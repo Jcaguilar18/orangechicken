@@ -6,6 +6,7 @@ const { exec }  = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 const crypto    = require('crypto');
+const axios     = require('axios');
 
 const { PDFDocument } = require('pdf-lib');
 const sharp     = require('sharp');
@@ -338,6 +339,99 @@ router.post('/tools/pdf-to-jpg', toolUpload.single('file'), async (req, res) => 
   } finally {
     cleanFile(req.file.path);
   }
+});
+
+// ── TTS: word timestamp helper ────────────────────────────────────
+function buildWordTimestamps(alignment) {
+  const chars  = alignment?.characters || [];
+  const starts = alignment?.character_start_times_seconds || [];
+  const ends   = alignment?.character_end_times_seconds   || [];
+  const words  = [];
+  let w = '', ws = null, we = null;
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+    if (/[\s\n]/.test(c)) {
+      if (w) { words.push({ word: w, start: ws, end: we }); w = ''; ws = null; }
+    } else {
+      if (!w) ws = starts[i];
+      w += c;
+      we = ends[i];
+    }
+  }
+  if (w) words.push({ word: w, start: ws, end: we });
+  return words;
+}
+
+// ── TTS endpoint ──────────────────────────────────────────────────
+router.post('/tools/story-tts', express.json({ limit: '64kb' }), async (req, res) => {
+  const { text, voiceId = '21m00Tcm4TlvDq8ikWAM' } = req.body;
+  if (!text?.trim()) return res.json({ ok: false, error: 'No text provided.' });
+
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) return res.json({ ok: false, error: 'no_key' });
+
+  try {
+    const r = await axios.post(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`,
+      {
+        text: text.trim(),
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.3, use_speaker_boost: true },
+      },
+      { headers: { 'Content-Type': 'application/json', 'xi-api-key': apiKey }, timeout: 30000 }
+    );
+    const { audio_base64, alignment } = r.data;
+
+    // Save audio to disk so the merge endpoint can use it
+    const ttsPath = `/tmp/uploads/tts_${crypto.randomBytes(12).toString('hex')}.mp3`;
+    fs.writeFileSync(ttsPath, Buffer.from(audio_base64, 'base64'));
+    const ttsResult = saveTempResult(ttsPath, 'voice.mp3', 'audio/mpeg');
+
+    res.json({ ok: true, audio: audio_base64, words: buildWordTimestamps(alignment), ttsId: ttsResult.id });
+  } catch (err) {
+    const msg = err.response?.data?.detail?.message || err.message || 'TTS generation failed.';
+    res.json({ ok: false, error: msg });
+  }
+});
+
+// ── Story merge: video + TTS → MP4 ───────────────────────────────
+const mergeUpload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 200 * 1024 * 1024 } });
+
+router.post('/tools/story-merge', mergeUpload.single('video'), async (req, res) => {
+  if (!req.file) return res.json({ ok: false, error: 'No video uploaded.' });
+
+  const ttsInfo = tempResults.get(req.body.ttsId);
+  if (!ttsInfo || !fs.existsSync(ttsInfo.filePath)) {
+    cleanFile(req.file.path);
+    return res.json({ ok: false, error: 'Voice audio expired — please regenerate.' });
+  }
+
+  const outPath = `/tmp/uploads/story_${crypto.randomBytes(12).toString('hex')}.mp4`;
+  try {
+    await execAsync(
+      `ffmpeg -i "${req.file.path}" -i "${ttsInfo.filePath}" ` +
+      `-map 0:v -map 1:a -c:v libx264 -c:a aac -preset veryfast -crf 23 ` +
+      `-movflags +faststart -shortest "${outPath}" -y`
+    , { timeout: 120000 });
+    const result = saveTempResult(outPath, 'tiktok-story.mp4', 'video/mp4');
+    res.json({ ok: true, downloadUrl: `/tools/download/${result.id}`, filename: 'tiktok-story.mp4' });
+  } catch (err) {
+    console.error('Story merge error:', err);
+    cleanFile(outPath);
+    res.json({ ok: false, error: 'Video merge failed: ' + err.message });
+  } finally {
+    cleanFile(req.file.path);
+  }
+});
+
+// ── TikTok Story Maker ────────────────────────────────────────────
+router.get('/tools/story-maker', async (req, res) => {
+  const usageInfo = await getUsageInfo(req);
+  res.render('story-maker', {
+    currentUser: req.session.user || null,
+    isSubscriber: usageInfo.unlimited,
+    pageTitle: "TikTok Story Maker — JC's Space",
+  });
 });
 
 module.exports = { router, tempResults };

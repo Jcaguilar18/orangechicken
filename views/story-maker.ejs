@@ -1,0 +1,816 @@
+<%- include('partials/header', { pageTitle: "TikTok Story Maker — JC's Space", currentUser, isSubscriber }) %>
+
+<style>
+  .sm-wrap { max-width: 1100px; margin: 2rem auto; padding: 0 1.25rem; }
+
+  .sm-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 820px) {
+    .sm-layout { grid-template-columns: 1fr; }
+    .sm-preview-col { order: -1; }
+  }
+
+  .sm-label {
+    display: block;
+    font-size: .7rem;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: .5rem;
+  }
+  .sm-textarea {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    font-size: .95rem;
+    line-height: 1.6;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .sm-preset-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .5rem; }
+  .sm-preset-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 8px;
+    padding: .65rem .4rem;
+    cursor: pointer;
+    font-size: .72rem;
+    text-align: center;
+    transition: border-color .15s, background .15s, color .15s;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  .sm-preset-btn.active { border-color: var(--cyan); background: rgba(0,212,255,.1); color: var(--cyan); }
+
+  .sm-toggle-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .sm-toggle-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 6px;
+    padding: .3rem .8rem;
+    cursor: pointer;
+    font-size: .78rem;
+    font-family: 'Orbitron', sans-serif;
+    transition: all .15s;
+  }
+  .sm-toggle-btn.active { border-color: var(--cyan); background: rgba(0,212,255,.1); color: var(--cyan); }
+
+  .sm-slider-row { display: flex; align-items: center; gap: .75rem; }
+  .sm-slider-row label { font-size: .8rem; color: var(--muted); min-width: 68px; }
+  .sm-slider-row input[type=range] { flex: 1; accent-color: var(--cyan); }
+  .sm-slider-val { font-size: .78rem; color: var(--cyan); font-family: 'Orbitron', sans-serif; min-width: 52px; text-align: right; }
+
+  /* voice card */
+  .sm-voice-card {
+    background: rgba(168,85,247,.06);
+    border: 1px solid rgba(168,85,247,.25);
+    border-radius: 12px;
+    padding: 1.1rem 1.1rem .9rem;
+  }
+  .sm-voice-card .sm-label { color: #a855f7; }
+  .sm-voice-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .5rem;
+    align-items: end;
+    margin-top: .5rem;
+  }
+  .sm-tts-loaded {
+    background: rgba(34,197,94,.07);
+    border: 1px solid rgba(34,197,94,.25);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    margin-top: .75rem;
+    display: none;
+  }
+  .sm-tts-loaded.show { display: block; }
+  .sm-tts-loaded audio { width: 100%; margin-bottom: .5rem; }
+
+  /* canvas */
+  .sm-canvas-outer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+  .sm-canvas-badge {
+    font-size: .65rem;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    border: 1px solid rgba(0,212,255,.25);
+    border-radius: 20px;
+    padding: .2rem .75rem;
+    background: rgba(0,212,255,.05);
+  }
+  #previewCanvas {
+    width: 100%;
+    max-width: 292px;
+    border-radius: 14px;
+    border: 2px solid rgba(0,212,255,.25);
+    box-shadow: 0 0 40px rgba(0,212,255,.08);
+    display: block;
+  }
+  .sm-actions { display: flex; gap: .75rem; width: 100%; justify-content: center; }
+
+  .sm-status {
+    font-size: .78rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 1.1em;
+    padding: 0 .5rem;
+  }
+  .sm-status.recording { color: #f87171; animation: sm-blink 1s step-start infinite; }
+  @keyframes sm-blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .sm-tip {
+    background: rgba(251,191,36,.05);
+    border: 1px solid rgba(251,191,36,.2);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    font-size: .8rem;
+    color: #fbbf24;
+    line-height: 1.6;
+    margin-top: 1rem;
+  }
+  .sm-tip strong { color: #fde68a; }
+  .sm-tip code { background: rgba(0,0,0,.3); border-radius: 4px; padding: .1rem .35rem; font-size: .75rem; }
+</style>
+
+<div class="sm-wrap">
+  <section class="hero" style="padding-bottom:1.5rem">
+    <div class="hero-glow"></div>
+    <p class="hero-label">CONTENT LAB</p>
+    <h1 class="hero-title">TikTok Story Maker</h1>
+    <p class="hero-sub">AI voice, word-by-word highlighting, ADHD background — record a ready-to-upload TikTok in one click.</p>
+  </section>
+
+  <div class="glow-line" style="margin-bottom:1.5rem"></div>
+
+  <div class="sm-layout">
+
+    <!-- ── Left: Controls ── -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+      <!-- Story text -->
+      <div class="glass-card">
+        <span class="sm-label">Story / Script</span>
+        <textarea id="storyText" class="form-input sm-textarea"
+          placeholder="Paste your full story here. It will appear word by word on screen.&#10;&#10;Commas and periods will auto-pause. Line breaks = longer pause."></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem">
+          <span id="wordCount" style="font-size:.75rem;color:var(--muted)">0 words</span>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('storyText').value='';clearTTS();updateWordCount()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Voice / TTS -->
+      <div class="sm-voice-card">
+        <span class="sm-label">AI Voice — ElevenLabs</span>
+        <p style="font-size:.8rem;color:var(--muted);margin:.3rem 0 .75rem">Human-quality AI narration. Generates audio + syncs word highlighting automatically.</p>
+
+        <div class="sm-voice-grid">
+          <select id="voiceSelect" class="form-input" style="font-size:.85rem">
+            <optgroup label="Female">
+              <option value="21m00Tcm4TlvDq8ikWAM">Rachel — Calm &amp; Clear</option>
+              <option value="EXAVITQu4vr4xnSDxMaL">Bella — Soft &amp; Warm</option>
+              <option value="MF3mGyEYCl7XYWbV9V6O">Elli — Expressive</option>
+              <option value="AZnzlk1XvdvUeBnXmlld">Domi — Bold &amp; Confident</option>
+            </optgroup>
+            <optgroup label="Male">
+              <option value="pNInz6obpgDQGcFmaJgB">Adam — Deep &amp; Authoritative</option>
+              <option value="TxGEqnHWrfWFTfGW9XjX">Josh — Young &amp; Casual</option>
+              <option value="VR6AewLTigWG4xSOukaG">Arnold — Crisp Narrator</option>
+              <option value="ErXwobaYiN019PkySvjV">Antoni — Balanced &amp; Natural</option>
+            </optgroup>
+          </select>
+          <button class="btn btn-primary" id="ttsBtn" onclick="generateTTS()" style="white-space:nowrap;background:rgba(168,85,247,.9);border-color:#a855f7">Generate Voice</button>
+        </div>
+
+        <div class="sm-tts-loaded" id="ttsLoaded">
+          <audio id="ttsPlayer" controls></audio>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+            <span style="font-size:.78rem;color:#4ade80" id="ttsDuration"></span>
+            <button class="btn btn-ghost btn-sm" onclick="clearTTS()">✕ Remove</button>
+          </div>
+          <!-- Voice bake toggle -->
+          <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:.7rem .85rem">
+            <span style="font-size:.7rem;font-family:'Orbitron',sans-serif;color:#a855f7;letter-spacing:1.5px;display:block;margin-bottom:.5rem">VOICE MODE</span>
+            <div style="display:flex;flex-direction:column;gap:.4rem">
+              <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.82rem;color:#ddd">
+                <input type="radio" name="voiceMode" value="bake" id="modeBake" checked style="accent-color:#a855f7" />
+                <span><strong style="color:#c084fc">Bake into video</strong> — MP4 with voice included</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.82rem;color:#ddd">
+                <input type="radio" name="voiceMode" value="manual" id="modeManual" style="accent-color:#a855f7" />
+                <span>Manual — add voice in TikTok app</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Background video -->
+      <div class="glass-card">
+        <span class="sm-label">Background Video</span>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">Pick a built-in ADHD clip or upload your own.</p>
+
+        <span class="sm-label" style="margin-bottom:.4rem">Built-in</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem">
+          <button class="sm-preset-btn" id="bg-ss" onclick="loadBuiltinBg('subway-surfers','🛹 Subway Surfers',this)">
+            🛹<br><span style="font-size:.75rem">Subway Surfers</span>
+          </button>
+          <button class="sm-preset-btn" id="bg-mc" onclick="loadBuiltinBg('minecraft-parkour2','⛏ Minecraft Parkour',this)">
+            ⛏<br><span style="font-size:.75rem">Minecraft Parkour</span>
+          </button>
+        </div>
+
+        <span class="sm-label" style="margin-bottom:.4rem">Or upload your own</span>
+        <input type="file" id="bgFileInput" class="form-input" accept="video/*" />
+        <video id="bgVideoEl" loop muted playsinline preload="auto" style="display:none"></video>
+        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem;cursor:pointer;font-size:.8rem;color:var(--muted)">
+          <input type="checkbox" id="includeAudio" style="accent-color:var(--cyan)" />
+          Include background audio in recording
+        </label>
+      </div>
+
+      <!-- Style -->
+      <div class="glass-card">
+        <span class="sm-label" style="margin-bottom:.6rem">Text Style</span>
+        <div class="sm-preset-grid" style="margin-bottom:1rem">
+          <button class="sm-preset-btn active" data-s="bold" onclick="pickStyle(this)">
+            <span style="font-weight:900;font-size:.95rem;color:#fff;-webkit-text-stroke:.5px #000">BOLD</span><br>
+            <span style="color:var(--muted)">TikTok Classic</span>
+          </button>
+          <button class="sm-preset-btn" data-s="highlight" onclick="pickStyle(this)">
+            <span style="background:#ffe600;color:#111;font-weight:900;font-size:.85rem;padding:.05rem .3rem;border-radius:3px">WORD</span><br>
+            <span style="color:var(--muted)">Highlight</span>
+          </button>
+          <button class="sm-preset-btn" data-s="subtitle" onclick="pickStyle(this)">
+            <span style="font-size:.85rem;color:#ddd">caption.</span><br>
+            <span style="color:var(--muted)">Subtitle</span>
+          </button>
+        </div>
+
+        <div id="posRow" style="margin-bottom:.85rem">
+          <span class="sm-label" style="margin-bottom:.4rem">Position</span>
+          <div class="sm-toggle-row">
+            <button class="sm-toggle-btn" onclick="pickPos(this,'top')">Top</button>
+            <button class="sm-toggle-btn active" onclick="pickPos(this,'center')">Center</button>
+            <button class="sm-toggle-btn" onclick="pickPos(this,'bottom')">Bottom</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:.85rem">
+          <span class="sm-label" style="margin-bottom:.4rem">Words at once</span>
+          <div class="sm-toggle-row">
+            <button class="sm-toggle-btn active" onclick="pickChunk(this,1)">1</button>
+            <button class="sm-toggle-btn" onclick="pickChunk(this,2)">2</button>
+            <button class="sm-toggle-btn" onclick="pickChunk(this,3)">3</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          <div class="sm-slider-row">
+            <label>Speed <span id="wpmNote" style="font-size:.65rem;opacity:.5">(no voice)</span></label>
+            <input type="range" id="wpmSlider" min="60" max="300" value="150" oninput="syncSlider('wpmSlider','wpmVal',v=>v+' WPM')" />
+            <span class="sm-slider-val" id="wpmVal">150 WPM</span>
+          </div>
+          <div class="sm-slider-row">
+            <label>Text size</label>
+            <input type="range" id="sizeSlider" min="28" max="86" value="56" oninput="syncSlider('sizeSlider','sizeVal',v=>v+'px')" />
+            <span class="sm-slider-val" id="sizeVal">56px</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- ── Right: Preview ── -->
+    <div class="sm-preview-col">
+      <div class="glass-card sm-canvas-outer">
+        <span class="sm-canvas-badge">PREVIEW · 9:16</span>
+        <canvas id="previewCanvas" width="405" height="720"></canvas>
+        <div class="sm-actions">
+          <button class="btn btn-ghost" id="previewBtn" onclick="togglePreview()">▶ Preview</button>
+          <button class="btn btn-primary" id="recordBtn" onclick="toggleRecord()">⏺ Record</button>
+        </div>
+        <div class="sm-status" id="statusEl">Enter your story and generate a voice to begin.</div>
+      </div>
+
+      <div class="sm-tip">
+        <strong>How to use:</strong><br>
+        1. Paste story → hit <strong>Generate Voice</strong><br>
+        2. Pick a background clip<br>
+        3. <strong>Preview</strong> to check timing<br>
+        4. <strong>Record</strong> → downloads <code>.webm</code><br>
+        5. Upload to TikTok — done<br><br>
+        <strong>ElevenLabs key:</strong> Add <code>ELEVENLABS_API_KEY=sk-...</code> to your <code>.env</code> file. Free tier = 10k chars/month.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── Config ────────────────────────────────────────────────────────
+const cfg = { style: 'bold', pos: 'center', chunk: 1 };
+
+// ─── Elements ──────────────────────────────────────────────────────
+const canvas   = document.getElementById('previewCanvas');
+const ctx      = canvas.getContext('2d');
+const videoEl  = document.getElementById('bgVideoEl');
+const statusEl = document.getElementById('statusEl');
+
+// ─── TTS state ────────────────────────────────────────────────────
+const tts = {
+  loaded: false,
+  words: [],        // [{word, start, end}]
+  audioBuffer: null,
+  audioCtx: null,
+  source: null,
+  destNode: null,
+  startTime: 0,     // audioCtx.currentTime at playback start
+  duration: 0,
+  ttsId: null,      // server-side temp file id for merge
+};
+
+// ─── Engine state ─────────────────────────────────────────────────
+const eng = {
+  words: [], idx: 0,
+  timer: null, raf: null,
+  previewing: false, recording: false,
+  recorder: null, chunks: [],
+};
+
+// ─── UI controls ──────────────────────────────────────────────────
+function pickStyle(btn) {
+  document.querySelectorAll('.sm-preset-btn[data-s]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cfg.style = btn.dataset.s;
+  document.getElementById('posRow').style.display = cfg.style === 'subtitle' ? 'none' : '';
+  if (!eng.previewing && !eng.recording) drawIdle();
+}
+function pickPos(btn, pos) {
+  btn.closest('.sm-toggle-row').querySelectorAll('.sm-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cfg.pos = pos;
+}
+function pickChunk(btn, n) {
+  btn.closest('.sm-toggle-row').querySelectorAll('.sm-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cfg.chunk = n;
+}
+function syncSlider(id, valId, fmt) {
+  document.getElementById(valId).textContent = fmt(document.getElementById(id).value);
+}
+function updateWordCount() {
+  const words = document.getElementById('storyText').value.trim().split(/\s+/).filter(w => w);
+  document.getElementById('wordCount').textContent = words.length + ' word' + (words.length !== 1 ? 's' : '');
+}
+document.getElementById('storyText').addEventListener('input', updateWordCount);
+
+// Background file
+document.getElementById('bgFileInput').addEventListener('change', function() {
+  if (!this.files[0]) return;
+  document.querySelectorAll('#bg-ss,#bg-mc').forEach(b => b.classList.remove('active'));
+  videoEl.src = URL.createObjectURL(this.files[0]);
+  videoEl.load();
+  videoEl.addEventListener('loadeddata', () => { setStatus('Background ready.'); drawIdle(); }, { once: true });
+});
+
+function loadBuiltinBg(slug, label, btn) {
+  document.querySelectorAll('#bg-ss,#bg-mc').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('bgFileInput').value = '';
+  setStatus('Loading ' + label + '...');
+  videoEl.src = '/backgrounds/' + slug + '.mp4';
+  videoEl.load();
+  videoEl.addEventListener('loadeddata', () => { setStatus(label + ' ready.'); drawIdle(); }, { once: true });
+}
+
+// ─── ElevenLabs TTS ────────────────────────────────────────────────
+async function generateTTS() {
+  const text = document.getElementById('storyText').value.trim();
+  if (!text) { setStatus('Enter your story text first.'); return; }
+
+  const btn = document.getElementById('ttsBtn');
+  btn.textContent = 'Generating...';
+  btn.disabled = true;
+  setStatus('Generating AI voice...');
+
+  try {
+    const r = await fetch('/tools/story-tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceId: document.getElementById('voiceSelect').value }),
+    });
+    const data = await r.json();
+
+    if (!data.ok) {
+      if (data.error === 'no_key') {
+        setStatus('Add ELEVENLABS_API_KEY to your .env file to enable AI voice.');
+      } else {
+        setStatus('Voice error: ' + data.error);
+      }
+      return;
+    }
+
+    // Decode base64 audio
+    const bytes = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+
+    // Build AudioContext + decode
+    if (!tts.audioCtx || tts.audioCtx.state === 'closed') {
+      tts.audioCtx = new AudioContext();
+    }
+    tts.audioBuffer = await tts.audioCtx.decodeAudioData(bytes.buffer.slice(0));
+    tts.words       = data.words;
+    tts.duration    = tts.audioBuffer.duration;
+    tts.ttsId       = data.ttsId;
+    tts.loaded      = true;
+
+    // Wire preview player
+    const blob    = new Blob([bytes], { type: 'audio/mpeg' });
+    const url     = URL.createObjectURL(blob);
+    const player  = document.getElementById('ttsPlayer');
+    if (player._blobUrl) URL.revokeObjectURL(player._blobUrl);
+    player._blobUrl = url;
+    player.src  = url;
+
+    // Show loaded section
+    document.getElementById('ttsLoaded').classList.add('show');
+    document.getElementById('ttsDuration').textContent =
+      '✓ Voice ready · ' + data.words.length + ' words · ' + tts.duration.toFixed(1) + 's';
+    document.getElementById('wpmNote').textContent = '(voice active)';
+    document.getElementById('wpmSlider').disabled = true;
+
+    // Sync eng.words so chunk display works
+    eng.words = data.words.map(w => w.word);
+
+    setStatus('Voice ready! Hit Preview or Record.');
+  } catch (err) {
+    setStatus('Error: ' + err.message);
+  } finally {
+    btn.textContent = 'Generate Voice';
+    btn.disabled = false;
+  }
+}
+
+function clearTTS() {
+  stopPreview();
+  tts.loaded = false;
+  tts.words = [];
+  tts.audioBuffer = null;
+  tts.source = null;
+  tts.destNode = null;
+  tts.ttsId = null;
+  document.getElementById('ttsLoaded').classList.remove('show');
+  document.getElementById('ttsDuration').textContent = '';
+  document.getElementById('wpmNote').textContent = '(no voice)';
+  document.getElementById('wpmSlider').disabled = false;
+  eng.words = [];
+  setStatus('Voice removed. Using WPM timer mode.');
+}
+
+// ─── Canvas drawing ────────────────────────────────────────────────
+function drawBg() {
+  if (videoEl.readyState >= 2 && videoEl.src) {
+    const vw = videoEl.videoWidth  || 1, vh = videoEl.videoHeight || 1;
+    const cw = canvas.width, ch = canvas.height;
+    const scale = Math.max(cw / vw, ch / vh);
+    const sw = cw / scale, sh = ch / scale;
+    ctx.drawImage(videoEl, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, cw, ch);
+  } else {
+    ctx.fillStyle = '#060b1f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'rgba(0,212,255,0.07)'; ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 36) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+    for (let y = 0; y < canvas.height; y += 36) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+  }
+}
+
+function getFont(size) { return `bold ${size}px Impact, 'Arial Black', sans-serif`; }
+
+function roundRect(x, y, w, h, r, fill) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function wrapWords(text, maxW, size) {
+  ctx.font = getFont(size);
+  const parts = text.split(' ');
+  const lines = []; let cur = '';
+  for (const p of parts) {
+    const test = cur ? cur + ' ' + p : p;
+    if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = p; }
+    else cur = test;
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [text];
+}
+
+function drawOverlayText(text) {
+  const size  = parseInt(document.getElementById('sizeSlider').value);
+  const cw    = canvas.width, cx = cw / 2;
+  const maxW  = cw - 36;
+  const lines = wrapWords(text, maxW, size);
+  const lineH = size * 1.35;
+
+  ctx.font = getFont(size);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (cfg.style === 'subtitle') {
+    const stripH = size * 2.6;
+    ctx.fillStyle = 'rgba(0,0,0,0.82)';
+    ctx.fillRect(0, canvas.height - stripH, cw, stripH);
+    const startY = canvas.height - stripH / 2 - ((lines.length - 1) * lineH) / 2;
+    lines.forEach((ln, i) => { ctx.fillStyle = '#fff'; ctx.fillText(ln, cx, startY + i * lineH); });
+    return;
+  }
+
+  const posY   = cfg.pos === 'top' ? canvas.height * .22
+               : cfg.pos === 'bottom' ? canvas.height * .78
+               : canvas.height * .5;
+  const startY = posY - ((lines.length - 1) * lineH) / 2;
+
+  if (cfg.style === 'bold') {
+    lines.forEach((ln, i) => {
+      const y = startY + i * lineH;
+      ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
+      ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(7, size / 8);
+      ctx.strokeText(ln, cx, y);
+      ctx.fillStyle = '#fff'; ctx.fillText(ln, cx, y);
+      ctx.shadowBlur = 0;
+    });
+  } else if (cfg.style === 'highlight') {
+    lines.forEach((ln, i) => {
+      const y = startY + i * lineH;
+      const tw = ctx.measureText(ln).width;
+      const px = 22, py = 10;
+      roundRect(cx - tw / 2 - px, y - size / 2 - py, tw + px * 2, size + py * 2, 8, '#FFE600');
+      ctx.fillStyle = '#111'; ctx.fillText(ln, cx, y);
+    });
+  }
+}
+
+function drawIdle() {
+  drawBg();
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  ctx.font = 'bold 28px Impact, Arial Black';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 6;
+  ctx.strokeText('YOUR STORY', cx, cy);
+  ctx.fillStyle = '#fff'; ctx.fillText('YOUR STORY', cx, cy);
+  ctx.font = '13px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillText('appears here word by word', cx, cy + 38);
+}
+
+// ─── Render loop ───────────────────────────────────────────────────
+function renderLoop() {
+  if (!eng.previewing && !eng.recording) return;
+  drawBg();
+
+  let displayText = '';
+  if (tts.loaded && tts.audioCtx) {
+    const elapsed = tts.audioCtx.currentTime - tts.startTime;
+    // Find current word index from timestamps
+    let idx = 0;
+    for (let i = 0; i < tts.words.length; i++) {
+      if (elapsed >= tts.words[i].start) idx = i; else break;
+    }
+    eng.idx = idx;
+    displayText = tts.words.slice(idx, idx + cfg.chunk).map(w => w.word).join(' ');
+  } else {
+    displayText = eng.words.slice(eng.idx, eng.idx + cfg.chunk).join(' ');
+  }
+
+  if (displayText) drawOverlayText(displayText);
+  eng.raf = requestAnimationFrame(renderLoop);
+}
+
+// ─── WPM word timer (fallback when no TTS) ────────────────────────
+function scheduleNext() {
+  if (!eng.previewing && !eng.recording) return;
+  eng.idx += cfg.chunk;
+  if (eng.idx >= eng.words.length) {
+    setTimeout(() => { eng.recording ? stopRecord() : stopPreview(); }, 900);
+    return;
+  }
+  const prev = eng.words[eng.idx - 1] || '';
+  const mult = /[.!?…]$/.test(prev) ? 2 : /[,;:]$/.test(prev) ? 1.5 : 1;
+  const wpm  = parseInt(document.getElementById('wpmSlider').value);
+  eng.timer  = setTimeout(scheduleNext, (60000 / wpm) * cfg.chunk * mult);
+}
+
+function startEngine() {
+  if (tts.loaded) {
+    eng.words = tts.words.map(w => w.word);
+    eng.idx   = 0;
+    return true;
+  }
+  const raw = document.getElementById('storyText').value.trim();
+  if (!raw) { setStatus('Enter your story text first.'); return false; }
+  eng.words = raw.split(/\s+/).filter(w => w);
+  if (!eng.words.length) return false;
+  eng.idx = 0;
+  const wpm = parseInt(document.getElementById('wpmSlider').value);
+  eng.timer = setTimeout(scheduleNext, (60000 / wpm) * cfg.chunk);
+  return true;
+}
+
+function stopEngine() {
+  clearTimeout(eng.timer);
+  cancelAnimationFrame(eng.raf);
+  eng.timer = eng.raf = null;
+}
+
+// ─── TTS audio helpers ────────────────────────────────────────────
+function createTTSSource() {
+  if (!tts.loaded || !tts.audioCtx) return null;
+  // Resume context if suspended (browser autoplay policy)
+  if (tts.audioCtx.state === 'suspended') tts.audioCtx.resume();
+
+  const src  = tts.audioCtx.createBufferSource();
+  src.buffer = tts.audioBuffer;
+
+  const dest = tts.audioCtx.createMediaStreamDestination();
+  src.connect(dest);
+  src.connect(tts.audioCtx.destination); // speakers
+
+  tts.source   = src;
+  tts.destNode = dest;
+  return { src, dest };
+}
+
+function stopTTSSource() {
+  if (tts.source) { try { tts.source.stop(); } catch (_) {} tts.source = null; }
+}
+
+// ─── Preview ─────────────────────────────────────────────────────
+function togglePreview() {
+  if (eng.previewing) stopPreview(); else startPreview();
+}
+
+function startPreview() {
+  if (eng.recording) return;
+  if (!startEngine()) return;
+  eng.previewing = true;
+  videoEl.currentTime = 0; videoEl.play().catch(() => {});
+
+  if (tts.loaded) {
+    createTTSSource();
+    tts.source.start(0);
+    tts.startTime = tts.audioCtx.currentTime;
+    tts.source.onended = () => { if (eng.previewing) stopPreview(); };
+  }
+
+  renderLoop();
+  document.getElementById('previewBtn').textContent = '■ Stop';
+  setStatus(tts.loaded ? 'Previewing with AI voice...' : 'Previewing...');
+}
+
+function stopPreview() {
+  eng.previewing = false;
+  stopEngine();
+  stopTTSSource();
+  videoEl.pause();
+  document.getElementById('previewBtn').textContent = '▶ Preview';
+  setStatus('Stopped.');
+  drawIdle();
+}
+
+// ─── Recording ───────────────────────────────────────────────────
+function toggleRecord() {
+  if (eng.recording) stopRecord(); else startRecord();
+}
+
+function isBakeMode() {
+  return tts.loaded && document.getElementById('modeBake').checked;
+}
+
+function startRecord() {
+  if (eng.previewing) stopPreview();
+  if (!startEngine()) return;
+
+  const stream = canvas.captureStream(30);
+
+  if (isBakeMode()) {
+    // Bake mode: canvas only — audio added server-side via FFmpeg
+    // Still play TTS so word highlighting is synced during recording
+    const { dest } = createTTSSource();
+    // Don't add dest tracks to stream — server will mux the saved audio file instead
+    void dest; // reference to satisfy linter
+  } else {
+    // Manual mode: try to capture TTS audio client-side into the stream
+    if (tts.loaded) {
+      const { dest } = createTTSSource();
+      dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    }
+    // Background audio (optional)
+    if (document.getElementById('includeAudio').checked && videoEl.src && typeof videoEl.captureStream === 'function') {
+      try { videoEl.captureStream().getAudioTracks().forEach(t => stream.addTrack(t)); } catch (_) {}
+    }
+  }
+
+  const videoMime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    .find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+  const fullMime  = isBakeMode() ? videoMime
+    : (['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm');
+
+  eng.chunks   = [];
+  eng.recorder = new MediaRecorder(stream, { mimeType: fullMime, videoBitsPerSecond: 5_000_000 });
+  eng.recorder.ondataavailable = e => { if (e.data.size > 0) eng.chunks.push(e.data); };
+  eng.recorder.onstop = onRecordingDone;
+  eng.recorder.start(200);
+
+  eng.recording = true;
+  videoEl.currentTime = 0; videoEl.play().catch(() => {});
+
+  if (tts.loaded && tts.source) {
+    tts.source.start(0);
+    tts.startTime = tts.audioCtx.currentTime;
+    tts.source.onended = () => { if (eng.recording) stopRecord(); };
+  }
+
+  renderLoop();
+
+  const btn = document.getElementById('recordBtn');
+  btn.textContent = '⏹ Stop & Save';
+  btn.style.background = '#dc2626';
+  document.getElementById('previewBtn').disabled = true;
+  setStatus('● REC' + (isBakeMode() ? ' — will bake voice on save' : tts.loaded ? ' — AI voice active' : ''), true);
+}
+
+function stopRecord() {
+  eng.recording = false;
+  stopEngine();
+  stopTTSSource();
+  videoEl.pause();
+  if (eng.recorder && eng.recorder.state !== 'inactive') eng.recorder.stop();
+  const btn = document.getElementById('recordBtn');
+  btn.textContent = '⏺ Record';
+  btn.style.background = '';
+  document.getElementById('previewBtn').disabled = false;
+  setStatus(isBakeMode() ? 'Processing — merging voice into video...' : 'Saving video...');
+  drawIdle();
+}
+
+async function onRecordingDone() {
+  const mime = eng.recorder?.mimeType || 'video/webm';
+  const blob = new Blob(eng.chunks, { type: mime });
+
+  if (isBakeMode() && tts.ttsId) {
+    // Upload to server, merge with TTS audio via FFmpeg
+    setStatus('Uploading for processing... (' + (blob.size / 1048576).toFixed(1) + ' MB)');
+    try {
+      const fd = new FormData();
+      fd.append('video', blob, 'recording.webm');
+      fd.append('ttsId', tts.ttsId);
+
+      const r    = await fetch('/tools/story-merge', { method: 'POST', body: fd });
+      const data = await r.json();
+
+      if (!data.ok) { setStatus('Merge failed: ' + data.error); return; }
+
+      // Trigger download from server
+      const a = Object.assign(document.createElement('a'), { href: data.downloadUrl, download: data.filename });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setStatus('Done! MP4 with voice downloaded. Ready to upload to TikTok.');
+    } catch (err) {
+      setStatus('Upload error: ' + err.message);
+    }
+  } else {
+    // Manual mode — direct browser download
+    const url = URL.createObjectURL(blob);
+    const a   = Object.assign(document.createElement('a'), { href: url, download: 'tiktok-story.webm' });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    setStatus('Done! ' + (blob.size / 1048576).toFixed(1) + ' MB. Add voice in TikTok.');
+  }
+}
+
+function setStatus(msg, rec = false) {
+  statusEl.textContent = msg;
+  statusEl.className = 'sm-status' + (rec ? ' recording' : '');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+drawIdle();
+</script>
+
+<%- include('partials/footer') %>
