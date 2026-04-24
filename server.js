@@ -136,6 +136,7 @@ async function start() {
     // Backfill emailVerified for users who registered before verification was added
     `UPDATE "Users" SET "emailVerified" = 1 WHERE "password" IS NOT NULL AND "emailVerified" = 0`,
     'ALTER TABLE "Subscriptions" ADD COLUMN "paymentMethod" VARCHAR(20) NOT NULL DEFAULT \'gcash\'',
+    'ALTER TABLE "Subscriptions" ADD COLUMN "plan" VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
   ];
   for (const sql of patches) {
     try { await sequelize.query(sql); } catch (_) {}
@@ -148,6 +149,7 @@ async function start() {
   await SiteSetting.findOrCreate({ where: { key: 'gcash_number' },   defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_email' },   defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_me' },      defaults: { value: null } });
+  await SiteSetting.findOrCreate({ where: { key: 'paypal_plan_id' }, defaults: { value: null } });
 
   // Ensure the designated admin account is flagged
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;

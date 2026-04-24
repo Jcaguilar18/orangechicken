@@ -4,6 +4,7 @@ const path     = require('path');
 const fs       = require('fs');
 const { Subscription, User, SiteSetting } = require('../models');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const paypal = require('../utils/paypal');
 
 const router = express.Router();
 
@@ -150,6 +151,112 @@ router.post('/admin/settings', requireAdmin, settingsUpload.single('gcashQr'), a
   }
   const settings = await getPaymentSettings();
   res.render('admin-settings', { ...settings, success, error });
+});
+
+// ─── PayPal automated payment endpoints ──────────────────────────────────────
+
+// Returns the client ID + plan ID the frontend needs to render PayPal buttons
+router.get('/subscribe/paypal/config', requireAuth, async (req, res) => {
+  if (!process.env.PAYPAL_CLIENT_ID) return res.json({ ok: false, error: 'PayPal not configured.' });
+  try {
+    const planId = await paypal.ensureMonthlyPlan();
+    res.json({ ok: true, clientId: process.env.PAYPAL_CLIENT_ID, planId, mode: process.env.PAYPAL_MODE || 'sandbox' });
+  } catch (err) {
+    console.error('PayPal config error:', err.message);
+    res.json({ ok: false, error: 'Failed to load PayPal config.' });
+  }
+});
+
+// Creates a monthly subscription server-side and returns the subscription ID
+router.post('/subscribe/paypal/create-subscription-server', requireAuth, async (req, res) => {
+  try {
+    const planId = await paypal.ensureMonthlyPlan();
+    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+    const sub = await paypal.createSubscription(
+      planId,
+      baseUrl + '/subscribe?success=1',
+      baseUrl + '/subscribe?cancelled=1'
+    );
+    res.json({ ok: true, subscriptionId: sub.id });
+  } catch (err) {
+    console.error('PayPal create subscription server error:', err.message);
+    res.json({ ok: false, error: 'Failed to create subscription.' });
+  }
+});
+
+// Called by frontend after user approves a monthly subscription
+router.post('/subscribe/paypal/activate-subscription', requireAuth, async (req, res) => {
+  const { subscriptionId } = req.body;
+  if (!subscriptionId) return res.json({ ok: false, error: 'Missing subscription ID.' });
+
+  try {
+    const sub = await paypal.getSubscription(subscriptionId);
+    if (sub.status !== 'ACTIVE') return res.json({ ok: false, error: 'Subscription not active yet.' });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const end   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    // Cancel any existing pending subscription for this user
+    await Subscription.destroy({ where: { userId: req.session.user.id, status: 'pending' } });
+
+    await Subscription.create({
+      userId:        req.session.user.id,
+      gcashRef:      subscriptionId,
+      paymentMethod: 'paypal',
+      plan:          'monthly',
+      status:        'active',
+      startDate:     today,
+      endDate:       end,
+      approvedBy:    null,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PayPal activate subscription error:', err.message);
+    res.json({ ok: false, error: 'Failed to activate subscription.' });
+  }
+});
+
+// Called by frontend to create a one-time $5 lifetime order
+router.post('/subscribe/paypal/create-order', requireAuth, async (req, res) => {
+  try {
+    const order = await paypal.createOrder('5.00');
+    res.json({ ok: true, id: order.id });
+  } catch (err) {
+    console.error('PayPal create order error:', err.message);
+    res.json({ ok: false, error: 'Failed to create PayPal order.' });
+  }
+});
+
+// Called by frontend after user approves the lifetime order
+router.post('/subscribe/paypal/capture-order', requireAuth, async (req, res) => {
+  const { orderId } = req.body;
+  if (!orderId) return res.json({ ok: false, error: 'Missing order ID.' });
+
+  try {
+    const capture = await paypal.captureOrder(orderId);
+    if (capture.status !== 'COMPLETED') return res.json({ ok: false, error: 'Payment not completed.' });
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    await Subscription.destroy({ where: { userId: req.session.user.id, status: 'pending' } });
+
+    await Subscription.create({
+      userId:        req.session.user.id,
+      gcashRef:      orderId,
+      paymentMethod: 'paypal',
+      plan:          'lifetime',
+      status:        'active',
+      startDate:     today,
+      endDate:       '2099-12-31',
+      approvedBy:    null,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PayPal capture order error:', err.message);
+    res.json({ ok: false, error: 'Failed to capture payment.' });
+  }
 });
 
 module.exports = router;

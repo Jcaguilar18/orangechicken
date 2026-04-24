@@ -20,13 +20,31 @@
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
   }
-  .tab-btn.active {
-    background: rgba(0,212,255,0.12);
-    color: var(--cyan);
-  }
+  .tab-btn.active { background: rgba(0,212,255,0.12); color: var(--cyan); }
   .tab-btn:first-child { border-right: 1px solid var(--border); }
   .payment-panel { display: none; }
   .payment-panel.active { display: block; }
+
+  .plan-options { display: flex; gap: .75rem; margin-bottom: 1.25rem; }
+  .plan-option {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    text-align: center;
+  }
+  .plan-option.selected {
+    border-color: var(--cyan);
+    background: rgba(0,212,255,.08);
+  }
+  .plan-option input { display: none; }
+  .plan-price { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--cyan); }
+  .plan-label { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+
+  #paypal-btn-container { min-height: 50px; }
+  .paypal-msg { color: var(--muted); font-size: .85rem; text-align: center; padding: 1rem 0; }
 </style>
 
 <div class="container">
@@ -34,7 +52,7 @@
     <div class="hero-glow"></div>
     <p class="hero-label">UPGRADE</p>
     <h1 class="hero-title">Go PRO</h1>
-    <p class="hero-sub">Unlimited tool and scraper access — GCash ₱20/mo or PayPal $1/mo.</p>
+    <p class="hero-sub">Unlimited tools and scraper — GCash ₱20/mo or PayPal $1/mo · $5 lifetime.</p>
   </section>
 
   <div class="glow-line"></div>
@@ -43,16 +61,17 @@
 
     <% if (isActive) { %>
       <div class="alert alert-success">
-        ✅ You have an active PRO subscription! Expires: <strong><%= subscription.endDate %></strong>
+        ✅ You have an active PRO subscription!
+        <% if (subscription.plan === 'lifetime') { %>
+          <strong>Lifetime</strong> — never expires.
+        <% } else { %>
+          Expires: <strong><%= subscription.endDate %></strong>
+        <% } %>
       </div>
     <% } else if (subscription && subscription.status === 'pending') { %>
       <div class="alert" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.4);color:#fbbf24;border-radius:8px;padding:1rem">
         ⏳ Your subscription request is pending admin approval.
-        <% if (subscription.paymentMethod === 'paypal') { %>
-          PayPal transaction ID: <strong><%= subscription.gcashRef %></strong>
-        <% } else { %>
-          GCash ref: <strong><%= subscription.gcashRef %></strong>
-        <% } %>
+        GCash ref: <strong><%= subscription.gcashRef %></strong>
       </div>
     <% } %>
 
@@ -64,7 +83,7 @@
       <div class="glass-card">
         <h3 style="color:var(--cyan);font-family:'Orbitron',sans-serif;margin-bottom:1rem;font-size:1rem">PRO BENEFITS</h3>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.6rem;font-size:.9rem;color:#ccc">
-          <li>✦ Unlimited tool conversions (no 3/day cap)</li>
+          <li>✦ Unlimited tool conversions — no 3/day cap</li>
           <li>✦ Unlimited web scraper use</li>
           <li>✦ Full scraper settings — higher timeouts, larger files</li>
         </ul>
@@ -73,20 +92,19 @@
       <div class="glass-card">
         <div class="payment-tabs">
           <button type="button" class="tab-btn active" data-tab="gcash">GCash &nbsp;₱20/mo</button>
-          <button type="button" class="tab-btn" data-tab="paypal">PayPal &nbsp;$1/mo</button>
+          <button type="button" class="tab-btn" data-tab="paypal">PayPal</button>
         </div>
 
-        <form action="/subscribe" method="POST" id="subForm">
-          <input type="hidden" name="paymentMethod" id="paymentMethod" value="gcash" />
-
-          <!-- GCash panel -->
-          <div class="payment-panel active" id="panel-gcash">
+        <!-- ── GCash panel ── -->
+        <div class="payment-panel active" id="panel-gcash">
+          <form action="/subscribe" method="POST">
+            <input type="hidden" name="paymentMethod" value="gcash" />
             <% if (qrImage || gcashNum) { %>
               <% if (qrImage) { %>
                 <div style="text-align:center;margin-bottom:1.25rem">
-                  <img src="/uploads/settings/<%= qrImage %>" alt="GCash QR Code"
+                  <img src="/uploads/settings/<%= qrImage %>" alt="GCash QR"
                        style="max-width:200px;border-radius:12px;border:2px solid var(--cyan);display:inline-block" />
-                  <p style="font-size:.8rem;color:var(--muted);margin-top:.5rem">Scan QR to pay via GCash</p>
+                  <p style="font-size:.8rem;color:var(--muted);margin-top:.5rem">Scan to pay ₱20 via GCash</p>
                 </div>
               <% } %>
               <% if (gcashNum) { %>
@@ -100,61 +118,177 @@
             <% } %>
             <div class="form-group">
               <label class="form-label">GCash Reference Number</label>
-              <input type="text" name="gcashRef" class="form-input"
-                     placeholder="e.g. 2024041200001234" autocomplete="off" />
+              <input type="text" name="gcashRef" class="form-input" placeholder="e.g. 2024041200001234" autocomplete="off" required />
             </div>
+            <p style="font-size:.8rem;color:var(--muted);margin:.75rem 0">Admin will verify and activate within 24 hours.</p>
+            <button type="submit" class="btn btn-primary" style="width:100%">Submit →</button>
+          </form>
+        </div>
+
+        <!-- ── PayPal panel ── -->
+        <div class="payment-panel" id="panel-paypal">
+          <!-- Plan selector -->
+          <div class="plan-options" id="planOptions">
+            <label class="plan-option selected" id="opt-monthly">
+              <input type="radio" name="paypalPlan" value="monthly" checked />
+              <div class="plan-price">$1</div>
+              <div class="plan-label">per month</div>
+            </label>
+            <label class="plan-option" id="opt-lifetime">
+              <input type="radio" name="paypalPlan" value="lifetime" />
+              <div class="plan-price">$5</div>
+              <div class="plan-label">lifetime</div>
+            </label>
           </div>
 
-          <!-- PayPal panel -->
-          <div class="payment-panel" id="panel-paypal">
-            <% if (paypalMe || paypalEmail) { %>
-              <% if (paypalMe) { %>
-                <div style="text-align:center;margin-bottom:1.25rem">
-                  <a href="https://paypal.me/<%= paypalMe %>/1" target="_blank" rel="noopener"
-                     class="btn btn-primary" style="display:inline-flex;align-items:center;gap:.6rem;font-size:1rem;padding:.85rem 2rem">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/>
-                    </svg>
-                    Pay $1 via PayPal.me
-                  </a>
-                </div>
-              <% } %>
-              <% if (paypalEmail) { %>
-                <div style="background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:1rem;margin-bottom:1.25rem;text-align:center">
-                  <p style="font-size:.8rem;color:var(--muted);margin-bottom:.25rem">Send $1 to</p>
-                  <p style="font-size:1.05rem;color:var(--cyan)"><%= paypalEmail %></p>
-                </div>
-              <% } %>
-            <% } else { %>
-              <p style="color:var(--muted);text-align:center;margin-bottom:1.25rem">PayPal payment info will be available soon.</p>
-            <% } %>
-            <div class="form-group">
-              <label class="form-label">PayPal Transaction ID</label>
-              <input type="text" name="paypalRef" class="form-input"
-                     placeholder="e.g. 5TY05013RG057411E" autocomplete="off" />
-            </div>
-          </div>
-
-          <p style="font-size:.8rem;color:var(--muted);margin:1rem 0">
-            Admin will verify and activate your subscription within 24 hours.
-          </p>
-          <button type="submit" class="btn btn-primary" style="width:100%">Submit →</button>
-        </form>
+          <div class="paypal-msg" id="paypal-loading">Loading PayPal...</div>
+          <!-- Separate containers — PayPal requires element to stay in DOM -->
+          <div id="paypal-btn-monthly"></div>
+          <div id="paypal-btn-lifetime" style="display:none"></div>
+          <div id="paypal-error" style="display:none;color:#f87171;font-size:.85rem;margin-top:.75rem;text-align:center"></div>
+        </div>
       </div>
     <% } %>
   </div>
 </div>
 
 <script>
+  // Tab switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.payment-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-      document.getElementById('paymentMethod').value = btn.dataset.tab;
+      if (btn.dataset.tab === 'paypal') initPayPal();
     });
   });
+
+  // Plan toggle — only swap visibility, never destroy rendered buttons
+  document.querySelectorAll('.plan-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      showPlanContainer(selectedPlan());
+    });
+  });
+
+  let paypalConfig = null;
+  let rendered = { monthly: false, lifetime: false };
+
+  function selectedPlan() {
+    return document.querySelector('input[name="paypalPlan"]:checked')?.value || 'monthly';
+  }
+
+  function showPayPalError(msg) {
+    const el = document.getElementById('paypal-error');
+    el.innerHTML = msg;
+    el.style.display = 'block';
+  }
+
+  function showPlanContainer(plan) {
+    document.getElementById('paypal-btn-monthly').style.display  = plan === 'monthly'  ? '' : 'none';
+    document.getElementById('paypal-btn-lifetime').style.display = plan === 'lifetime' ? '' : 'none';
+  }
+
+  function loadSDK(clientId) {
+    return new Promise((resolve, reject) => {
+      if (window.paypal) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&vault=true&currency=USD`;
+      s.onload  = resolve;
+      s.onerror = () => reject(new Error('Failed to load PayPal SDK.'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function initPayPal() {
+    if (rendered.monthly && rendered.lifetime) { showPlanContainer(selectedPlan()); return; }
+
+    const loadingEl = document.getElementById('paypal-loading');
+    loadingEl.style.display = 'block';
+    loadingEl.textContent = 'Loading PayPal...';
+    document.getElementById('paypal-error').style.display = 'none';
+
+    if (!paypalConfig) {
+      const cfg = await fetch('/subscribe/paypal/config').then(r => r.json()).catch(() => null);
+      if (!cfg?.ok) {
+        loadingEl.textContent = cfg?.error || 'PayPal is not available right now.';
+        return;
+      }
+      paypalConfig = cfg;
+    }
+
+    try {
+      await loadSDK(paypalConfig.clientId);
+    } catch (e) {
+      loadingEl.textContent = e.message;
+      return;
+    }
+
+    loadingEl.style.display = 'none';
+
+    // Render both buttons into their own permanent containers
+    if (!rendered.monthly) {
+      rendered.monthly = true;
+      document.getElementById('paypal-btn-monthly').style.display = '';
+      try {
+        await paypal.Buttons({
+          style: { shape: 'rect', color: 'blue', layout: 'vertical', label: 'subscribe' },
+          createSubscription: async () => {
+            const res = await fetch('/subscribe/paypal/create-subscription-server', { method: 'POST' }).then(r => r.json());
+            if (!res.ok) throw new Error(res.error || 'Failed to create subscription.');
+            return res.subscriptionId;
+          },
+          onApprove: async (data) => {
+            document.getElementById('paypal-btn-monthly').innerHTML = '<div class="paypal-msg">Activating...</div>';
+            const res = await fetch('/subscribe/paypal/activate-subscription', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscriptionId: data.subscriptionID }),
+            }).then(r => r.json()).catch(() => ({ ok: false, error: 'Network error.' }));
+            res.ok ? location.reload() : showPayPalError(res.error || 'Activation failed.');
+          },
+          onError: () => showPayPalError('PayPal error. Please try again.'),
+        }).render('#paypal-btn-monthly');
+      } catch (e) {
+        rendered.monthly = false;
+        showPayPalError('Button error: ' + e.message);
+        return;
+      }
+    }
+
+    if (!rendered.lifetime) {
+      rendered.lifetime = true;
+      document.getElementById('paypal-btn-lifetime').style.display = 'none';
+      try {
+        await paypal.Buttons({
+          style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'pay' },
+          createOrder: async () => {
+            const res = await fetch('/subscribe/paypal/create-order', { method: 'POST' }).then(r => r.json());
+            if (!res.ok) throw new Error(res.error);
+            return res.id;
+          },
+          onApprove: async (data) => {
+            document.getElementById('paypal-btn-lifetime').innerHTML = '<div class="paypal-msg">Processing...</div>';
+            const res = await fetch('/subscribe/paypal/capture-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: data.orderID }),
+            }).then(r => r.json()).catch(() => ({ ok: false, error: 'Network error.' }));
+            res.ok ? location.reload() : showPayPalError(res.error || 'Payment failed.');
+          },
+          onError: () => showPayPalError('PayPal error. Please try again.'),
+        }).render('#paypal-btn-lifetime');
+      } catch (e) {
+        rendered.lifetime = false;
+        showPayPalError('Button error: ' + e.message);
+        return;
+      }
+    }
+
+    showPlanContainer(selectedPlan());
+  }
 </script>
 
 <%- include('partials/footer') %>
