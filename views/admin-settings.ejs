@@ -1,0 +1,70 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <p class="hero-label">ADMIN</p>
+    <h1 class="hero-title" style="font-size:2rem">Payment Settings</h1>
+  </section>
+
+  <div style="margin-bottom:2rem">
+    <a href="/admin/subscriptions" class="btn btn-ghost">← Back to Subscriptions</a>
+  </div>
+
+  <% if (success) { %><div class="alert alert-success" style="margin-bottom:1.5rem"><%= success %></div><% } %>
+  <% if (error)   { %><div class="alert alert-error"   style="margin-bottom:1.5rem"><%= error %></div><% } %>
+
+  <div class="glass-card" style="max-width:560px;margin:0 auto">
+    <form action="/admin/settings" method="POST" enctype="multipart/form-data">
+
+      <h3 style="font-family:'Orbitron',sans-serif;font-size:.9rem;color:var(--cyan);margin-bottom:1.25rem;letter-spacing:.05em">GCASH</h3>
+
+      <div class="form-group">
+        <label class="form-label">GCash QR Code Image</label>
+        <% if (qrImage) { %>
+          <div style="margin-bottom:1rem">
+            <img src="/uploads/settings/<%= qrImage %>" alt="Current QR"
+                 style="max-width:200px;border-radius:12px;border:2px solid var(--cyan)" />
+            <p style="font-size:.8rem;color:var(--muted);margin-top:.5rem">Upload a new one to replace</p>
+          </div>
+        <% } %>
+        <input type="file" name="gcashQr" class="form-input" accept="image/jpeg,image/png,image/webp" />
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.25rem">JPG/PNG/WebP, max 2 MB</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">GCash Number</label>
+        <input type="text" name="gcashNumber" class="form-input"
+               placeholder="e.g. 09XX XXX XXXX"
+               value="<%= gcashNum || '' %>" />
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Leave blank to hide.</p>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:1.75rem 0" />
+
+      <h3 style="font-family:'Orbitron',sans-serif;font-size:.9rem;color:#c084fc;margin-bottom:1.25rem;letter-spacing:.05em">PAYPAL</h3>
+
+      <div class="form-group">
+        <label class="form-label">PayPal Email</label>
+        <input type="email" name="paypalEmail" class="form-input"
+               placeholder="your@paypal.com"
+               value="<%= paypalEmail || '' %>" />
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Shown as the address users send $1 to. Leave blank to hide.</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">PayPal.me Username</label>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span style="color:var(--muted);font-size:.9rem;white-space:nowrap">paypal.me/</span>
+          <input type="text" name="paypalMe" class="form-input" style="margin:0"
+                 placeholder="yourusername"
+                 value="<%= paypalMe || '' %>" />
+        </div>
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Shows a "Pay $1 via PayPal.me" button on the subscribe page. Leave blank to hide.</p>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top:.5rem">Save Settings</button>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

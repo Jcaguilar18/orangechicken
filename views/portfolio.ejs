@@ -1,0 +1,87 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <div class="hero-glow"></div>
+    <p class="hero-label">MISSION ARCHIVE</p>
+    <h1 class="hero-title">Portfolio</h1>
+    <p class="hero-sub">Projects built with precision and passion.</p>
+    <% if (currentUser && currentUser.isAdmin) { %>
+      <a href="/admin/portfolio" class="btn btn-admin" style="margin-top:1rem">⚙ Manage Projects</a>
+    <% } %>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <% if (projects.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">🛸</div>
+      <h3>No projects yet.</h3>
+      <p>Check back soon — something is being built.</p>
+    </div>
+  <% } else { %>
+
+    <!-- Category filters -->
+    <div class="filter-bar">
+      <button class="filter-btn active" data-cat="all">All</button>
+      <% const cats = [...new Set(projects.map(p => p.category))]; %>
+      <% cats.forEach(cat => { %>
+        <button class="filter-btn" data-cat="<%= cat %>"><%= cat %></button>
+      <% }) %>
+    </div>
+
+    <div class="portfolio-grid">
+      <% projects.forEach(p => { %>
+        <div class="portfolio-card glass-card" data-cat="<%= p.category %>">
+          <% if (p.featured) { %><span class="featured-badge">★ Featured</span><% } %>
+          <% if (p.coverImage) { %>
+            <div class="portfolio-img-wrap">
+              <img src="/uploads/portfolio/<%= p.coverImage %>" alt="<%= p.title %>" class="portfolio-img" />
+            </div>
+          <% } else { %>
+            <div class="portfolio-img-wrap portfolio-img-placeholder">
+              <span>🛸</span>
+            </div>
+          <% } %>
+          <div class="portfolio-card-body">
+            <div class="portfolio-meta">
+              <span class="category-badge"><%= p.category %></span>
+            </div>
+            <h3 class="portfolio-title"><%= p.title %></h3>
+            <p class="portfolio-desc"><%= p.description.length > 200 ? p.description.substring(0,200) + '…' : p.description %></p>
+            <% if (p.techStackArr && p.techStackArr.length > 0) { %>
+              <div class="tech-pills">
+                <% p.techStackArr.forEach(t => { %>
+                  <span class="tech-pill"><%= t %></span>
+                <% }) %>
+              </div>
+            <% } %>
+            <div class="portfolio-links">
+              <% if (p.projectUrl) { %>
+                <a href="<%= p.projectUrl %>" target="_blank" rel="noopener" class="btn btn-primary btn-sm">View Project →</a>
+              <% } %>
+              <% if (p.githubUrl) { %>
+                <a href="<%= p.githubUrl %>" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">GitHub</a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = btn.dataset.cat;
+      document.querySelectorAll('.portfolio-card').forEach(card => {
+        card.style.display = (cat === 'all' || card.dataset.cat === cat) ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,487 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <div class="hero-glow"></div>
+    <p class="hero-label">CONVERSION LAB</p>
+    <h1 class="hero-title">Tools</h1>
+    <p class="hero-sub">PDF conversion, QR codes, and more. Free for up to 3 uses/day.</p>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Rate limit banner -->
+  <div class="rate-limit-banner" style="<%= usageInfo.unlimited ? 'border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.08)' : usageInfo.remaining === 0 ? 'border-color:rgba(255,100,100,.4);background:rgba(255,100,100,.08)' : '' %>">
+    <% if (usageInfo.unlimited) { %>
+      <span style="color:var(--cyan)">✦</span> <strong style="color:var(--cyan)">PRO Subscriber</strong> — Unlimited conversions
+    <% } else if (usageInfo.remaining === 0) { %>
+      <span>⚠</span> Daily limit reached (3/3 used).
+      <a href="/subscribe" class="btn btn-primary btn-sm" style="margin-left:.5rem">Upgrade to PRO →</a>
+    <% } else { %>
+      <span style="color:var(--cyan)">◈</span> <strong><%= usageInfo.remaining %> of 3</strong> free uses remaining today
+      <% if (!isSubscriber) { %>
+        &nbsp;·&nbsp; <a href="/subscribe" class="btn btn-ghost btn-sm">Upgrade to PRO ₱20/mo</a>
+      <% } %>
+    <% } %>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-error" style="margin:1rem 0"><%- error %></div>
+  <% } %>
+
+  <!-- Search + Category Filters -->
+  <div class="tools-controls">
+    <div class="tools-search-wrap">
+      <span class="tools-search-icon">⌕</span>
+      <input
+        type="text"
+        id="toolSearch"
+        class="form-input tools-search"
+        placeholder="Search tools..."
+        autocomplete="off"
+      />
+    </div>
+    <div class="tools-filters" id="toolFilters">
+      <button class="tools-filter-btn active" data-filter="all">All</button>
+      <button class="tools-filter-btn" data-filter="to-pdf">→ PDF</button>
+      <button class="tools-filter-btn" data-filter="from-pdf">PDF →</button>
+      <button class="tools-filter-btn" data-filter="utility">Utilities</button>
+    </div>
+  </div>
+
+  <!-- Global error/loading feedback -->
+  <div id="toolAlert" style="display:none;margin:1rem 0"></div>
+  <div id="noResults" style="display:none;text-align:center;padding:3rem 1rem;color:#64748b">
+    <div style="font-size:2.5rem;margin-bottom:.75rem">🔍</div>
+    <p>No tools match your search.</p>
+  </div>
+
+  <!-- Tools Grid -->
+  <div class="tools-grid" id="toolsGrid">
+
+    <!-- Web Scraper -->
+    <div class="tool-card glass-card" data-category="utility" data-name="web scraper download images videos files zip">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">🕷</span></div>
+        <span class="tool-category-tag">Utility</span>
+      </div>
+      <h3 class="tool-title">Web Scraper</h3>
+      <p class="tool-desc">Extract all images, videos, audio, and files from any webpage into a ZIP archive.</p>
+      <div style="margin-top:1rem">
+        <% if (currentUser) { %>
+          <a href="/scraper" class="btn btn-primary tool-submit" style="width:100%;text-align:center;display:block">Open Scraper →</a>
+        <% } else { %>
+          <a href="/register" class="btn btn-ghost tool-submit" style="width:100%;text-align:center;display:block">Sign up to use →</a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- QR Code -->
+    <div class="tool-card glass-card" data-category="utility" data-name="qr code generator url text">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">⬛</span></div>
+        <span class="tool-category-tag">Utility</span>
+      </div>
+      <h3 class="tool-title">QR Code Generator</h3>
+      <p class="tool-desc">Convert any URL or text into a downloadable QR code PNG.</p>
+      <form class="tool-form" action="/tools/qr-code" method="POST">
+        <div class="form-group">
+          <input type="text" name="text" class="form-input" placeholder="Enter URL or text..." required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Generate QR →</button>
+      </form>
+    </div>
+
+    <!-- PDF Merge -->
+    <div class="tool-card glass-card" data-category="utility" data-name="merge combine pdfs join documents">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📎</span></div>
+        <span class="tool-category-tag">Utility</span>
+      </div>
+      <h3 class="tool-title">Merge PDFs</h3>
+      <p class="tool-desc">Combine multiple PDF files into one document.</p>
+      <form class="tool-form" action="/tools/pdf-merge" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="files" class="form-input" accept=".pdf" multiple required />
+          <p class="tool-hint">Select 2 or more PDF files</p>
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Merge PDFs →</button>
+      </form>
+    </div>
+
+    <!-- Image to PDF -->
+    <div class="tool-card glass-card" data-category="to-pdf" data-name="image jpg png to pdf convert pictures">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">🖼</span></div>
+        <span class="tool-category-tag">→ PDF</span>
+      </div>
+      <h3 class="tool-title">Image → PDF</h3>
+      <p class="tool-desc">Convert JPG or PNG images into a single PDF document.</p>
+      <form class="tool-form" action="/tools/image-to-pdf" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="files" class="form-input" accept="image/jpeg,image/png,image/webp" multiple required />
+          <p class="tool-hint">Select one or more images</p>
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- Word to PDF -->
+    <div class="tool-card glass-card" data-category="to-pdf" data-name="word docx doc to pdf convert microsoft office">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📝</span></div>
+        <span class="tool-category-tag">→ PDF</span>
+      </div>
+      <h3 class="tool-title">Word → PDF</h3>
+      <p class="tool-desc">Convert .docx Word documents to PDF format.</p>
+      <form class="tool-form" action="/tools/word-to-pdf" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".doc,.docx" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- PowerPoint to PDF -->
+    <div class="tool-card glass-card" data-category="to-pdf" data-name="powerpoint pptx ppt to pdf slides presentation">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📊</span></div>
+        <span class="tool-category-tag">→ PDF</span>
+      </div>
+      <h3 class="tool-title">PowerPoint → PDF</h3>
+      <p class="tool-desc">Convert .pptx presentations to PDF format.</p>
+      <form class="tool-form" action="/tools/pptx-to-pdf" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".ppt,.pptx" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- Excel to PDF -->
+    <div class="tool-card glass-card" data-category="to-pdf" data-name="excel xlsx xls to pdf spreadsheet">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📈</span></div>
+        <span class="tool-category-tag">→ PDF</span>
+      </div>
+      <h3 class="tool-title">Excel → PDF</h3>
+      <p class="tool-desc">Convert .xlsx spreadsheets to PDF format.</p>
+      <form class="tool-form" action="/tools/excel-to-pdf" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".xls,.xlsx" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- HTML to PDF -->
+    <div class="tool-card glass-card" data-category="to-pdf" data-name="html htm webpage to pdf code convert">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">🌐</span></div>
+        <span class="tool-category-tag">→ PDF</span>
+      </div>
+      <h3 class="tool-title">HTML → PDF</h3>
+      <p class="tool-desc">Convert an HTML file or pasted HTML code to PDF.</p>
+      <form class="tool-form" action="/tools/html-to-pdf" method="POST" enctype="multipart/form-data" id="htmlForm">
+        <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+          <button type="button" class="btn btn-ghost btn-sm html-tab active" data-mode="file">Upload File</button>
+          <button type="button" class="btn btn-ghost btn-sm html-tab" data-mode="paste">Paste HTML</button>
+        </div>
+        <div id="htmlFileInput" class="form-group">
+          <input type="file" name="file" class="form-input" accept=".html,.htm" />
+        </div>
+        <div id="htmlPasteInput" class="form-group" style="display:none">
+          <textarea name="htmlContent" class="form-input" rows="4" placeholder="<html>...</html>"
+                    style="resize:vertical;font-family:monospace;font-size:.8rem"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- PDF to JPG -->
+    <div class="tool-card glass-card" data-category="from-pdf" data-name="pdf to jpg jpeg image png pages extract">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">🖼</span></div>
+        <span class="tool-category-tag">PDF →</span>
+      </div>
+      <h3 class="tool-title">PDF → JPG</h3>
+      <p class="tool-desc">Convert each PDF page to a JPG image. Downloads as a ZIP archive.</p>
+      <form class="tool-form" action="/tools/pdf-to-jpg" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".pdf" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- PDF to Word -->
+    <div class="tool-card glass-card" data-category="from-pdf" data-name="pdf to word docx document editable">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📄</span></div>
+        <span class="tool-category-tag">PDF →</span>
+      </div>
+      <h3 class="tool-title">PDF → Word</h3>
+      <p class="tool-desc">Convert a PDF back to an editable .docx Word document.</p>
+      <form class="tool-form" action="/tools/pdf-to-word" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".pdf" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- PDF to HTML -->
+    <div class="tool-card glass-card" data-category="from-pdf" data-name="pdf to html web page code convert">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">🔤</span></div>
+        <span class="tool-category-tag">PDF →</span>
+      </div>
+      <h3 class="tool-title">PDF → HTML</h3>
+      <p class="tool-desc">Convert a PDF document to an HTML web page.</p>
+      <form class="tool-form" action="/tools/pdf-to-html" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".pdf" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- PDF to PowerPoint -->
+    <div class="tool-card glass-card" data-category="from-pdf" data-name="pdf to powerpoint pptx presentation slides">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📋</span></div>
+        <span class="tool-category-tag">PDF →</span>
+      </div>
+      <h3 class="tool-title">PDF → PowerPoint</h3>
+      <p class="tool-desc">Convert a PDF to an editable .pptx presentation.</p>
+      <form class="tool-form" action="/tools/pdf-to-pptx" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".pdf" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+    <!-- PDF to Excel -->
+    <div class="tool-card glass-card" data-category="from-pdf" data-name="pdf to excel xlsx spreadsheet">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">📊</span></div>
+        <span class="tool-category-tag">PDF →</span>
+      </div>
+      <h3 class="tool-title">PDF → Excel</h3>
+      <p class="tool-desc">Convert a PDF to an editable .xlsx spreadsheet.</p>
+      <form class="tool-form" action="/tools/pdf-to-excel" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept=".pdf" required />
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
+  </div><!-- /.tools-grid -->
+
+  <!-- Subscribe CTA -->
+  <% if (!isSubscriber) { %>
+    <div class="glass-card" style="text-align:center;margin-top:3rem;padding:2.5rem;border-color:rgba(168,85,247,.4)">
+      <p class="hero-label">UPGRADE</p>
+      <h2 style="color:#fff;margin:.5rem 0">Get Unlimited Access</h2>
+      <p style="color:#ccc;margin-bottom:1.5rem">Remove the 3/day limit and convert as much as you need.</p>
+      <div style="font-size:2rem;font-family:'Orbitron',sans-serif;color:var(--cyan);margin-bottom:1.5rem">
+        ₱20 <span style="font-size:1rem;color:var(--text-muted)">/month</span>
+      </div>
+      <a href="/subscribe" class="btn btn-primary">Subscribe via GCash →</a>
+    </div>
+  <% } %>
+</div>
+
+<!-- ═══ Preview Modal ═══ -->
+<div id="previewModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1rem">
+  <div style="background:rgba(8,12,35,.97);border:1px solid rgba(0,212,255,.25);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,212,255,.1)">
+
+    <!-- Modal header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.08)">
+      <div>
+        <p style="font-size:.7rem;font-family:'Orbitron',sans-serif;color:var(--cyan);letter-spacing:2px;margin-bottom:.15rem">CONVERSION COMPLETE</p>
+        <h3 id="modalFilename" style="color:#fff;font-size:1rem;font-weight:600"></h3>
+      </div>
+      <button onclick="closeModal()" style="background:rgba(255,255,255,.08);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Preview area -->
+    <div id="modalPreview" style="flex:1;overflow:auto;padding:1.25rem;min-height:200px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2)">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Modal footer -->
+    <div style="padding:1.25rem 1.5rem;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;gap:1rem">
+      <div id="modalMeta" style="font-size:.8rem;color:#64748b"></div>
+      <div style="display:flex;gap:.75rem">
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">Close</button>
+        <a id="modalDownload" href="#" class="btn btn-primary btn-sm" download>⬇ Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="text-align:center">
+    <div class="loading-spinner"></div>
+    <p style="color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.85rem;letter-spacing:2px;margin-top:1rem">PROCESSING...</p>
+  </div>
+</div>
+
+<script>
+  // ── HTML tab toggle ──
+  document.querySelectorAll('.html-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.html-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const mode = tab.dataset.mode;
+      document.getElementById('htmlFileInput').style.display  = mode === 'file'  ? '' : 'none';
+      document.getElementById('htmlPasteInput').style.display = mode === 'paste' ? '' : 'none';
+      if (mode === 'paste') document.querySelector('#htmlFileInput input').value = '';
+      else document.querySelector('#htmlPasteInput textarea').value = '';
+    });
+  });
+
+  // ── Search + Category filter ──
+  const searchInput  = document.getElementById('toolSearch');
+  const filterBtns   = document.querySelectorAll('.tools-filter-btn');
+  const allCards     = document.querySelectorAll('#toolsGrid .tool-card');
+  const noResults    = document.getElementById('noResults');
+  let activeFilter   = 'all';
+
+  function applyFilter() {
+    const q = searchInput.value.trim().toLowerCase();
+    let visible = 0;
+    allCards.forEach(card => {
+      const matchCat  = activeFilter === 'all' || card.dataset.category === activeFilter;
+      const matchText = !q || card.dataset.name.includes(q) || card.querySelector('.tool-title').textContent.toLowerCase().includes(q);
+      const show = matchCat && matchText;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    noResults.style.display = visible === 0 ? '' : 'none';
+  }
+
+  searchInput.addEventListener('input', applyFilter);
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      applyFilter();
+    });
+  });
+
+  // ── AJAX tool form submission ──
+  document.querySelectorAll('.tool-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('.tool-submit');
+      const originalText = btn.textContent;
+
+      showLoading(true);
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+      hideAlert();
+
+      try {
+        const formData = new FormData(form);
+        const res  = await fetch(form.action, { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.ok) {
+          showModal(data);
+        } else {
+          showAlert(data.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        showAlert('Network error. Please try again.');
+      } finally {
+        showLoading(false);
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  });
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function showModal(data) {
+    document.getElementById('modalFilename').textContent = data.filename;
+    document.getElementById('modalMeta').textContent = data.size ? formatBytes(data.size) : '';
+    document.getElementById('modalDownload').href = '/tools/download/' + data.id;
+    document.getElementById('modalDownload').setAttribute('download', data.filename);
+
+    const preview = document.getElementById('modalPreview');
+    preview.innerHTML = '';
+
+    if (data.previewType === 'pdf') {
+      const iframe = document.createElement('iframe');
+      iframe.src = '/tools/preview/' + data.id;
+      iframe.style.cssText = 'width:100%;height:min(380px,55vh);border:none;border-radius:8px;background:#fff';
+      preview.appendChild(iframe);
+    } else if (data.previewType === 'image') {
+      const previewSrc = data.previewId ? '/tools/preview/' + data.previewId : '/tools/preview/' + data.id;
+      const img = document.createElement('img');
+      img.src = previewSrc;
+      img.style.cssText = 'max-width:100%;max-height:360px;border-radius:8px;object-fit:contain';
+      img.alt = data.filename;
+      preview.appendChild(img);
+    } else {
+      const iconMap = { docx:'📝', xlsx:'📈', pptx:'📊', html:'🌐', zip:'📦' };
+      const ext = data.filename.split('.').pop().toLowerCase();
+      preview.innerHTML = `
+        <div style="text-align:center;padding:2rem">
+          <div style="font-size:4rem;margin-bottom:1rem">${iconMap[ext] || '📄'}</div>
+          <p style="color:#fff;font-size:1.1rem;font-weight:600;margin-bottom:.5rem">${data.filename}</p>
+          <p style="color:#64748b;font-size:.85rem">Ready to download</p>
+        </div>`;
+    }
+
+    const modal = document.getElementById('previewModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('previewModal').style.display = 'none';
+    document.body.style.overflow = '';
+    document.getElementById('modalPreview').innerHTML = '';
+  }
+
+  function showLoading(show) {
+    const el = document.getElementById('loadingOverlay');
+    el.style.display = show ? 'flex' : 'none';
+  }
+
+  function showAlert(html) {
+    const el = document.getElementById('toolAlert');
+    el.innerHTML = `<div class="alert alert-error">⚠ ${html}</div>`;
+    el.style.display = '';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function hideAlert() {
+    document.getElementById('toolAlert').style.display = 'none';
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('previewModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('previewModal')) closeModal();
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+
+<%- include('partials/footer') %>

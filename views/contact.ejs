@@ -1,0 +1,75 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <div class="hero-glow"></div>
+    <p class="hero-label">OPEN CHANNEL</p>
+    <h1 class="hero-title">Contact</h1>
+    <p class="hero-sub">Got a project in mind? A question? Let's connect.</p>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <div class="glass-card" style="max-width:640px;margin:2rem auto">
+    <% if (success) { %>
+      <div class="alert alert-success" style="margin-bottom:1.5rem"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert alert-error" style="margin-bottom:1.5rem"><%= error %></div>
+    <% } %>
+
+    <form action="/contact" method="POST">
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Your Name *</label>
+          <input type="text" name="name" class="form-input" required
+                 value="<%= formData.name || '' %>" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" name="email" class="form-input" required
+                 value="<%= formData.email || '' %>" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Message Type *</label>
+        <select name="type" id="msgType" class="form-input" required>
+          <option value="">Select type...</option>
+          <% ['Commission','General Question','Collaboration'].forEach(t => { %>
+            <option value="<%= t %>" <%= formData.type === t ? 'selected' : '' %>><%= t %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group" id="budgetGroup" style="display:<%= formData.type === 'Commission' ? 'block' : 'none' %>">
+        <label class="form-label">Budget (optional)</label>
+        <input type="text" name="budget" class="form-input" placeholder="e.g. ₱5,000 or $200"
+               value="<%= formData.budget || '' %>" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Subject *</label>
+        <input type="text" name="subject" class="form-input" required
+               value="<%= formData.subject || '' %>" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Message *</label>
+        <textarea name="message" class="form-input" rows="6" required
+                  style="resize:vertical"><%= formData.message || '' %></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%">Transmit Message →</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('msgType').addEventListener('change', function () {
+    document.getElementById('budgetGroup').style.display = this.value === 'Commission' ? 'block' : 'none';
+  });
+</script>
+
+<%- include('partials/footer') %>

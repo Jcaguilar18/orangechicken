@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <p class="hero-label">ADMIN</p>
+    <h1 class="hero-title" style="font-size:2rem">Messages & Inquiries</h1>
+  </section>
+
+  <div style="margin-bottom:2rem">
+    <a href="/admin" class="btn btn-ghost">← Back to Admin</a>
+  </div>
+
+  <% if (messages.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <h3>No messages yet.</h3>
+    </div>
+  <% } else { %>
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      <% messages.forEach(msg => { %>
+        <div class="glass-card" style="<%= !msg.read ? 'border-color:rgba(0,212,255,.4)' : '' %>">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.5rem">
+                <% if (!msg.read) { %><span class="unread-dot"></span><% } %>
+                <span class="category-badge" style="<%= msg.type === 'Commission' ? 'background:rgba(168,85,247,.2);color:#c084fc;border-color:rgba(168,85,247,.4)' : '' %>">
+                  <%= msg.type %>
+                </span>
+                <strong style="color:#fff"><%= msg.subject %></strong>
+              </div>
+              <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">
+                From <span style="color:var(--cyan)"><%= msg.name %></span>
+                &lt;<%= msg.email %>&gt; &nbsp;·&nbsp;
+                <%= new Date(msg.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) %>
+              </div>
+              <% if (msg.budget) { %>
+                <div style="font-size:.85rem;color:#c084fc;margin-bottom:.5rem">Budget: <%= msg.budget %></div>
+              <% } %>
+              <p style="color:#ccc;white-space:pre-wrap;line-height:1.6"><%= msg.message %></p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:.5rem;min-width:120px">
+              <form action="/admin/messages/<%= msg.id %>/read" method="POST">
+                <button type="submit" class="btn btn-ghost btn-sm" style="width:100%">
+                  <%= msg.read ? 'Mark Unread' : 'Mark Read' %>
+                </button>
+              </form>
+              <form action="/admin/messages/<%= msg.id %>/delete" method="POST"
+                    onsubmit="return confirm('Delete this message permanently?')">
+                <button type="submit" class="btn btn-sm" style="width:100%;background:rgba(255,60,60,.15);color:#ff6b6b;border:1px solid rgba(255,60,60,.3)">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

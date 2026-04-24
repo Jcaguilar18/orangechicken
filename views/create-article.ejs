@@ -1,0 +1,119 @@
+<%- include('partials/header') %>
+
+  <div class="container">
+    <a href="/" class="back-link">← Back to Feed</a>
+
+    <div class="page-header">
+      <h1 class="page-title">New Transmission</h1>
+      <p class="page-sub">Broadcast your signal to the cosmos</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-error" style="max-width:760px;margin-bottom:1.5rem;"><%= error %></div>
+    <% } %>
+
+    <form action="/articles" method="POST" enctype="multipart/form-data" class="create-form glass-card">
+      <div class="form-group">
+        <label class="form-label" for="title">Transmission Title</label>
+        <input
+          class="form-input"
+          type="text"
+          id="title"
+          name="title"
+          placeholder="What are you transmitting today?"
+          required
+          minlength="3"
+          maxlength="200"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="content">Message Content</label>
+        <textarea
+          class="form-input form-textarea"
+          id="content"
+          name="content"
+          placeholder="Write your transmission here. Share your discoveries, thoughts, and signals from across the cosmos…"
+          required
+          minlength="10"
+          rows="14"
+        ></textarea>
+      </div>
+
+      <!-- Images -->
+      <div class="form-group">
+        <label class="form-label">Images <span class="form-hint">(optional · up to 10 · max 20 MB each)</span></label>
+        <div class="upload-zone" id="imgZone">
+          <div class="upload-zone-inner">
+            <span class="upload-icon">🖼</span>
+            <span>Drop images here or <label for="images" style="color:var(--cyan);cursor:pointer;text-decoration:underline">browse</label></span>
+          </div>
+          <input type="file" id="images" name="images" accept="image/*" multiple style="display:none" onchange="previewImages(this)" />
+        </div>
+        <div class="img-preview-row" id="imgPreview"></div>
+      </div>
+
+      <!-- Attachments -->
+      <div class="form-group">
+        <label class="form-label">Attachments <span class="form-hint">(optional · up to 10 · max 20 MB each)</span></label>
+        <div class="upload-zone" id="attZone">
+          <div class="upload-zone-inner">
+            <span class="upload-icon">📎</span>
+            <span>Drop files here or <label for="attachments" style="color:var(--cyan);cursor:pointer;text-decoration:underline">browse</label></span>
+          </div>
+          <input type="file" id="attachments" name="attachments" multiple style="display:none" onchange="previewAttachments(this)" />
+        </div>
+        <div class="att-preview-list" id="attPreview"></div>
+      </div>
+
+      <div class="create-form-footer">
+        <a href="/" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary">Transmit ›</button>
+      </div>
+    </form>
+
+    <script>
+      // Drag-and-drop for image zone
+      ['imgZone','attZone'].forEach(id => {
+        const zone = document.getElementById(id);
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('upload-zone--drag'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('upload-zone--drag'));
+        zone.addEventListener('drop', e => {
+          e.preventDefault(); zone.classList.remove('upload-zone--drag');
+          const input = zone.querySelector('input[type=file]');
+          input.files = e.dataTransfer.files;
+          input.dispatchEvent(new Event('change'));
+        });
+        zone.addEventListener('click', e => { if (e.target.tagName !== 'LABEL') zone.querySelector('input').click(); });
+      });
+
+      function previewImages(input) {
+        const preview = document.getElementById('imgPreview');
+        preview.innerHTML = '';
+        Array.from(input.files).forEach(file => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'img-preview-thumb';
+            preview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function previewAttachments(input) {
+        const preview = document.getElementById('attPreview');
+        preview.innerHTML = '';
+        Array.from(input.files).forEach(file => {
+          const div = document.createElement('div');
+          div.className = 'att-preview-item';
+          div.innerHTML = `<span class="att-icon">📎</span><span class="att-name">${file.name}</span><span class="att-size">${(file.size/1024).toFixed(0)} KB</span>`;
+          preview.appendChild(div);
+        });
+      }
+    </script>
+  </div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,320 @@
+<%- include('partials/header', { pageTitle: "Web Scraper — Admin", currentUser, isSubscriber }) %>
+
+<style>
+  .scraper-wrap {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+  }
+  .scraper-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    margin-bottom: 0.4rem;
+  }
+  .scraper-sub {
+    color: var(--muted);
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .scraper-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .scraper-input {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    font-family: inherit;
+  }
+  .scraper-input:focus {
+    outline: none;
+    border-color: var(--cyan, #00d4ff);
+  }
+  .scraper-btn {
+    margin-top: 0.5rem;
+    padding: 0.85rem 2.5rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+
+  /* Settings panel */
+  .settings-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.2s, border-color 0.2s;
+    margin-top: 0.25rem;
+  }
+  .settings-toggle:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .settings-toggle .arrow { transition: transform 0.2s; display: inline-block; }
+  .settings-toggle.open .arrow { transform: rotate(90deg); }
+
+  .settings-panel {
+    display: none;
+    margin-top: 0.75rem;
+    padding: 1.25rem;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    gap: 1rem;
+  }
+  .settings-panel.open { display: grid; grid-template-columns: 1fr 1fr; }
+
+  .setting-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .setting-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .setting-hint {
+    font-size: 0.72rem;
+    color: var(--dim);
+    margin-top: 0.2rem;
+  }
+  .setting-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+  }
+  .setting-input:focus { outline: none; border-color: var(--cyan); }
+
+  /* Status */
+  .scraper-status {
+    display: none;
+    margin-top: 1.75rem;
+    padding: 1.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .scraper-loading { display: none; color: var(--muted); }
+  .scraper-loading-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scraper-loading p { margin-top: 0.5rem; font-size: 0.85rem; }
+  #resultText { margin-bottom: 1rem; line-height: 1.5; }
+  .scraper-download {
+    display: none;
+    min-height: 48px;
+    font-size: 1rem;
+    padding: 0.85rem 2rem;
+  }
+  .scraper-error { display: none; color: #f87171; font-size: 0.95rem; line-height: 1.5; }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    .scraper-wrap { margin: 1.25rem auto; padding: 0 1rem; }
+    .scraper-title { font-size: 1.25rem; }
+    .scraper-sub { font-size: 0.88rem; margin-bottom: 1.5rem; }
+    .scraper-input { font-size: 16px; padding: 1rem; }
+    .scraper-btn, .scraper-download { width: 100%; text-align: center; }
+    .scraper-status { padding: 1.1rem; }
+    .settings-panel.open { grid-template-columns: 1fr; }
+    .setting-input { font-size: 16px; }
+  }
+</style>
+
+<div class="scraper-wrap">
+  <a href="/admin" class="btn btn-ghost" style="margin-bottom:1.5rem;display:inline-flex;align-items:center;gap:0.4rem;min-height:44px">
+    ← Back to Admin
+  </a>
+
+  <h1 class="scraper-title">🕷 WEB SCRAPER</h1>
+  <p class="scraper-sub">Enter a URL to extract all images, videos, audio, and files into a ZIP archive.</p>
+
+  <form id="scraperForm" style="display:flex;flex-direction:column;gap:0.75rem">
+    <div>
+      <label class="scraper-label" for="urlInput">Target URL</label>
+      <input
+        type="url"
+        id="urlInput"
+        name="url"
+        class="scraper-input"
+        placeholder="https://example.com/gallery"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="none"
+        spellcheck="false"
+        required
+      />
+    </div>
+
+    <div>
+      <button type="button" class="settings-toggle" id="settingsToggle">
+        <span class="arrow">›</span> Advanced Settings
+      </button>
+      <div class="settings-panel" id="settingsPanel">
+        <div class="setting-group">
+          <label class="setting-label" for="pageTimeout">Page Load Timeout</label>
+          <input type="number" id="pageTimeout" class="setting-input" value="60" min="10" max="300" />
+          <span class="setting-hint">Seconds to wait for page to load</span>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="fileTimeout">Per-File Timeout</label>
+          <input type="number" id="fileTimeout" class="setting-input" value="60" min="5" max="300" />
+          <span class="setting-hint">Seconds to download each file</span>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="maxFileMb">Max File Size (MB)</label>
+          <input type="number" id="maxFileMb" class="setting-input" value="500" min="1" max="2000" />
+          <span class="setting-hint">Skip files larger than this</span>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="scrollWait">Post-Scroll Wait</label>
+          <input type="number" id="scrollWait" class="setting-input" value="1.5" min="0" max="10" step="0.5" />
+          <span class="setting-hint">Seconds to wait after scrolling for lazy content</span>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary scraper-btn" id="scrapeBtn">
+      Scrape
+    </button>
+  </form>
+
+  <div class="scraper-status" id="statusBox">
+    <div class="scraper-loading" id="loadingMsg">
+      <div class="scraper-loading-label">
+        <span class="spin">⟳</span> SCANNING PAGE...
+      </div>
+      <p id="loadingHint">This may take a while for large pages.</p>
+    </div>
+    <div id="resultMsg" style="display:none">
+      <p id="resultText"></p>
+      <a id="downloadBtn" href="#" class="btn btn-primary scraper-download">⬇ Download ZIP</a>
+    </div>
+    <div class="scraper-error" id="errorMsg"></div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('settingsToggle').addEventListener('click', function () {
+    this.classList.toggle('open');
+    document.getElementById('settingsPanel').classList.toggle('open');
+  });
+
+  const form        = document.getElementById('scraperForm');
+  const scrapeBtn   = document.getElementById('scrapeBtn');
+  const statusBox   = document.getElementById('statusBox');
+  const loadingMsg  = document.getElementById('loadingMsg');
+  const loadingHint = document.getElementById('loadingHint');
+  const resultMsg   = document.getElementById('resultMsg');
+  const resultText  = document.getElementById('resultText');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const errorMsg    = document.getElementById('errorMsg');
+
+  let pollTimer = null;
+
+  function showError(msg) {
+    loadingMsg.style.display  = 'none';
+    errorMsg.style.display    = 'block';
+    errorMsg.textContent      = msg;
+    scrapeBtn.disabled        = false;
+    scrapeBtn.textContent     = 'Scrape';
+  }
+
+  function showResult(data) {
+    loadingMsg.style.display    = 'none';
+    resultMsg.style.display     = 'block';
+    resultText.innerHTML        = `Found <strong>${data.assetCount}</strong> assets — downloaded <strong>${data.downloadedCount}</strong> successfully.`;
+    downloadBtn.style.display   = 'inline-block';
+    downloadBtn.href            = '/admin/scraper/download/' + data.id;
+    downloadBtn.setAttribute('download', data.filename);
+    scrapeBtn.disabled          = false;
+    scrapeBtn.textContent       = 'Scrape';
+  }
+
+  async function poll(jobId) {
+    try {
+      const resp = await fetch('/admin/scraper/status/' + jobId);
+      const data = await resp.json();
+
+      if (data.status === 'running') {
+        pollTimer = setTimeout(() => poll(jobId), 3000);
+      } else if (data.status === 'done') {
+        showResult(data);
+      } else {
+        showError(data.error || 'Scraping failed.');
+      }
+    } catch {
+      showError('Lost connection while waiting — the scrape may still be running. Refresh to check.');
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+
+    const url         = document.getElementById('urlInput').value.trim();
+    const pageTimeout = parseInt(document.getElementById('pageTimeout').value)   || 60;
+    const fileTimeout = parseInt(document.getElementById('fileTimeout').value)   || 60;
+    const maxFileMb   = parseInt(document.getElementById('maxFileMb').value)     || 500;
+    const scrollWait  = parseFloat(document.getElementById('scrollWait').value)  || 1.5;
+    if (!url) return;
+
+    scrapeBtn.disabled        = true;
+    scrapeBtn.textContent     = 'Scraping...';
+    statusBox.style.display   = 'block';
+    loadingMsg.style.display  = 'block';
+    loadingHint.textContent   = `Page timeout: ${pageTimeout}s · File timeout: ${fileTimeout}s · Max file: ${maxFileMb} MB`;
+    resultMsg.style.display   = 'none';
+    errorMsg.style.display    = 'none';
+    downloadBtn.style.display = 'none';
+
+    try {
+      const resp = await fetch('/admin/scraper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, pageTimeout, fileTimeout, maxFileMb, scrollWait }),
+      });
+      const data = await resp.json();
+
+      if (!data.ok) {
+        showError(data.error || 'Failed to start scrape.');
+        return;
+      }
+
+      // Job started — begin polling
+      pollTimer = setTimeout(() => poll(data.jobId), 3000);
+
+    } catch {
+      showError('Could not reach the server — please try again.');
+    }
+  });
+</script>
+
+<%- include('partials/footer', { currentUser }) %>

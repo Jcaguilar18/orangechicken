@@ -1,0 +1,163 @@
+<%- include('partials/header') %>
+
+  <div class="container">
+    <div class="admin-header">
+      <div>
+        <p class="hero-label">COMMAND CENTER</p>
+        <h1 class="page-title" style="font-size:2rem;margin-bottom:0.25rem">Admin Panel</h1>
+        <p class="page-sub"><%= users.length %> registered explorer<%= users.length !== 1 ? 's' : '' %> in the network</p>
+      </div>
+      <a href="/" class="btn btn-ghost">← Back to Feed</a>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <!-- Quick links -->
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem">
+      <a href="/admin/portfolio" class="btn btn-ghost">🛸 Portfolio</a>
+      <a href="/admin/messages" class="btn btn-ghost">📬 Messages</a>
+      <a href="/admin/subscriptions" class="btn btn-ghost">💳 Subscriptions</a>
+      <a href="/admin/settings" class="btn btn-ghost">⚙ GCash Settings</a>
+      <a href="/admin/scraper" class="btn btn-ghost">🕷 Web Scraper</a>
+    </div>
+
+    <div class="glow-line"></div>
+
+    <section class="admin-section">
+      <h2 class="feed-title" style="margin-bottom:1.5rem">EXPLORER REGISTRY</h2>
+
+      <div class="user-list">
+        <% users.forEach(user => { %>
+          <div class="user-card glass-card"
+               style="<%= user.isBanned ? 'border-color:rgba(255,100,100,.4);background:rgba(255,30,30,.05)' : user.isRestricted ? 'border-color:rgba(255,160,0,.35);background:rgba(255,160,0,.03)' : '' %>">
+            <div class="user-card-main">
+
+              <!-- Avatar + Identity -->
+              <div class="user-identity">
+                <% if (user.avatar) { %>
+                  <img src="<%= user.avatar %>" class="user-avatar-img" alt="<%= user.username %>" />
+                <% } else { %>
+                  <div class="user-avatar <%= user.isAdmin ? 'user-avatar--admin' : '' %>"
+                       style="<%= user.isBanned ? 'background:rgba(255,100,100,.25);border-color:rgba(255,100,100,.5)' : '' %>">
+                    <%= user.username.charAt(0).toUpperCase() %>
+                  </div>
+                <% } %>
+                <div class="user-info">
+                  <div class="user-name">
+                    <a href="/users/<%= user.username %>" class="user-profile-link"><%= user.username %></a>
+                    <% if (user.isAdmin) { %>
+                      <span class="admin-badge">ADMIN</span>
+                    <% } %>
+                    <% if (user.isBanned) { %>
+                      <span class="status-badge status-badge--banned">BANNED</span>
+                    <% } %>
+                    <% if (user.isRestricted) { %>
+                      <span class="status-badge status-badge--restricted">RESTRICTED</span>
+                    <% } %>
+                  </div>
+                  <div class="user-email"><%= user.email %></div>
+                  <div class="user-joined">
+                    Joined <%= new Date(user.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stats -->
+              <div class="user-stats">
+                <div class="user-stat">
+                  <div class="user-stat-num"><%= user.articleCount %></div>
+                  <div class="user-stat-label">Articles</div>
+                </div>
+                <div class="user-stat">
+                  <div class="user-stat-num"><%= user.commentCount %></div>
+                  <div class="user-stat-label">Comments</div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <% if (!user.isAdmin) { %>
+                <div class="admin-user-actions">
+                  <!-- Change password -->
+                  <button class="btn btn-ghost btn-sm" onclick="togglePwForm('<%= user.id %>')">
+                    🔑 Password
+                  </button>
+
+                  <!-- Ban / Unban -->
+                  <% if (!user.isBanned) { %>
+                    <form action="/admin/users/<%= user.id %>/ban" method="POST"
+                          onsubmit="return confirm('Ban <%= user.username %>? They will be locked out immediately.')">
+                      <button type="submit" class="btn btn-sm btn-warn">⊘ Ban</button>
+                    </form>
+                  <% } else { %>
+                    <form action="/admin/users/<%= user.id %>/unban" method="POST">
+                      <button type="submit" class="btn btn-sm btn-cyan">✓ Unban</button>
+                    </form>
+                  <% } %>
+
+                  <!-- Restrict / Unrestrict -->
+                  <% if (!user.isRestricted) { %>
+                    <form action="/admin/users/<%= user.id %>/restrict" method="POST"
+                          onsubmit="return confirm('Restrict <%= user.username %>? They can log in but cannot post or comment.')">
+                      <button type="submit" class="btn btn-sm btn-orange">🚫 Restrict</button>
+                    </form>
+                  <% } else { %>
+                    <form action="/admin/users/<%= user.id %>/unrestrict" method="POST">
+                      <button type="submit" class="btn btn-sm btn-cyan">↑ Lift Restriction</button>
+                    </form>
+                  <% } %>
+
+                  <!-- Delete -->
+                  <form action="/admin/users/<%= user.id %>/delete" method="POST"
+                        onsubmit="return confirm('Permanently delete <%= user.username %>? This removes their account, articles, and comments. This CANNOT be undone.')">
+                    <button type="submit" class="btn btn-sm btn-danger">🗑 Delete</button>
+                  </form>
+                </div>
+              <% } else { %>
+                <div class="admin-user-actions">
+                  <button class="btn btn-ghost btn-sm" onclick="togglePwForm('<%= user.id %>')">
+                    🔑 Password
+                  </button>
+                  <span style="font-size:.75rem;color:#64748b;padding:.25rem .5rem">Protected account</span>
+                </div>
+              <% } %>
+            </div>
+
+            <!-- Inline password form -->
+            <div class="pw-form-wrap" id="pw-form-<%= user.id %>" style="display:none">
+              <form action="/admin/users/<%= user.id %>/password" method="POST" class="pw-form">
+                <div class="pw-form-inner">
+                  <input
+                    type="password"
+                    name="newPassword"
+                    class="form-input pw-input"
+                    placeholder="New password (min 6 chars)"
+                    minlength="6"
+                    required
+                    autocomplete="new-password"
+                  />
+                  <button type="submit" class="btn btn-primary btn-sm">Set Password</button>
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="togglePwForm('<%= user.id %>')">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function togglePwForm(userId) {
+      const form = document.getElementById('pw-form-' + userId);
+      const isHidden = form.style.display === 'none';
+      form.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) form.querySelector('input').focus();
+    }
+  </script>
+
+<%- include('partials/footer') %>

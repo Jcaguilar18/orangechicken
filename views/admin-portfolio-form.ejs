@@ -1,0 +1,91 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <p class="hero-label">ADMIN</p>
+    <h1 class="hero-title" style="font-size:2rem"><%= project ? 'Edit Project' : 'Add Project' %></h1>
+  </section>
+
+  <% if (error) { %>
+    <div class="alert alert-error" style="margin-bottom:1.5rem"><%= error %></div>
+  <% } %>
+
+  <div class="glass-card" style="max-width:700px;margin:0 auto">
+    <form action="<%= project ? '/admin/portfolio/' + project.id + '/edit' : '/admin/portfolio' %>"
+          method="POST" enctype="multipart/form-data">
+
+      <div class="form-group">
+        <label class="form-label">Project Title *</label>
+        <input type="text" name="title" class="form-input"
+               value="<%= project ? project.title : '' %>" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description *</label>
+        <textarea name="description" class="form-input" rows="5"
+                  style="resize:vertical" required><%= project ? project.description : '' %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cover Image (JPG/PNG/WebP, max 5MB)</label>
+        <% if (project && project.coverImage) { %>
+          <div style="margin-bottom:.75rem">
+            <img src="/uploads/portfolio/<%= project.coverImage %>" alt="current"
+                 style="max-width:200px;border-radius:8px;border:1px solid var(--border)" />
+            <p style="font-size:.8rem;color:var(--text-muted);margin-top:.25rem">Current image — upload a new one to replace</p>
+          </div>
+        <% } %>
+        <input type="file" name="coverImage" class="form-input" accept="image/jpeg,image/png,image/webp" />
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Project URL</label>
+          <input type="url" name="projectUrl" class="form-input" placeholder="https://..."
+                 value="<%= project ? (project.projectUrl || '') : '' %>" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">GitHub URL</label>
+          <input type="url" name="githubUrl" class="form-input" placeholder="https://github.com/..."
+                 value="<%= project ? (project.githubUrl || '') : '' %>" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tech Stack (comma-separated)</label>
+        <input type="text" name="techStack" class="form-input" placeholder="React, Node.js, SQLite"
+               value="<%= project ? (JSON.parse(project.techStack || '[]').join(', ')) : '' %>" />
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select name="category" class="form-input">
+            <% ['Web','Mobile','Design','Backend','Other'].forEach(cat => { %>
+              <option value="<%= cat %>" <%= project && project.category === cat ? 'selected' : '' %>><%= cat %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Display Order</label>
+          <input type="number" name="displayOrder" class="form-input" min="0"
+                 value="<%= project ? project.displayOrder : 0 %>" />
+        </div>
+        <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:#ccc;font-size:.9rem">
+            <input type="checkbox" name="featured" <%= project && project.featured ? 'checked' : '' %>
+                   style="width:18px;height:18px;accent-color:var(--cyan)" />
+            Featured project
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:1rem;margin-top:1.5rem">
+        <button type="submit" class="btn btn-primary"><%= project ? 'Save Changes' : 'Add Project' %></button>
+        <a href="/admin/portfolio" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

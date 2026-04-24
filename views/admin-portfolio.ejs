@@ -1,0 +1,59 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <p class="hero-label">ADMIN</p>
+    <h1 class="hero-title" style="font-size:2rem">Manage Portfolio</h1>
+  </section>
+
+  <div style="display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap">
+    <a href="/admin/portfolio/new" class="btn btn-primary">+ Add Project</a>
+    <a href="/admin" class="btn btn-ghost">← Back to Admin</a>
+  </div>
+
+  <% if (projects.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">🛸</div>
+      <h3>No projects yet.</h3>
+      <a href="/admin/portfolio/new" class="btn btn-primary" style="margin-top:1rem">Add First Project</a>
+    </div>
+  <% } else { %>
+    <div class="glass-card" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.75rem">Project</th>
+            <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.75rem">Category</th>
+            <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.75rem">Order</th>
+            <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.75rem">Featured</th>
+            <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.75rem">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% projects.forEach(p => { %>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+              <td style="padding:12px">
+                <div style="font-weight:600;color:#fff"><%= p.title %></div>
+                <div style="font-size:.8rem;color:var(--text-muted);margin-top:2px"><%= p.description.substring(0,80) %>...</div>
+              </td>
+              <td style="padding:12px"><span class="category-badge"><%= p.category %></span></td>
+              <td style="padding:12px;color:var(--text-muted)"><%= p.displayOrder %></td>
+              <td style="padding:12px"><%= p.featured ? '★' : '—' %></td>
+              <td style="padding:12px">
+                <div style="display:flex;gap:.5rem">
+                  <a href="/admin/portfolio/<%= p.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
+                  <form action="/admin/portfolio/<%= p.id %>/delete" method="POST"
+                        onsubmit="return confirm('Delete this project permanently?')">
+                    <button type="submit" class="btn btn-sm" style="background:rgba(255,60,60,.15);color:#ff6b6b;border:1px solid rgba(255,60,60,.3)">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

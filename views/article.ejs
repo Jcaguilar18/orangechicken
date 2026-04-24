@@ -1,0 +1,168 @@
+<%- include('partials/header') %>
+
+  <div class="container">
+    <a href="/" class="back-link">← Back to Feed</a>
+
+    <!-- Article -->
+    <article class="article-detail glass-card">
+      <header class="article-detail-header">
+        <h1 class="article-detail-title"><%= article.title %></h1>
+        <div class="article-detail-meta">
+          <a href="/users/<%= article.author.username %>" class="meta-author-pill">
+            <% if (article.author.avatar) { %>
+              <img src="<%= article.author.avatar %>" class="meta-avatar" alt="" />
+            <% } else { %>
+              <span class="meta-avatar-letter"><%= article.author.username.charAt(0).toUpperCase() %></span>
+            <% } %>
+            ✦ <%= article.author.username %>
+          </a>
+          <span class="meta-date-pill">
+            <%= new Date(article.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) %>
+          </span>
+          <% if (currentUser && currentUser.isAdmin) { %>
+            <form
+              action="/admin/articles/<%= article.id %>/delete"
+              method="POST"
+              onsubmit="return confirm('Delete this transmission permanently?')"
+              style="display:inline"
+            >
+              <button type="submit" class="btn-delete-inline">✕ Delete Article</button>
+            </form>
+          <% } %>
+        </div>
+      </header>
+
+      <div class="glow-line"></div>
+
+      <div class="article-body">
+        <% article.content.split('\n').forEach(para => { %>
+          <% if (para.trim()) { %>
+            <p><%= para %></p>
+          <% } %>
+        <% }) %>
+      </div>
+
+      <!-- Inline images -->
+      <% if (article.images && article.images.length > 0) { %>
+        <div class="article-images">
+          <% article.images.forEach(img => { %>
+            <a href="<%= img %>" target="_blank" class="article-img-link">
+              <img src="<%= img %>" alt="" class="article-img" loading="lazy" />
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <!-- File attachments -->
+      <% if (article.attachments && article.attachments.length > 0) { %>
+        <div class="article-attachments">
+          <div class="attachments-label">📎 Attachments</div>
+          <% article.attachments.forEach(att => { %>
+            <a href="<%= att.path %>" download="<%= att.name %>" class="attachment-item">
+              <span class="att-file-icon">📄</span>
+              <span class="att-name"><%= att.name %></span>
+              <span class="att-dl">↓ Download</span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+
+    <!-- Comments -->
+    <section class="comments-section glass-card">
+      <h2 class="comments-title">
+        SIGNALS RECEIVED
+        <span class="comments-count"><%= article.Comments.length %></span>
+      </h2>
+
+      <!-- Comment form -->
+      <% if (currentUser) { %>
+        <% if (currentUser.isRestricted) { %>
+          <div class="login-prompt" style="color:#ffb347;">
+            Your account is restricted — you cannot post comments.
+          </div>
+        <% } else { %>
+          <form action="/articles/<%= article.id %>/comments" method="POST" enctype="multipart/form-data" class="comment-form">
+            <textarea
+              name="content"
+              class="comment-input"
+              placeholder="Transmit your thoughts into the cosmos…"
+              rows="3"
+              required
+              maxlength="5000"
+            ></textarea>
+            <div class="comment-form-footer">
+              <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                <span class="comment-as">Transmitting as <strong><%= currentUser.username %></strong></span>
+                <label class="attach-label" title="Attach files">
+                  📎 <span id="attachCount">Attach files</span>
+                  <input type="file" name="attachments" multiple style="display:none" onchange="updateAttachCount(this)" />
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary">Send Signal ›</button>
+            </div>
+          </form>
+        <% } %>
+      <% } else { %>
+        <div class="login-prompt">
+          <a href="/login">Log in</a> or <a href="/register">create an account</a> to leave a signal.
+        </div>
+      <% } %>
+
+      <!-- Comment list -->
+      <% if (article.Comments.length === 0) { %>
+        <div class="no-comments">No signals received yet. Be the first.</div>
+      <% } else { %>
+        <div class="comment-list">
+          <% article.Comments.forEach(comment => { %>
+            <div class="comment-item">
+              <div class="comment-header">
+                <a href="/users/<%= comment.author.username %>" class="comment-author-link">
+                  <% if (comment.author.avatar) { %>
+                    <img src="<%= comment.author.avatar %>" class="comment-avatar" alt="" />
+                  <% } else { %>
+                    <span class="comment-avatar-letter"><%= comment.author.username.charAt(0).toUpperCase() %></span>
+                  <% } %>
+                  <span class="comment-author">✦ <%= comment.author.username %></span>
+                </a>
+                <div class="comment-header-right">
+                  <span class="comment-date">
+                    <%= new Date(comment.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) %>
+                  </span>
+                  <% if (currentUser && currentUser.isAdmin) { %>
+                    <form
+                      action="/admin/comments/<%= comment.id %>/delete"
+                      method="POST"
+                      onsubmit="return confirm('Delete this signal?')"
+                      style="display:inline"
+                    >
+                      <button type="submit" class="btn-delete-comment" title="Delete comment">✕</button>
+                    </form>
+                  <% } %>
+                </div>
+              </div>
+              <p class="comment-body"><%= comment.content %></p>
+              <% if (comment.attachments && comment.attachments.length > 0) { %>
+                <div class="comment-attachments">
+                  <% comment.attachments.forEach(att => { %>
+                    <a href="<%= att.path %>" download="<%= att.name %>" class="comment-attachment-item">
+                      📎 <%= att.name %>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <script>
+    function updateAttachCount(input) {
+      const el = document.getElementById('attachCount');
+      el.textContent = input.files.length > 0 ? `${input.files.length} file(s) selected` : 'Attach files';
+    }
+  </script>
+
+<%- include('partials/footer') %>

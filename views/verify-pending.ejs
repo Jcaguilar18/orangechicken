@@ -1,0 +1,23 @@
+<%- include('partials/header') %>
+
+  <div class="auth-page">
+    <div class="auth-card" style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:1rem">📬</div>
+      <h1 class="auth-title">Check Your Inbox</h1>
+      <p class="auth-subtitle" style="margin-bottom:1.5rem">
+        We sent a verification link to<br/>
+        <strong style="color:var(--cyan)"><%= email %></strong>
+      </p>
+      <p style="color:#94a3b8;font-size:.875rem;line-height:1.6;margin-bottom:2rem">
+        Click the link in the email to activate your account. If you don't see it, check your spam folder.
+      </p>
+      <a href="/resend-verification?email=<%= encodeURIComponent(email) %>" class="btn btn-ghost" style="font-size:.85rem">
+        Resend verification email
+      </a>
+      <p class="auth-footer">
+        Already verified? <a href="/login">Log in</a>
+      </p>
+    </div>
+  </div>
+
+<%- include('partials/footer') %>

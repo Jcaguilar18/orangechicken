@@ -1,0 +1,151 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <a href="/" class="back-link">← Back to Feed</a>
+
+  <!-- Profile Header -->
+  <section class="profile-header glass-card">
+    <div class="profile-avatar-wrap">
+      <% if (profileUser.avatar) { %>
+        <img src="<%= profileUser.avatar %>" alt="<%= profileUser.username %>" class="profile-avatar-img" />
+      <% } else { %>
+        <div class="profile-avatar-placeholder"><%= profileUser.username.charAt(0).toUpperCase() %></div>
+      <% } %>
+      <% if (isOwner) { %>
+        <form action="/profile/avatar" method="POST" enctype="multipart/form-data" class="avatar-upload-form">
+          <label class="btn btn-ghost btn-sm avatar-change-btn">
+            Change Photo
+            <input type="file" name="avatar" accept="image/*" onchange="this.form.submit()" style="display:none" />
+          </label>
+        </form>
+      <% } %>
+    </div>
+
+    <div class="profile-info">
+      <div class="profile-name-row">
+        <h1 class="profile-username"><%= profileUser.username %></h1>
+        <% if (profileUser.isAdmin) { %><span class="admin-badge">ADMIN</span><% } %>
+      </div>
+      <div class="profile-joined">
+        Explorer since <%= new Date(profileUser.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) %>
+      </div>
+
+      <div class="profile-bio-wrap">
+        <% if (isOwner) { %>
+          <div id="bio-display">
+            <% if (profileUser.bio) { %>
+              <p class="profile-bio"><%= profileUser.bio %></p>
+            <% } else { %>
+              <p class="profile-bio profile-bio--empty">No bio yet.</p>
+            <% } %>
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="document.getElementById('bio-display').style.display='none';document.getElementById('bio-edit').style.display='block'"
+              style="margin-top:.5rem"
+            >✏ Edit Bio</button>
+          </div>
+          <div id="bio-edit" style="display:none;margin-top:.75rem">
+            <form action="/profile/bio" method="POST">
+              <textarea
+                name="bio"
+                class="form-input"
+                rows="3"
+                maxlength="500"
+                placeholder="Tell the cosmos about yourself…"
+                style="font-size:.9rem"
+              ><%= profileUser.bio || '' %></textarea>
+              <div style="display:flex;gap:.5rem;margin-top:.5rem">
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  onclick="document.getElementById('bio-display').style.display='block';document.getElementById('bio-edit').style.display='none'"
+                >Cancel</button>
+              </div>
+            </form>
+          </div>
+        <% } else { %>
+          <% if (profileUser.bio) { %>
+            <p class="profile-bio"><%= profileUser.bio %></p>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="user-stat">
+        <div class="user-stat-num"><%= articles.length %></div>
+        <div class="user-stat-label">Transmissions</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Posts -->
+  <section class="feed">
+    <div class="feed-header">
+      <h2 class="feed-title">
+        <%= isOwner ? 'YOUR' : profileUser.username.toUpperCase() + "'S" %> TRANSMISSIONS
+      </h2>
+      <% if (isOwner) { %>
+        <a href="/articles/new" class="btn btn-primary">+ New Transmission</a>
+      <% } %>
+    </div>
+
+    <% if (articles.length === 0) { %>
+      <div class="empty-state">
+        <div class="empty-icon">🌌</div>
+        <h3>No transmissions yet.</h3>
+        <% if (isOwner) { %>
+          <a href="/articles/new" class="btn btn-primary" style="margin-top:1rem">Start Transmitting</a>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="article-grid">
+        <% articles.forEach(article => { %>
+          <div class="article-card-wrapper">
+            <a href="/articles/<%= article.id %>" class="article-card">
+              <div class="article-card-inner">
+                <% if (article.images && article.images.length > 0) { %>
+                  <div class="article-card-img-wrap">
+                    <img src="<%= article.images[0] %>" alt="" class="article-card-img" loading="lazy" />
+                  </div>
+                <% } %>
+                <h3 class="article-title"><%= article.title %></h3>
+                <div class="article-meta">
+                  <span class="meta-date">
+                    <%= new Date(article.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) %>
+                  </span>
+                  <% if (article.attachments && article.attachments.length > 0) { %>
+                    <span class="attachment-badge">📎 <%= article.attachments.length %></span>
+                  <% } %>
+                </div>
+                <p class="article-excerpt">
+                  <%= article.content.length > 220 ? article.content.substring(0, 220) + '…' : article.content %>
+                </p>
+                <div class="article-footer-row">
+                  <span class="read-more">Read transmission →</span>
+                  <span class="comment-badge">💬 <%= article.Comments ? article.Comments.length : 0 %></span>
+                </div>
+              </div>
+              <div class="card-glow"></div>
+            </a>
+            <% if (currentUser && currentUser.isAdmin) { %>
+              <form
+                class="admin-delete-card"
+                action="/admin/articles/<%= article.id %>/delete"
+                method="POST"
+                onsubmit="return confirm('Delete this transmission permanently?')"
+              >
+                <button type="submit" class="btn-delete-card" title="Delete article">✕</button>
+              </form>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</div>
+
+<%- include('partials/footer') %>

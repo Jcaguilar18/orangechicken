@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">✉️</div>
+      <h1 class="auth-title">Verify Your Email</h1>
+      <p class="auth-subtitle">
+        We sent a 6-digit code to<br/>
+        <strong style="color:var(--cyan)"><%= email %></strong>
+      </p>
+
+      <% if (typeof info !== 'undefined' && info) { %>
+        <div class="alert alert-success" style="margin-bottom:1.5rem"><%= info %></div>
+      <% } %>
+      <% if (error) { %>
+        <div class="alert alert-error" style="margin-bottom:1.5rem"><%- error %></div>
+      <% } %>
+
+      <form action="/verify-code" method="POST" class="auth-form">
+        <input type="hidden" name="email" value="<%= email %>" />
+        <div class="form-group">
+          <label class="form-label" for="code">Verification Code</label>
+          <input
+            class="form-input"
+            type="text"
+            id="code"
+            name="code"
+            placeholder="000000"
+            required
+            maxlength="6"
+            autocomplete="one-time-code"
+            inputmode="numeric"
+            pattern="\d{6}"
+            style="font-size:1.8rem;letter-spacing:10px;text-align:center;font-family:monospace"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Verify Email →</button>
+      </form>
+
+      <p class="auth-footer" style="margin-top:1.25rem">
+        Didn't receive it?
+        <a href="/resend-code?email=<%= encodeURIComponent(email) %>">Resend code</a>
+      </p>
+      <p class="auth-footer">
+        <a href="/login">← Back to login</a>
+      </p>
+    </div>
+  </div>
+
+<%- include('partials/footer') %>

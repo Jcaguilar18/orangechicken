@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">✦</div>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Log in to your Jc's Space account</p>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <% if (info) { %>
+        <div class="alert" style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:#7dd3fc;border-radius:8px;padding:.875rem 1.25rem;font-size:.875rem"><%- info %></div>
+      <% } %>
+
+
+      <form action="/login" method="POST" class="auth-form">
+        <div class="form-group">
+          <label class="form-label" for="username">Username or Email</label>
+          <input class="form-input" type="text" id="username" name="username"
+                 placeholder="your_callsign or email@example.com" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" type="password" id="password" name="password"
+                 placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">
+          Initiate Launch ›
+        </button>
+        <p style="text-align:right;margin-top:.5rem">
+          <a href="/forgot-password" style="font-size:.8rem;color:var(--muted)">Forgot password?</a>
+        </p>
+      </form>
+
+      <p class="auth-footer">
+        New to the network? <a href="/register">Create an account</a>
+      </p>
+    </div>
+  </div>
+
+<%- include('partials/footer') %>
