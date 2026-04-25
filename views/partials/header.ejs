@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= typeof pageTitle !== 'undefined' ? pageTitle : "Jc's Space" %></title>
-  <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'JC\'s Space — a social platform, portfolio, and free online tools.' %>" />
+  <title><%= typeof pageTitle !== 'undefined' ? pageTitle : "Orange Chicken" %></title>
+  <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Orange Chicken — a cozy community, portfolio, and free online tools.' %>" />
   <% if (typeof metaKeywords !== 'undefined') { %>
   <meta name="keywords" content="<%= metaKeywords %>" />
   <% } %>
-  <meta property="og:title" content="<%= typeof pageTitle !== 'undefined' ? pageTitle : 'Jc\'s Space' %>" />
-  <meta property="og:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'JC\'s Space — a social platform, portfolio, and free online tools.' %>" />
+  <meta property="og:title" content="<%= typeof pageTitle !== 'undefined' ? pageTitle : 'Orange Chicken' %>" />
+  <meta property="og:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Orange Chicken — a cozy community, portfolio, and free online tools.' %>" />
   <meta property="og:type" content="website" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>" />
 </head>
 <body>
@@ -22,7 +22,8 @@
 
   <nav class="navbar">
     <a href="/" class="brand">
-      <span class="brand-icon">✦</span> JC'S SPACE
+      <img src="/img/mascot.png" class="brand-mascot" alt="Orange Chicken mascot" onerror="this.style.display='none'" />
+      ORANGE CHICKEN
     </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
     <div class="nav-links" id="navLinks">
@@ -42,11 +43,11 @@
         <% if (currentUser.isAdmin) { %>
           <a href="/admin" class="btn btn-admin">⚙ Admin</a>
         <% } %>
-        <a href="/articles/new" class="btn btn-primary">+ Transmit</a>
+        <a href="/articles/new" class="btn btn-primary">+ Post</a>
         <a href="/logout" class="btn btn-ghost">Log Out</a>
       <% } else { %>
         <a href="/login" class="btn btn-ghost">Log In</a>
-        <a href="/register" class="btn btn-primary">Join the Network</a>
+        <a href="/register" class="btn btn-primary">Join the Coop</a>
       <% } %>
     </div>
   </nav>
@@ -68,3 +69,4 @@
   </script>
 
   <div class="page-wrap">
+

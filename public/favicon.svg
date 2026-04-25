@@ -1,33 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0a0a2e"/>
-      <stop offset="100%" style="stop-color:#050510"/>
-    </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <radialGradient id="bgGrad" cx="50%" cy="55%" r="55%">
+      <stop offset="0%" stop-color="#1a0600"/>
+      <stop offset="100%" stop-color="#0D0300"/>
+    </radialGradient>
+    <radialGradient id="bodyGrad" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#FFB300"/>
+      <stop offset="100%" stop-color="#FF6B1A"/>
+    </radialGradient>
   </defs>
 
   <!-- Background circle -->
-  <circle cx="32" cy="32" r="32" fill="url(#bg)"/>
+  <circle cx="32" cy="32" r="32" fill="url(#bgGrad)"/>
 
-  <!-- Cyan ring -->
-  <circle cx="32" cy="32" r="30" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.4"/>
+  <!-- Outer ring -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#FF6B1A" stroke-width="1.5" opacity="0.45"/>
 
-  <!-- JC text -->
-  <text
-    x="32" y="38"
-    text-anchor="middle"
-    font-family="Arial, sans-serif"
-    font-weight="900"
-    font-size="22"
-    letter-spacing="1"
-    fill="#00d4ff"
-    filter="url(#glow)"
-  >JC</text>
+  <!-- Body -->
+  <ellipse cx="32" cy="42" rx="14" ry="12" fill="url(#bodyGrad)"/>
 
-  <!-- Star accent top-right -->
-  <text x="46" y="20" font-size="8" fill="#00d4ff" opacity="0.8" text-anchor="middle">✦</text>
+  <!-- Head -->
+  <circle cx="32" cy="24" r="10" fill="#FF8C42"/>
+
+  <!-- Comb -->
+  <ellipse cx="32" cy="15" rx="3.5" ry="3" fill="#C0392B"/>
+  <ellipse cx="27" cy="16.5" rx="2.5" ry="2.2" fill="#C0392B"/>
+  <ellipse cx="37" cy="16.5" rx="2.5" ry="2.2" fill="#C0392B"/>
+
+  <!-- Eyes -->
+  <circle cx="28" cy="23" r="2" fill="#1a0800"/>
+  <circle cx="36" cy="23" r="2" fill="#1a0800"/>
+  <circle cx="28.6" cy="22.4" r="0.7" fill="#fff"/>
+  <circle cx="36.6" cy="22.4" r="0.7" fill="#fff"/>
+
+  <!-- Beak -->
+  <path d="M30 27 L32 30 L34 27 Z" fill="#FFD060"/>
+
+  <!-- Wattle -->
+  <ellipse cx="32" cy="30.5" rx="2.2" ry="1.8" fill="#C0392B"/>
+
+  <!-- Wings -->
+  <ellipse cx="20" cy="43" rx="4.5" ry="7" fill="#FF8C42" transform="rotate(-12 20 43)"/>
+  <ellipse cx="44" cy="43" rx="4.5" ry="7" fill="#FF8C42" transform="rotate(12 44 43)"/>
+
+  <!-- Rice bowl base -->
+  <ellipse cx="32" cy="57" rx="10" ry="4" fill="#FFF5E6" opacity="0.8"/>
+  <ellipse cx="32" cy="54.5" rx="8" ry="3.2" fill="#FFF5E6" opacity="0.65"/>
+
+  <!-- Rice dots -->
+  <circle cx="29" cy="54" r="1" fill="#FFD060" opacity="0.9"/>
+  <circle cx="32" cy="53" r="1" fill="#FFD060" opacity="0.9"/>
+  <circle cx="35" cy="54" r="1" fill="#FFD060" opacity="0.9"/>
 </svg>
