@@ -22,7 +22,7 @@
         <thead>
           <tr style="border-bottom:1px solid var(--border)">
             <% ['User','Method','Reference','Status','Submitted','Expires','Actions'].forEach(h => { %>
-              <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:.7rem"><%= h %></th>
+              <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Rye',serif;font-size:.7rem"><%= h %></th>
             <% }) %>
           </tr>
         </thead>
@@ -35,16 +35,16 @@
               </td>
               <td style="padding:12px">
                 <% if (sub.paymentMethod === 'paypal') { %>
-                  <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Orbitron',sans-serif;background:rgba(124,58,237,.2);color:#c084fc">PayPal</span>
+                  <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Rye',serif;background:rgba(200,110,20,.2);color:var(--amber)">PayPal</span>
                 <% } else { %>
-                  <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Orbitron',sans-serif;background:rgba(0,212,255,.1);color:var(--cyan)">GCash</span>
+                  <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Rye',serif;background:rgba(80,160,30,.12);color:#A8D060">GCash</span>
                 <% } %>
               </td>
               <td style="padding:12px;font-family:monospace;color:var(--cyan);font-size:.85rem"><%= sub.gcashRef %></td>
               <td style="padding:12px">
                 <% const colors = {pending:'rgba(251,191,36,.15)',active:'rgba(0,212,255,.15)',expired:'rgba(255,100,100,.15)'}; %>
                 <% const textColors = {pending:'#fbbf24',active:'var(--cyan)',expired:'#ff6b6b'}; %>
-                <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-family:'Orbitron',sans-serif;
+                <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-family:'Rye',serif;
                              background:<%= colors[sub.status] %>;color:<%= textColors[sub.status] %>">
                   <%= sub.status.toUpperCase() %>
                 </span>

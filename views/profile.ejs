@@ -27,7 +27,7 @@
         <% if (profileUser.isAdmin) { %><span class="admin-badge">ADMIN</span><% } %>
       </div>
       <div class="profile-joined">
-        Explorer since <%= new Date(profileUser.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) %>
+        Member since <%= new Date(profileUser.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) %>
       </div>
 
       <div class="profile-bio-wrap">
@@ -51,7 +51,7 @@
                 class="form-input"
                 rows="3"
                 maxlength="500"
-                placeholder="Tell the cosmos about yourself…"
+                placeholder="Tell everyone about yourself…"
                 style="font-size:.9rem"
               ><%= profileUser.bio || '' %></textarea>
               <div style="display:flex;gap:.5rem;margin-top:.5rem">
@@ -75,7 +75,7 @@
     <div class="profile-stats">
       <div class="user-stat">
         <div class="user-stat-num"><%= articles.length %></div>
-        <div class="user-stat-label">Transmissions</div>
+        <div class="user-stat-label">Posts</div>
       </div>
     </div>
   </section>
@@ -86,19 +86,19 @@
   <section class="feed">
     <div class="feed-header">
       <h2 class="feed-title">
-        <%= isOwner ? 'YOUR' : profileUser.username.toUpperCase() + "'S" %> TRANSMISSIONS
+        <%= isOwner ? 'YOUR' : profileUser.username.toUpperCase() + "'S" %> POSTS
       </h2>
       <% if (isOwner) { %>
-        <a href="/articles/new" class="btn btn-primary">+ New Transmission</a>
+        <a href="/articles/new" class="btn btn-primary">+ New Post</a>
       <% } %>
     </div>
 
     <% if (articles.length === 0) { %>
       <div class="empty-state">
-        <div class="empty-icon">🌌</div>
-        <h3>No transmissions yet.</h3>
+        <div class="empty-icon">🐔</div>
+        <h3>No posts yet.</h3>
         <% if (isOwner) { %>
-          <a href="/articles/new" class="btn btn-primary" style="margin-top:1rem">Start Transmitting</a>
+          <a href="/articles/new" class="btn btn-primary" style="margin-top:1rem">Post Something</a>
         <% } %>
       </div>
     <% } else { %>
@@ -125,7 +125,7 @@
                   <%= article.content.length > 220 ? article.content.substring(0, 220) + '…' : article.content %>
                 </p>
                 <div class="article-footer-row">
-                  <span class="read-more">Read transmission →</span>
+                  <span class="read-more">Read more →</span>
                   <span class="comment-badge">💬 <%= article.Comments ? article.Comments.length : 0 %></span>
                 </div>
               </div>
@@ -136,7 +136,7 @@
                 class="admin-delete-card"
                 action="/admin/articles/<%= article.id %>/delete"
                 method="POST"
-                onsubmit="return confirm('Delete this transmission permanently?')"
+                onsubmit="return confirm('Delete this post permanently?')"
               >
                 <button type="submit" class="btn-delete-card" title="Delete article">✕</button>
               </form>

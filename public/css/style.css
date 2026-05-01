@@ -28,10 +28,10 @@ html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   background:
-    radial-gradient(ellipse at 20% 40%, rgba(180, 100, 20, 0.16) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 60%, rgba(140, 70, 10, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 90%, rgba(232, 197, 71, 0.08) 0%, transparent 40%),
-    linear-gradient(160deg, #130A02 0%, #221008 50%, #0E0602 100%);
+    radial-gradient(ellipse at 20% 40%, rgba(160, 80, 18, 0.20) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 65%, rgba(120, 45, 6, 0.16) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 92%, rgba(200, 110, 22, 0.12) 0%, transparent 40%),
+    linear-gradient(160deg, #0D0602 0%, #1A0A04 50%, #0A0401 100%);
   color: var(--text);
   font-family: 'Lora', serif;
   min-height: 100vh;
@@ -74,11 +74,11 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   padding: 0 2rem;
   height: 68px;
-  background: rgba(15, 7, 2, 0.96);
+  background: rgba(10, 4, 1, 0.97);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(232, 197, 71, 0.20);
-  box-shadow: 0 1px 24px rgba(139, 32, 32, 0.12);
+  border-bottom: 2px solid rgba(180, 95, 18, 0.28);
+  box-shadow: 0 2px 28px rgba(80, 28, 4, 0.55), inset 0 -1px 0 rgba(232, 197, 71, 0.06);
 }
 
 .brand {
@@ -189,11 +189,12 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Glass Card ── */
 .glass-card {
-  background: var(--card);
+  background: rgba(30, 11, 2, 0.94);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  border: 1px solid rgba(180, 100, 22, 0.22);
+  border-left: 3px solid rgba(200, 115, 28, 0.38);
+  border-radius: 12px;
   padding: 2rem;
 }
 
@@ -382,8 +383,8 @@ a { color: inherit; text-decoration: none; }
   width: min(600px, 100vw);
   height: 300px;
   background: radial-gradient(ellipse at center,
-    rgba(192, 57, 43, 0.14) 0%,
-    rgba(255, 107, 26, 0.08) 50%,
+    rgba(200, 90, 12, 0.14) 0%,
+    rgba(220, 140, 20, 0.07) 50%,
     transparent 70%
   );
   pointer-events: none;
@@ -1125,8 +1126,8 @@ a { color: inherit; text-decoration: none; }
 .subscriber-badge {
   font-size: 0.6rem;
   font-family: 'Rye', serif;
-  background: linear-gradient(135deg, var(--cyan), var(--purple));
-  color: #fff;
+  background: linear-gradient(135deg, var(--amber), var(--orange));
+  color: #1A0800;
   padding: 2px 7px;
   border-radius: 4px;
   letter-spacing: 1px;
