@@ -6,21 +6,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --orange:  #FF6B1A;
-  --red:     #C0392B;
-  --amber:   #FFB300;
-  --gold:    #FFD060;
-  --dark:    #0D0600;
-  --card:    rgba(35, 12, 2, 0.90);
-  --border:  rgba(255, 107, 26, 0.18);
-  --text:    #FFF5E6;
-  --muted:   #9A7050;
-  --dim:     #5C3A20;
+  --orange:  #D4831A;
+  --red:     #8B2020;
+  --amber:   #E8C547;
+  --gold:    #F5D87A;
+  --dark:    #130A02;
+  --card:    rgba(38, 20, 6, 0.92);
+  --border:  rgba(232, 197, 71, 0.18);
+  --text:    #F5E6C8;
+  --muted:   #A8845A;
+  --dim:     #6B4A2A;
 
   /* Legacy aliases so all existing var(--cyan) etc. still resolve */
-  --cyan:    var(--orange);
+  --cyan:    var(--amber);
   --purple:  var(--red);
-  --violet:  var(--amber);
+  --violet:  var(--orange);
   --pink:    var(--gold);
 }
 
@@ -28,12 +28,12 @@ html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   background:
-    radial-gradient(ellipse at 22% 42%, rgba(210,70,20,0.18) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 58%, rgba(255,120,0,0.13) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 88%, rgba(255,180,0,0.10) 0%, transparent 40%),
-    linear-gradient(160deg, #1C0700 0%, #2D0F00 50%, #180500 100%);
+    radial-gradient(ellipse at 20% 40%, rgba(180, 100, 20, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 60%, rgba(140, 70, 10, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(232, 197, 71, 0.08) 0%, transparent 40%),
+    linear-gradient(160deg, #130A02 0%, #221008 50%, #0E0602 100%);
   color: var(--text);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Lora', serif;
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.6;
@@ -74,19 +74,20 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   padding: 0 2rem;
   height: 68px;
-  background: rgba(18, 6, 0, 0.94);
+  background: rgba(15, 7, 2, 0.96);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255, 107, 26, 0.22);
+  border-bottom: 1px solid rgba(232, 197, 71, 0.20);
+  box-shadow: 0 1px 24px rgba(139, 32, 32, 0.12);
 }
 
 .brand {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-weight: 400;
   font-size: 1.35rem;
   letter-spacing: 1.5px;
-  color: var(--orange);
-  text-shadow: 0 0 24px rgba(255, 107, 26, 0.55);
+  color: var(--amber);
+  text-shadow: 0 0 24px rgba(232, 197, 71, 0.50);
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -155,12 +156,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #C0392B 0%, #FF6B1A 60%, #FFB300 100%);
-  color: #fff;
-  box-shadow: 0 0 18px rgba(255, 107, 26, 0.4);
+  background: linear-gradient(135deg, #6B1A1A 0%, #8B2020 40%, #D4831A 100%);
+  color: #F5E6C8;
+  box-shadow: 0 0 18px rgba(139, 32, 32, 0.4);
 }
 .btn-primary:hover {
-  box-shadow: 0 0 32px rgba(255, 107, 26, 0.6);
+  box-shadow: 0 0 32px rgba(212, 131, 26, 0.5);
   transform: translateY(-1px);
   filter: brightness(1.1);
 }
@@ -279,7 +280,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .auth-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--text);
@@ -390,7 +391,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hero-label {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 0.65rem;
   letter-spacing: 4px;
   color: var(--muted);
@@ -398,15 +399,16 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hero-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 3rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, #FF6B1A 0%, #FFB300 45%, #FFD060 100%);
+  font-weight: 400;
+  background: linear-gradient(135deg, #E8C547 0%, #D4831A 50%, #F5D87A 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  line-height: 1.15;
+  line-height: 1.2;
   margin-bottom: 0.75rem;
+  letter-spacing: 1px;
 }
 
 .hero-sub {
@@ -426,7 +428,7 @@ a { color: inherit; text-decoration: none; }
 
 .stat { text-align: center; }
 .stat-num {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--cyan);
@@ -450,7 +452,7 @@ a { color: inherit; text-decoration: none; }
 
 .feed-header { margin-bottom: 1.5rem; }
 .feed-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 0.7rem;
   letter-spacing: 3px;
   color: var(--muted);
@@ -489,7 +491,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .article-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text);
@@ -539,7 +541,7 @@ a { color: inherit; text-decoration: none; }
 }
 .empty-icon { font-size: 4rem; display: block; margin-bottom: 1rem; opacity: 0.5; }
 .empty-state h3 {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   color: var(--dim);
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
@@ -564,7 +566,7 @@ a { color: inherit; text-decoration: none; }
 .article-detail-header { margin-bottom: 0.5rem; }
 
 .article-detail-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.9rem;
   font-weight: 900;
   color: var(--text);
@@ -599,7 +601,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .article-body {
-  color: #cbd5e1;
+  color: #D9C4A0;
   font-size: 1.025rem;
   line-height: 1.82;
 }
@@ -610,7 +612,7 @@ a { color: inherit; text-decoration: none; }
 .comments-section { margin-top: 1.5rem; }
 
 .comments-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 0.7rem;
   letter-spacing: 3px;
   color: var(--muted);
@@ -627,7 +629,7 @@ a { color: inherit; text-decoration: none; }
   padding: 0.15rem 0.6rem;
   font-size: 0.75rem;
   color: var(--cyan);
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
 }
 
 .comment-form {
@@ -700,14 +702,14 @@ a { color: inherit; text-decoration: none; }
 }
 .comment-author { color: var(--violet); font-size: 0.82rem; font-weight: 600; }
 .comment-date { color: var(--dim); font-size: 0.78rem; }
-.comment-body { color: #94a3b8; font-size: 0.92rem; line-height: 1.6; }
+.comment-body { color: #B89A70; font-size: 0.92rem; line-height: 1.6; }
 
 .no-comments { text-align: center; color: var(--dim); padding: 2rem; font-size: 0.9rem; }
 
 /* ── Create Article ── */
 .page-header { margin-bottom: 2rem; }
 .page-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
@@ -863,7 +865,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.1rem;
   font-weight: 700;
   color: #fff;
@@ -879,7 +881,7 @@ a { color: inherit; text-decoration: none; }
 .user-identity { display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 200px; }
 
 .user-name {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
@@ -899,7 +901,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 0.6rem;
   letter-spacing: 1px;
   color: #fbbf24;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
 }
 
 /* Stats */
@@ -912,7 +914,7 @@ a { color: inherit; text-decoration: none; }
 }
 .user-stat { text-align: center; }
 .user-stat-num {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--cyan);
@@ -965,7 +967,7 @@ a { color: inherit; text-decoration: none; }
     align-items: stretch;
     gap: 0.4rem;
     padding: 0.75rem 1rem 1.25rem;
-    background: rgba(20, 6, 0, 0.97);
+    background: rgba(12, 5, 1, 0.98);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border-bottom: 1px solid var(--border);
@@ -1097,7 +1099,7 @@ a { color: inherit; text-decoration: none; }
   line-height: 1;
 }
 .feature-title {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--cyan);
@@ -1122,7 +1124,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Subscriber badge ── */
 .subscriber-badge {
   font-size: 0.6rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   background: linear-gradient(135deg, var(--cyan), var(--purple));
   color: #fff;
   padding: 2px 7px;
@@ -1155,7 +1157,7 @@ a { color: inherit; text-decoration: none; }
 .category-badge {
   display: inline-block;
   font-size: 0.7rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   padding: 2px 10px;
   border-radius: 20px;
   background: rgba(255, 107, 26, 0.1);
@@ -1170,7 +1172,7 @@ a { color: inherit; text-decoration: none; }
   top: 12px;
   right: 12px;
   font-size: 0.65rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   padding: 3px 10px;
   border-radius: 20px;
   background: rgba(251, 191, 36, 0.15);
@@ -1190,7 +1192,7 @@ a { color: inherit; text-decoration: none; }
   padding: 0.4rem 1.1rem;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   background: rgba(255, 107, 26, 0.06);
   color: var(--muted);
   border: 1px solid var(--border);
@@ -1250,7 +1252,7 @@ a { color: inherit; text-decoration: none; }
 }
 .portfolio-desc {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: #B89A70;
   line-height: 1.6;
   flex: 1;
   margin-bottom: 1rem;
@@ -1325,7 +1327,7 @@ a { color: inherit; text-decoration: none; }
   top: 50%;
   transform: translateY(-50%);
   font-size: 1.1rem;
-  color: #64748b;
+  color: #8B6530;
   pointer-events: none;
 }
 .tools-search {
@@ -1342,9 +1344,9 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
   border: 1px solid var(--border);
   background: rgba(255,255,255,.04);
-  color: #94a3b8;
+  color: #B89A70;
   font-size: .8rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   letter-spacing: .5px;
   cursor: pointer;
   transition: all .2s;
@@ -1404,7 +1406,7 @@ a { color: inherit; text-decoration: none; }
 }
 .tool-category-tag {
   font-size: .65rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   letter-spacing: 1px;
   color: var(--cyan);
   background: rgba(255,107,26,.08);
@@ -1416,12 +1418,12 @@ a { color: inherit; text-decoration: none; }
   font-size: .95rem;
   font-weight: 700;
   color: #fff;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   margin-bottom: .5rem;
 }
 .tool-desc {
   font-size: .825rem;
-  color: #94a3b8;
+  color: #B89A70;
   line-height: 1.55;
   flex: 1;
   margin-bottom: 1.25rem;
@@ -1451,7 +1453,7 @@ a { color: inherit; text-decoration: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── text-muted alias ── */
-.text-muted, [style*="var(--text-muted)"] { color: #64748b; }
+.text-muted, [style*="var(--text-muted)"] { color: #8B6530; }
 :root { --text-muted: #64748b; }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1494,7 +1496,7 @@ a { color: inherit; text-decoration: none; }
 .status-badge {
   display: inline-block;
   font-size: 0.65rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   padding: 2px 8px;
   border-radius: 20px;
   letter-spacing: 0.5px;
@@ -1600,7 +1602,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.9rem;
   color: var(--cyan);
 }
@@ -1621,7 +1623,7 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 0.25rem;
 }
 .profile-username {
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: #fff;
@@ -1633,7 +1635,7 @@ a { color: inherit; text-decoration: none; }
 }
 .profile-bio {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: #B89A70;
   line-height: 1.6;
 }
 .profile-bio--empty {
@@ -1688,7 +1690,7 @@ a { color: inherit; text-decoration: none; }
 }
 .attachments-label {
   font-size: 0.8rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   color: var(--muted);
   letter-spacing: 0.5px;
   margin-bottom: 0.5rem;
@@ -1777,7 +1779,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: center;
   font-size: 0.65rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   color: var(--cyan);
 }
 .meta-avatar-xs {
@@ -1817,7 +1819,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  font-family: 'Fredoka One', 'Orbitron', sans-serif;
+  font-family: 'Rye', serif;
   color: var(--cyan);
   flex-shrink: 0;
 }
@@ -1849,7 +1851,8 @@ a { color: inherit; text-decoration: none; }
   font-size: 0.75rem;
   color: var(--muted);
   font-weight: 400;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Lora', serif;
+  font-style: italic;
   letter-spacing: 0;
 }
 

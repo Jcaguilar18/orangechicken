@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════
-   Orange Chicken — Hot Kitchen Background
-   Glowing embers · Steam wisps · Floating food · Warm fire glow
+   Orange Chicken — Farmhouse Night Background
+   Fireflies · Hay dust · Farm floaters · Lantern warmth
    ═══════════════════════════════════════════════════════════════ */
 
 const canvas = document.getElementById('spaceCanvas');
 const ctx    = canvas.getContext('2d');
 
-let W, H, embers = [], wisps = [], foods = [], mouse = { x: 0, y: 0 };
+let W, H, fireflies = [], dustMotes = [], floaters = [], mouse = { x: 0, y: 0 };
 
 function resize() {
   W = canvas.width  = window.innerWidth;
@@ -18,45 +18,44 @@ window.addEventListener('mousemove', e => {
   mouse.y = e.clientY / H - 0.5;
 });
 
-/* ════════════════════ EMBERS ════════════════════ */
-const EMBER_COLORS = [
-  '#FF6B1A', '#FFB300', '#FF8C42', '#FFD060',
-  '#C0392B', '#FF4500', '#FFA040', '#FF7020'
+/* ════════════════════ FIREFLIES ════════════════════ */
+const FIREFLY_COLORS = [
+  '#E8C547', '#F5D87A', '#D4A020', '#FFD060',
+  '#E0B030', '#C8A028', '#F0CC50', '#D8B840'
 ];
 
-class Ember {
+class Firefly {
   constructor() { this.reset(true); }
 
   reset(cold = false) {
     this.x      = Math.random() * W;
     this.baseX  = this.x;
     this.y      = cold ? Math.random() * H : H + 10;
-    this.vy     = -(Math.random() * 0.55 + 0.18);
-    this.vx     = (Math.random() - 0.5) * 0.25;
-    this.size   = Math.random() * 2.2 + 0.4;
-    this.alpha  = Math.random() * 0.55 + 0.15;
-    this.da     = (Math.random() * 0.007 + 0.002) * (Math.random() < 0.5 ? 1 : -1);
-    this.color  = EMBER_COLORS[Math.floor(Math.random() * EMBER_COLORS.length)];
-    if (Math.random() < 0.04) {
-      this.size  = Math.random() * 5 + 2.5;
-      this.alpha = 0.3;
-    }
+    this.vy     = -(Math.random() * 0.40 + 0.10);
+    this.vx     = (Math.random() - 0.5) * 0.18;
+    this.size   = Math.random() * 1.8 + 0.5;
+    this.alpha  = 0;
+    this.maxA   = Math.random() * 0.7 + 0.2;
+    this.phase  = Math.random() * Math.PI * 2;
+    this.speed  = Math.random() * 0.025 + 0.012;
+    this.color  = FIREFLY_COLORS[Math.floor(Math.random() * FIREFLY_COLORS.length)];
+    this.glow   = Math.random() < 0.35;
   }
 
   update() {
-    this.alpha += this.da;
-    if (this.alpha > 0.88 || this.alpha < 0.06) this.da *= -1;
+    this.phase += this.speed;
+    this.alpha  = ((Math.sin(this.phase) + 1) / 2) * this.maxA;
     this.y     += this.vy;
     this.baseX += this.vx;
-    this.x      = this.baseX + mouse.x * 10;
+    this.x      = this.baseX + Math.sin(this.phase * 0.6) * 12 + mouse.x * 8;
     if (this.y < -20) this.reset(false);
   }
 
   draw() {
     ctx.save();
     ctx.globalAlpha = this.alpha;
-    if (this.size > 1.8) {
-      ctx.shadowBlur  = this.size * 7;
+    if (this.glow) {
+      ctx.shadowBlur  = this.size * 9;
       ctx.shadowColor = this.color;
     }
     ctx.fillStyle = this.color;
@@ -67,28 +66,28 @@ class Ember {
   }
 }
 
-/* ════════════════════ STEAM WISPS ════════════════════ */
-class Wisp {
+/* ════════════════════ HAY DUST MOTES ════════════════════ */
+class DustMote {
   constructor() { this.reset(true); }
 
   reset(cold = false) {
     this.x         = Math.random() * W;
     this.baseX     = this.x;
     this.y         = cold ? Math.random() * H : H + 60;
-    this.vy        = -(Math.random() * 0.28 + 0.08);
+    this.vy        = -(Math.random() * 0.18 + 0.04);
     this.wobble    = Math.random() * Math.PI * 2;
-    this.wobbleSpd = Math.random() * 0.022 + 0.006;
-    this.size      = Math.random() * 50 + 25;
-    this.alpha     = Math.random() * 0.045 + 0.008;
-    this.da        = (Math.random() * 0.002 + 0.0005) * (Math.random() < 0.5 ? 1 : -1);
+    this.wobbleSpd = Math.random() * 0.018 + 0.005;
+    this.size      = Math.random() * 40 + 20;
+    this.alpha     = Math.random() * 0.035 + 0.006;
+    this.da        = (Math.random() * 0.0015 + 0.0004) * (Math.random() < 0.5 ? 1 : -1);
   }
 
   update() {
     this.alpha   += this.da;
-    if (this.alpha > 0.065 || this.alpha < 0.004) this.da *= -1;
+    if (this.alpha > 0.05 || this.alpha < 0.003) this.da *= -1;
     this.y       += this.vy;
     this.wobble  += this.wobbleSpd;
-    this.x        = this.baseX + Math.sin(this.wobble) * 18 + mouse.x * 8;
+    this.x        = this.baseX + Math.sin(this.wobble) * 22 + mouse.x * 6;
     if (this.y < -this.size * 2) this.reset(false);
   }
 
@@ -96,8 +95,8 @@ class Wisp {
     ctx.save();
     ctx.globalAlpha = this.alpha;
     const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-    g.addColorStop(0, 'rgba(255, 210, 140, 1)');
-    g.addColorStop(1, 'rgba(255, 180, 80,  0)');
+    g.addColorStop(0, 'rgba(232, 197, 71, 1)');
+    g.addColorStop(1, 'rgba(180, 120, 30, 0)');
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -106,29 +105,29 @@ class Wisp {
   }
 }
 
-/* ════════════════════ FOOD FLOATERS ════════════════════ */
-const FOOD_GLYPHS = ['🍗', '🍚', '🌶️', '🥢', '🍳', '🔥', '⭐'];
+/* ════════════════════ FARM FLOATERS ════════════════════ */
+const FARM_GLYPHS = ['🐔', '🌾', '🥚', '🌻', '🐓', '🌽', '🪺'];
 
-class FoodFloat {
+class FarmFloat {
   constructor() { this.reset(true); }
 
   reset(cold = false) {
     this.x        = Math.random() * W;
     this.baseX    = this.x;
     this.y        = cold ? Math.random() * H : H + 50;
-    this.vy       = -(Math.random() * 0.18 + 0.05);
-    this.vx       = (Math.random() - 0.5) * 0.1;
-    this.size     = Math.random() * 14 + 10;
-    this.alpha    = Math.random() * 0.14 + 0.04;
+    this.vy       = -(Math.random() * 0.14 + 0.04);
+    this.vx       = (Math.random() - 0.5) * 0.08;
+    this.size     = Math.random() * 12 + 9;
+    this.alpha    = Math.random() * 0.12 + 0.03;
     this.rotation = Math.random() * Math.PI * 2;
-    this.rotSpd   = (Math.random() - 0.5) * 0.006;
-    this.glyph    = FOOD_GLYPHS[Math.floor(Math.random() * FOOD_GLYPHS.length)];
+    this.rotSpd   = (Math.random() - 0.5) * 0.004;
+    this.glyph    = FARM_GLYPHS[Math.floor(Math.random() * FARM_GLYPHS.length)];
   }
 
   update() {
     this.y        += this.vy;
     this.baseX    += this.vx;
-    this.x         = this.baseX + mouse.x * 5;
+    this.x         = this.baseX + mouse.x * 4;
     this.rotation += this.rotSpd;
     if (this.y < -60) this.reset(false);
   }
@@ -148,59 +147,59 @@ class FoodFloat {
 
 /* ════════════════════ INIT ════════════════════ */
 function init() {
-  const ec = Math.min(Math.floor((W * H) / 3500), 300);
-  const wc = Math.min(Math.floor((W * H) / 16000), 28);
-  const fc = Math.min(Math.floor((W * H) / 35000), 14);
-  embers = Array.from({ length: ec }, () => new Ember());
-  wisps  = Array.from({ length: wc }, () => new Wisp());
-  foods  = Array.from({ length: fc }, () => new FoodFloat());
+  const fc = Math.min(Math.floor((W * H) / 3000), 280);
+  const dc = Math.min(Math.floor((W * H) / 14000), 24);
+  const ff = Math.min(Math.floor((W * H) / 40000), 10);
+  fireflies = Array.from({ length: fc }, () => new Firefly());
+  dustMotes = Array.from({ length: dc }, () => new DustMote());
+  floaters  = Array.from({ length: ff }, () => new FarmFloat());
 }
 
 /* ════════════════════ RENDER LOOP ════════════════════ */
 function draw() {
   requestAnimationFrame(draw);
 
-  // Rich, deep warm background — like a dark restaurant kitchen
+  // Deep warm barn night background
   const bg = ctx.createLinearGradient(0, 0, W * 0.4, H);
-  bg.addColorStop(0,   '#1C0700');
-  bg.addColorStop(0.5, '#2D0F00');
-  bg.addColorStop(1,   '#180500');
+  bg.addColorStop(0,   '#130A02');
+  bg.addColorStop(0.5, '#1E0E04');
+  bg.addColorStop(1,   '#0E0602');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Hot glow pool — left
+  // Warm lantern glow — left
   const g1 = ctx.createRadialGradient(
-    W * 0.22 + mouse.x * 22, H * 0.42 + mouse.y * 16, 0,
-    W * 0.22 + mouse.x * 22, H * 0.42 + mouse.y * 16, W * 0.38
+    W * 0.20 + mouse.x * 20, H * 0.40 + mouse.y * 14, 0,
+    W * 0.20 + mouse.x * 20, H * 0.40 + mouse.y * 14, W * 0.36
   );
-  g1.addColorStop(0,   'rgba(210, 70, 20, 0.20)');
-  g1.addColorStop(0.55,'rgba(160, 40, 10, 0.08)');
+  g1.addColorStop(0,   'rgba(180, 90, 15, 0.18)');
+  g1.addColorStop(0.55,'rgba(120, 55, 8, 0.07)');
   g1.addColorStop(1,   'rgba(0, 0, 0, 0)');
   ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
 
-  // Hot glow pool — right
+  // Warm lantern glow — right
   const g2 = ctx.createRadialGradient(
-    W * 0.80 + mouse.x * 18, H * 0.58 + mouse.y * 13, 0,
-    W * 0.80 + mouse.x * 18, H * 0.58 + mouse.y * 13, W * 0.33
+    W * 0.80 + mouse.x * 16, H * 0.55 + mouse.y * 12, 0,
+    W * 0.80 + mouse.x * 16, H * 0.55 + mouse.y * 12, W * 0.32
   );
-  g2.addColorStop(0,   'rgba(255, 120, 0, 0.16)');
-  g2.addColorStop(0.55,'rgba(200, 70, 0, 0.06)');
+  g2.addColorStop(0,   'rgba(139, 32, 32, 0.14)');
+  g2.addColorStop(0.55,'rgba(100, 20, 10, 0.06)');
   g2.addColorStop(1,   'rgba(0, 0, 0, 0)');
   ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
 
-  // Golden shimmer — bottom center (like a wok glow below)
+  // Golden hay shimmer — bottom
   const g3 = ctx.createRadialGradient(
-    W * 0.5 + mouse.x * 10, H * 0.88 + mouse.y * 6, 0,
-    W * 0.5 + mouse.x * 10, H * 0.88 + mouse.y * 6, W * 0.30
+    W * 0.5 + mouse.x * 8, H * 0.90 + mouse.y * 5, 0,
+    W * 0.5 + mouse.x * 8, H * 0.90 + mouse.y * 5, W * 0.28
   );
-  g3.addColorStop(0,   'rgba(255, 180, 0, 0.12)');
-  g3.addColorStop(0.6, 'rgba(200, 100, 0, 0.05)');
+  g3.addColorStop(0,   'rgba(232, 197, 71, 0.10)');
+  g3.addColorStop(0.6, 'rgba(180, 130, 20, 0.04)');
   g3.addColorStop(1,   'rgba(0, 0, 0, 0)');
   ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
 
-  wisps.forEach(w  => { w.update();  w.draw();  });
-  embers.forEach(e => { e.update(); e.draw(); });
-  foods.forEach(f  => { f.update();  f.draw();  });
+  dustMotes.forEach(d  => { d.update(); d.draw(); });
+  fireflies.forEach(f  => { f.update(); f.draw(); });
+  floaters.forEach(fl  => { fl.update(); fl.draw(); });
 }
 
 resize();
