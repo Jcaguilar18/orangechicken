@@ -11,6 +11,75 @@
     <a href="/admin" class="btn btn-ghost">← Back to Admin</a>
   </div>
 
+  <% if (success) { %>
+    <div class="glass-card" style="border:1px solid rgba(200,110,20,.5);background:rgba(200,110,20,.1);color:var(--amber);margin-bottom:1.5rem;padding:1rem 1.5rem">
+      ✓ <%= success %>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="glass-card" style="border:1px solid rgba(255,100,100,.4);background:rgba(255,100,100,.08);color:#ff6b6b;margin-bottom:1.5rem;padding:1rem 1.5rem">
+      ✕ <%= error %>
+    </div>
+  <% } %>
+
+  <!-- Grant Pro Form -->
+  <div class="glass-card" style="margin-bottom:2rem;padding:1.5rem">
+    <h3 style="color:var(--amber);font-family:'Rye',serif;font-size:.85rem;margin-bottom:1.25rem;letter-spacing:.08em">GRANT PRO ACCESS</h3>
+    <form action="/admin/subscriptions/grant" method="POST">
+      <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
+
+        <div style="flex:1;min-width:180px">
+          <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">USERNAME OR EMAIL</label>
+          <input
+            type="text"
+            name="usernameOrEmail"
+            placeholder="e.g. jcarlos or user@email.com"
+            required
+            style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;color:#fff;font-size:.9rem"
+          />
+        </div>
+
+        <div style="min-width:180px">
+          <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">DURATION</label>
+          <div style="display:flex;gap:.75rem;align-items:center">
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem">
+              <input type="radio" name="durationType" value="days" checked onchange="toggleDuration(this.value)" /> Days
+            </label>
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.85rem">
+              <input type="radio" name="durationType" value="date" onchange="toggleDuration(this.value)" /> End date
+            </label>
+          </div>
+        </div>
+
+        <div id="durationDays" style="min-width:120px">
+          <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">DAYS</label>
+          <input
+            type="number"
+            name="days"
+            min="1"
+            max="36500"
+            value="30"
+            style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;color:#fff;font-size:.9rem"
+          />
+        </div>
+
+        <div id="durationDate" style="min-width:160px;display:none">
+          <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">END DATE</label>
+          <input
+            type="date"
+            name="endDate"
+            min="<%= new Date(Date.now() + 86400000).toISOString().slice(0,10) %>"
+            style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;color:#fff;font-size:.9rem"
+          />
+        </div>
+
+        <div>
+          <button type="submit" class="btn btn-primary" style="white-space:nowrap">⭐ Grant Pro</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <% if (subs.length === 0) { %>
     <div class="empty-state">
       <div class="empty-icon">💳</div>
@@ -22,7 +91,7 @@
         <thead>
           <tr style="border-bottom:1px solid var(--border)">
             <% ['User','Method','Reference','Status','Submitted','Expires','Actions'].forEach(h => { %>
-              <th style="padding:12px;text-align:left;color:var(--cyan);font-family:'Rye',serif;font-size:.7rem"><%= h %></th>
+              <th style="padding:12px;text-align:left;color:var(--amber);font-family:'Rye',serif;font-size:.7rem"><%= h %></th>
             <% }) %>
           </tr>
         </thead>
@@ -34,18 +103,22 @@
                 <div style="font-size:.8rem;color:var(--text-muted)"><%= sub.subscriber?.email || '' %></div>
               </td>
               <td style="padding:12px">
-                <% if (sub.paymentMethod === 'paypal') { %>
+                <% if (sub.paymentMethod === 'admin_grant') { %>
+                  <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Rye',serif;background:rgba(250,204,21,.15);color:#fde047">GIFT</span>
+                <% } else if (sub.paymentMethod === 'paypal') { %>
                   <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Rye',serif;background:rgba(200,110,20,.2);color:var(--amber)">PayPal</span>
                 <% } else { %>
                   <span style="padding:2px 8px;border-radius:20px;font-size:.7rem;font-family:'Rye',serif;background:rgba(80,160,30,.12);color:#A8D060">GCash</span>
                 <% } %>
               </td>
-              <td style="padding:12px;font-family:monospace;color:var(--cyan);font-size:.85rem"><%= sub.gcashRef %></td>
+              <td style="padding:12px;font-family:monospace;color:var(--amber);font-size:.85rem">
+                <%= sub.paymentMethod === 'admin_grant' ? '—' : sub.gcashRef %>
+              </td>
               <td style="padding:12px">
-                <% const colors = {pending:'rgba(251,191,36,.15)',active:'rgba(0,212,255,.15)',expired:'rgba(255,100,100,.15)'}; %>
-                <% const textColors = {pending:'#fbbf24',active:'var(--cyan)',expired:'#ff6b6b'}; %>
+                <% const colors = {pending:'rgba(251,191,36,.15)',active:'rgba(200,110,20,.15)',expired:'rgba(255,100,100,.15)'}; %>
+                <% const textColors = {pending:'#fbbf24',active:'var(--amber)',expired:'#ff6b6b'}; %>
                 <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-family:'Rye',serif;
-                             background:<%= colors[sub.status] %>;color:<%= textColors[sub.status] %>">
+                             background:<%= colors[sub.status] || 'rgba(255,255,255,.05)' %>;color:<%= textColors[sub.status] || '#fff' %>">
                   <%= sub.status.toUpperCase() %>
                 </span>
               </td>
@@ -75,5 +148,12 @@
     </div>
   <% } %>
 </div>
+
+<script>
+  function toggleDuration(val) {
+    document.getElementById('durationDays').style.display = val === 'days' ? '' : 'none';
+    document.getElementById('durationDate').style.display = val === 'date' ? '' : 'none';
+  }
+</script>
 
 <%- include('partials/footer') %>

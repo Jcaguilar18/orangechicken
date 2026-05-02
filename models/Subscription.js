@@ -9,7 +9,8 @@ const Subscription = sequelize.define('Subscription', {
   plan:           { type: DataTypes.STRING(20),  allowNull: false, defaultValue: 'monthly' },
   startDate:  { type: DataTypes.DATEONLY,    allowNull: true },
   endDate:    { type: DataTypes.DATEONLY,    allowNull: true },
-  approvedBy: { type: DataTypes.INTEGER,     allowNull: true },
+  approvedBy:   { type: DataTypes.INTEGER,     allowNull: true },
+  welcomeSeen:  { type: DataTypes.BOOLEAN,     allowNull: false, defaultValue: false },
 });
 
 module.exports = Subscription;

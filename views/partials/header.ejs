@@ -68,5 +68,52 @@
     })();
   </script>
 
+  <% if (showProWelcome) { %>
+  <div id="proWelcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="proWelcomeTitle" style="
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:1.5rem
+  ">
+    <div style="
+      background:linear-gradient(135deg,#1a0e00 0%,#2b1800 100%);
+      border:1px solid rgba(200,110,20,.5);
+      border-radius:16px;max-width:420px;width:100%;
+      padding:2.5rem 2rem;text-align:center;
+      box-shadow:0 0 60px rgba(200,110,20,.2)
+    ">
+      <div style="font-size:3rem;margin-bottom:1rem">🐔</div>
+      <h2 id="proWelcomeTitle" style="font-family:'Rye',serif;font-size:1.1rem;color:var(--amber);letter-spacing:.1em;margin-bottom:.75rem">
+        PRO ACCESS GRANTED
+      </h2>
+      <p style="color:#e2e8f0;font-size:.95rem;line-height:1.6;margin-bottom:.5rem">
+        Congratulations! You've received <strong style="color:var(--amber)">Pro access</strong>.
+      </p>
+      <p style="color:var(--text-muted);font-size:.82rem;margin-bottom:1.75rem">
+        Active until <strong style="color:#fff"><%= proWelcomeEndDate || 'your subscription end date' %></strong> — enjoy unlimited tool usage and no daily cap.
+      </p>
+      <button
+        onclick="document.getElementById('proWelcomeOverlay').remove()"
+        class="btn btn-primary"
+        style="width:100%;padding:.75rem"
+        autofocus
+      >
+        Let's go 🍗
+      </button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          var el = document.getElementById('proWelcomeOverlay');
+          if (el) el.remove();
+          document.removeEventListener('keydown', onKey);
+        }
+      }
+      document.addEventListener('keydown', onKey);
+    })();
+  </script>
+  <% } %>
+
   <div class="page-wrap">
 

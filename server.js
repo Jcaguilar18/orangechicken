@@ -7,6 +7,7 @@ const fs       = require('fs');
 const passport = require('passport');
 
 const { sequelize } = require('./config/database');
+const { Op } = require('sequelize');
 require('./models'); // wire up associations
 const { User, Subscription, SiteSetting } = require('./models');
 
@@ -54,8 +55,10 @@ app.use(passport.session());
 
 // Make user + subscription status available in every template; enforce bans
 app.use(async (req, res, next) => {
-  res.locals.currentUser = null;
-  res.locals.isSubscriber = false;
+  res.locals.currentUser       = null;
+  res.locals.isSubscriber      = false;
+  res.locals.showProWelcome    = false;
+  res.locals.proWelcomeEndDate = null;
   if (req.session.user) {
     try {
       const sessionUser = await User.findByPk(req.session.user.id, {
@@ -64,7 +67,6 @@ app.use(async (req, res, next) => {
       if (!sessionUser || sessionUser.isBanned) {
         return req.session.destroy(() => res.redirect('/login?banned=1'));
       }
-      // Keep session fresh
       req.session.user = {
         id: sessionUser.id,
         username: sessionUser.username,
@@ -77,11 +79,35 @@ app.use(async (req, res, next) => {
       };
       res.locals.currentUser = req.session.user;
       const today = new Date().toISOString().slice(0, 10);
-      const sub = await Subscription.findOne({
+      const activeSubs = await Subscription.findAll({
         where: { userId: sessionUser.id, status: 'active' },
       });
-      res.locals.isSubscriber = !!(sub && sub.endDate >= today);
-    } catch (_) {}
+      res.locals.isSubscriber = activeSubs.some(s => s.endDate >= today);
+
+      const [affected] = await Subscription.update(
+        { welcomeSeen: true },
+        {
+          where: {
+            userId:        sessionUser.id,
+            status:        'active',
+            paymentMethod: 'admin_grant',
+            welcomeSeen:   false,
+            endDate:       { [Op.gte]: today },
+          },
+        }
+      );
+      if (affected > 0) {
+        const grant = activeSubs.find(
+          s => s.paymentMethod === 'admin_grant' && s.endDate >= today
+        );
+        res.locals.showProWelcome    = true;
+        res.locals.proWelcomeEndDate = grant
+          ? new Date(grant.endDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+          : null;
+      }
+    } catch (err) {
+      console.error('[middleware] user context error:', err);
+    }
   }
   next();
 });
@@ -137,6 +163,7 @@ async function start() {
     `UPDATE "Users" SET "emailVerified" = 1 WHERE "password" IS NOT NULL AND "emailVerified" = 0`,
     'ALTER TABLE "Subscriptions" ADD COLUMN "paymentMethod" VARCHAR(20) NOT NULL DEFAULT \'gcash\'',
     'ALTER TABLE "Subscriptions" ADD COLUMN "plan" VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
+    'ALTER TABLE "Subscriptions" ADD COLUMN "welcomeSeen" BOOLEAN NOT NULL DEFAULT 0',
   ];
   for (const sql of patches) {
     try { await sequelize.query(sql); } catch (_) {}

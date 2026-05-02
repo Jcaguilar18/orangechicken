@@ -5,6 +5,7 @@ const fs       = require('fs');
 const { Subscription, User, SiteSetting } = require('../models');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const paypal = require('../utils/paypal');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -101,7 +102,79 @@ router.get('/admin/subscriptions', requireAdmin, async (req, res) => {
     include: [{ model: User, as: 'subscriber', attributes: ['username', 'email'] }],
     order: [['createdAt', 'DESC']],
   });
-  res.render('admin-subscriptions', { subs });
+  res.render('admin-subscriptions', {
+    subs,
+    success: req.query.success || null,
+    error:   req.query.error   || null,
+  });
+});
+
+// Admin: grant pro to any user
+router.post('/admin/subscriptions/grant', requireAdmin, async (req, res) => {
+  const { usernameOrEmail, durationType, days, endDate } = req.body;
+
+  if (!usernameOrEmail || !usernameOrEmail.trim()) {
+    return res.redirect('/admin/subscriptions?error=Please+enter+a+username+or+email.');
+  }
+
+  try {
+    const identifier = usernameOrEmail.trim();
+    const isEmail = identifier.includes('@');
+    const user = await User.findOne({
+      where: isEmail ? { email: identifier } : { username: identifier },
+    });
+
+    if (!user) {
+      return res.redirect('/admin/subscriptions?error=User+not+found.');
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    let calculatedEnd;
+
+    if (durationType === 'date') {
+      if (!endDate || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+        return res.redirect('/admin/subscriptions?error=Please+pick+a+valid+end+date.');
+      }
+      if (isNaN(new Date(endDate + 'T00:00:00').getTime())) {
+        return res.redirect('/admin/subscriptions?error=Please+pick+a+valid+end+date.');
+      }
+      calculatedEnd = endDate;
+    } else {
+      const numDays = parseInt(days, 10);
+      if (!numDays || numDays < 1 || numDays > 36500) {
+        return res.redirect('/admin/subscriptions?error=Days+must+be+between+1+and+36500.');
+      }
+      calculatedEnd = new Date(Date.now() + numDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    }
+
+    if (calculatedEnd <= today) {
+      return res.redirect('/admin/subscriptions?error=End+date+must+be+in+the+future.');
+    }
+
+    const alreadyActive = await Subscription.findOne({
+      where: { userId: user.id, status: 'active', endDate: { [Op.gte]: today } },
+    });
+    if (alreadyActive) {
+      return res.redirect('/admin/subscriptions?error=User+already+has+an+active+subscription.+Revoke+it+first.');
+    }
+
+    await Subscription.create({
+      userId:        user.id,
+      gcashRef:      'admin_grant',
+      paymentMethod: 'admin_grant',
+      plan:          'admin_grant',
+      status:        'active',
+      startDate:     today,
+      endDate:       calculatedEnd,
+      approvedBy:    req.session.user.id,
+      welcomeSeen:   false,
+    });
+
+    return res.redirect(`/admin/subscriptions?success=Pro+access+granted+to+${encodeURIComponent(user.username)}+until+${calculatedEnd}.`);
+  } catch (err) {
+    console.error('Grant pro error:', err);
+    return res.redirect('/admin/subscriptions?error=Failed+to+grant+pro+access.+Please+try+again.');
+  }
 });
 
 // Admin: approve
