@@ -6,6 +6,7 @@ const { Subscription, User, SiteSetting } = require('../models');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const paypal = require('../utils/paypal');
 const { Op } = require('sequelize');
+const { sendNewSubscriptionRequestEmail, sendProApprovedEmail } = require('../config/mailer');
 
 const router = express.Router();
 
@@ -82,6 +83,16 @@ router.post('/subscribe', requireAuth, async (req, res) => {
       paymentMethod: method,
       status:        'pending',
     });
+
+    // Notify all admins
+    try {
+      const admins = await User.findAll({ where: { isAdmin: true }, attributes: ['email'] });
+      const adminEmails = admins.map(a => a.email).filter(Boolean);
+      if (adminEmails.length) {
+        await sendNewSubscriptionRequestEmail(adminEmails, req.session.user.username, method, ref);
+      }
+    } catch (mailErr) { console.error('[subscribe] admin notify error:', mailErr.message); }
+
     res.render('subscribe', {
       subscription: newSub,
       isActive: false,
@@ -170,6 +181,11 @@ router.post('/admin/subscriptions/grant', requireAdmin, async (req, res) => {
       welcomeSeen:   false,
     });
 
+    // Notify the user
+    try {
+      await sendProApprovedEmail(user.email, user.username, calculatedEnd);
+    } catch (mailErr) { console.error('[grant] notify error:', mailErr.message); }
+
     return res.redirect(`/admin/subscriptions?success=Pro+access+granted+to+${encodeURIComponent(user.username)}+until+${calculatedEnd}.`);
   } catch (err) {
     console.error('Grant pro error:', err);
@@ -185,6 +201,12 @@ router.post('/admin/subscriptions/:id/approve', requireAdmin, async (req, res) =
       const today = new Date().toISOString().slice(0, 10);
       const end   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       await sub.update({ status: 'active', startDate: today, endDate: end, approvedBy: req.session.user.id });
+
+      // Notify the user
+      try {
+        const user = await User.findByPk(sub.userId, { attributes: ['email', 'username'] });
+        if (user) await sendProApprovedEmail(user.email, user.username, end);
+      } catch (mailErr) { console.error('[approve] notify error:', mailErr.message); }
     }
   } catch (err) { console.error(err); }
   res.redirect('/admin/subscriptions');

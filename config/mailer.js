@@ -54,6 +54,52 @@ async function sendPasswordResetEmail(toEmail, username, token) {
   });
 }
 
+async function sendNewSubscriptionRequestEmail(adminEmails, username, method, ref) {
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  await transporter.sendMail({
+    from:    `"Orange Chicken" <${process.env.GMAIL_USER}>`,
+    to:      adminEmails.join(', '),
+    subject: `New subscription request from ${username}`,
+    html: emailTemplate(`
+      <h2 style="color:#fff;margin-bottom:.5rem">New Subscription Request</h2>
+      <p style="color:#c4a882;line-height:1.6;margin-bottom:1.5rem">
+        <strong style="color:#fff">${username}</strong> has submitted a subscription request and is waiting for approval.
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem">
+        <tr><td style="padding:8px 0;color:#8a6a48;font-size:.85rem;width:40%">Username</td><td style="color:#fff;font-size:.85rem">${username}</td></tr>
+        <tr><td style="padding:8px 0;color:#8a6a48;font-size:.85rem">Payment method</td><td style="color:#fff;font-size:.85rem;text-transform:uppercase">${method}</td></tr>
+        <tr><td style="padding:8px 0;color:#8a6a48;font-size:.85rem">Reference</td><td style="color:#F5A623;font-family:monospace;font-size:.9rem">${ref}</td></tr>
+      </table>
+      <div style="text-align:center;margin:1.5rem 0">
+        <a href="${appUrl}/admin/subscriptions" style="${btnStyle}">Review in Admin →</a>
+      </div>
+    `),
+  });
+}
+
+async function sendProApprovedEmail(toEmail, username, endDate) {
+  const formattedEnd = new Date(endDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  await transporter.sendMail({
+    from:    `"Orange Chicken" <${process.env.GMAIL_USER}>`,
+    to:      toEmail,
+    subject: 'You\'ve been granted Pro access on Orange Chicken!',
+    html: emailTemplate(`
+      <h2 style="color:#fff;margin-bottom:.5rem">Pro Access Granted! 🍗</h2>
+      <p style="color:#c4a882;line-height:1.6;margin-bottom:1.5rem">
+        Congratulations, <strong style="color:#fff">${username}</strong>! Your Pro access has been approved.
+        You now have unlimited tool usage and no daily cap.
+      </p>
+      <div style="text-align:center;background:rgba(200,110,20,.1);border:1px solid rgba(200,110,20,.4);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem">
+        <p style="color:#8a6a48;font-size:.8rem;margin:0 0 .25rem">Active until</p>
+        <p style="color:#F5A623;font-size:1.2rem;font-weight:700;margin:0">${formattedEnd}</p>
+      </div>
+      <p style="color:#8a6a48;font-size:.8rem;text-align:center">
+        Enjoy your stay in the Coop!
+      </p>
+    `),
+  });
+}
+
 // Shared email shell
 const btnStyle = 'background:linear-gradient(135deg,#C8600A,#F5A623);color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;display:inline-block';
 
@@ -73,4 +119,4 @@ function emailTemplate(body) {
   `;
 }
 
-module.exports = { transporter, sendVerificationCode, sendPasswordResetEmail };
+module.exports = { transporter, sendVerificationCode, sendPasswordResetEmail, sendNewSubscriptionRequestEmail, sendProApprovedEmail };
