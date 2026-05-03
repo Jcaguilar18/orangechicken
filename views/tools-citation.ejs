@@ -1,0 +1,646 @@
+<%- include('partials/header', { pageTitle: 'Citation Generator — Orange Chicken' }) %>
+
+<div class="container" style="max-width:860px">
+  <section class="hero" style="padding-bottom:1.5rem">
+    <p class="hero-label">TOOLS</p>
+    <h1 class="hero-title" style="font-size:2.2rem">Citation Generator</h1>
+    <p class="hero-sub">Fill in the details and get a perfectly formatted citation — APA, MLA, Chicago, or Harvard.</p>
+  </section>
+  <div class="glow-line"></div>
+
+  <!-- Step 1: Style + Source Type -->
+  <div class="glass-card" style="padding:1.5rem;margin-bottom:1.5rem">
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem">
+      <div style="flex:1;min-width:200px">
+        <label class="cite-label">Citation Style</label>
+        <div class="cite-pill-group" id="styleGroup">
+          <button class="cite-pill active" data-val="apa">APA 7</button>
+          <button class="cite-pill" data-val="mla">MLA 9</button>
+          <button class="cite-pill" data-val="chicago">Chicago</button>
+          <button class="cite-pill" data-val="harvard">Harvard</button>
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <label class="cite-label">Source Type</label>
+        <div class="cite-pill-group" id="typeGroup">
+          <button class="cite-pill active" data-val="book">Book</button>
+          <button class="cite-pill" data-val="journal">Journal</button>
+          <button class="cite-pill" data-val="website">Website</button>
+          <button class="cite-pill" data-val="magazine">Magazine</button>
+          <button class="cite-pill" data-val="video">Video</button>
+          <button class="cite-pill" data-val="report">Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Fields -->
+  <div class="glass-card" style="padding:1.5rem;margin-bottom:1.5rem" id="fieldsCard">
+
+    <!-- Authors -->
+    <div class="cite-section" id="authorSection">
+      <label class="cite-label">Authors <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(leave blank if none)</span></label>
+      <div id="authorList"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addAuthor()" style="margin-top:.5rem;font-size:.8rem">+ Add Author</button>
+    </div>
+
+    <!-- Video creator (replaces authors for video) -->
+    <div class="cite-section" id="creatorSection" style="display:none">
+      <label class="cite-label">Channel / Creator Name</label>
+      <input type="text" id="creatorName" class="cite-input" placeholder="e.g. Kurzgesagt – In a Nutshell" />
+    </div>
+
+    <!-- Year -->
+    <div class="cite-section" id="yearSection">
+      <label class="cite-label">Year Published</label>
+      <input type="text" id="year" class="cite-input" placeholder="e.g. 2023" style="max-width:140px" />
+    </div>
+
+    <!-- Full date (websites, magazine, video) -->
+    <div class="cite-section" id="fullDateSection" style="display:none">
+      <label class="cite-label">Publication Date</label>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <input type="text" id="dateYear"  class="cite-input" placeholder="Year"  style="max-width:100px" />
+        <input type="text" id="dateMonth" class="cite-input" placeholder="Month" style="max-width:120px" />
+        <input type="text" id="dateDay"   class="cite-input" placeholder="Day"   style="max-width:90px" />
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="cite-section" id="titleSection">
+      <label class="cite-label" id="titleLabel">Title</label>
+      <input type="text" id="title" class="cite-input" placeholder="e.g. The Great Gatsby" />
+    </div>
+
+    <!-- Subtitle (book, report) -->
+    <div class="cite-section" id="subtitleSection">
+      <label class="cite-label">Subtitle <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(optional)</span></label>
+      <input type="text" id="subtitle" class="cite-input" placeholder="e.g. A Novel of the Jazz Age" />
+    </div>
+
+    <!-- Edition (book) -->
+    <div class="cite-section" id="editionSection" style="display:none">
+      <label class="cite-label">Edition <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(optional)</span></label>
+      <input type="text" id="edition" class="cite-input" placeholder="e.g. 3rd" style="max-width:140px" />
+    </div>
+
+    <!-- Publisher -->
+    <div class="cite-section" id="publisherSection">
+      <label class="cite-label" id="publisherLabel">Publisher</label>
+      <input type="text" id="publisher" class="cite-input" placeholder="e.g. Penguin Books" />
+    </div>
+
+    <!-- Place of publication (Chicago, Harvard) -->
+    <div class="cite-section" id="placeSection" style="display:none">
+      <label class="cite-label">Place of Publication <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(City)</span></label>
+      <input type="text" id="place" class="cite-input" placeholder="e.g. New York" style="max-width:220px" />
+    </div>
+
+    <!-- Journal name -->
+    <div class="cite-section" id="journalSection" style="display:none">
+      <label class="cite-label">Journal Name</label>
+      <input type="text" id="journalName" class="cite-input" placeholder="e.g. Nature" />
+    </div>
+
+    <!-- Volume / Issue / Pages -->
+    <div class="cite-section" id="volSection" style="display:none">
+      <label class="cite-label">Volume / Issue / Pages</label>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <input type="text" id="volume" class="cite-input" placeholder="Volume" style="max-width:110px" />
+        <input type="text" id="issue"  class="cite-input" placeholder="Issue"  style="max-width:110px" />
+        <input type="text" id="pages"  class="cite-input" placeholder="e.g. 45–67" style="max-width:160px" />
+      </div>
+    </div>
+
+    <!-- Magazine / newspaper pages (optional) -->
+    <div class="cite-section" id="magPagesSection" style="display:none">
+      <label class="cite-label">Pages <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(optional)</span></label>
+      <input type="text" id="magPages" class="cite-input" placeholder="e.g. 12–15" style="max-width:160px" />
+    </div>
+
+    <!-- Site name (website) -->
+    <div class="cite-section" id="siteSection" style="display:none">
+      <label class="cite-label">Website / Organization Name</label>
+      <input type="text" id="siteName" class="cite-input" placeholder="e.g. BBC News" />
+    </div>
+
+    <!-- Platform (video) -->
+    <div class="cite-section" id="platformSection" style="display:none">
+      <label class="cite-label">Platform</label>
+      <input type="text" id="platform" class="cite-input" placeholder="e.g. YouTube" style="max-width:200px" />
+    </div>
+
+    <!-- Institution (report) -->
+    <div class="cite-section" id="institutionSection" style="display:none">
+      <label class="cite-label">Institution / Organization</label>
+      <input type="text" id="institution" class="cite-input" placeholder="e.g. Harvard University" />
+    </div>
+
+    <!-- Report type -->
+    <div class="cite-section" id="reportTypeSection" style="display:none">
+      <label class="cite-label">Type <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(optional)</span></label>
+      <input type="text" id="reportType" class="cite-input" placeholder="e.g. Doctoral dissertation, Technical report" />
+    </div>
+
+    <!-- Access date (Harvard, MLA for websites) -->
+    <div class="cite-section" id="accessDateSection" style="display:none">
+      <label class="cite-label">Access Date <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(for websites)</span></label>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <input type="text" id="accessDay"   class="cite-input" placeholder="Day"   style="max-width:90px" />
+        <input type="text" id="accessMonth" class="cite-input" placeholder="Month" style="max-width:120px" />
+        <input type="text" id="accessYear"  class="cite-input" placeholder="Year"  style="max-width:100px" />
+      </div>
+    </div>
+
+    <!-- Page number (in-text) -->
+    <div class="cite-section" id="pageNumSection">
+      <label class="cite-label">Page Number for In-Text Citation <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(optional)</span></label>
+      <input type="text" id="pageNum" class="cite-input" placeholder="e.g. 45" style="max-width:120px" />
+    </div>
+
+    <!-- DOI / URL -->
+    <div class="cite-section" id="doiSection">
+      <label class="cite-label" id="doiLabel">DOI or URL <span style="color:#8a6a48;font-weight:400;font-size:.78rem">(optional)</span></label>
+      <input type="text" id="doi" class="cite-input" placeholder="https://doi.org/... or https://..." />
+    </div>
+
+    <div style="margin-top:1.5rem">
+      <button class="btn btn-primary" onclick="generateCitation()" style="padding:.75rem 2rem">Generate Citation</button>
+      <button class="btn btn-ghost" onclick="clearAll()" style="margin-left:.75rem">Clear</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" style="display:none">
+    <div class="glass-card" style="padding:1.5rem;margin-bottom:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+        <h3 style="color:var(--amber);font-family:'Rye',serif;font-size:.85rem;letter-spacing:.08em;margin:0">FULL CITATION</h3>
+        <button class="btn btn-ghost btn-sm" onclick="copyText('fullCitationOut')">Copy</button>
+      </div>
+      <div id="fullCitationOut" class="cite-output"></div>
+    </div>
+
+    <div class="glass-card" style="padding:1.5rem;margin-bottom:2rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+        <h3 style="color:var(--amber);font-family:'Rye',serif;font-size:.85rem;letter-spacing:.08em;margin:0">IN-TEXT CITATION</h3>
+        <button class="btn btn-ghost btn-sm" onclick="copyText('inTextOut')">Copy</button>
+      </div>
+      <div id="inTextOut" class="cite-output"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+.cite-label {
+  display: block;
+  font-size: .78rem;
+  color: var(--text-muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: .4rem;
+  font-weight: 600;
+}
+.cite-input {
+  width: 100%;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .55rem .9rem;
+  color: #fff;
+  font-size: .9rem;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+.cite-input:focus { outline: none; border-color: rgba(200,110,20,.6); }
+.cite-section { margin-bottom: 1.1rem; }
+.cite-pill-group { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .3rem; }
+.cite-pill {
+  padding: .35rem .85rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: .8rem;
+  cursor: pointer;
+  transition: all .18s;
+}
+.cite-pill:hover { border-color: rgba(200,110,20,.5); color: #fff; }
+.cite-pill.active { background: rgba(200,110,20,.2); border-color: rgba(200,110,20,.7); color: var(--amber); }
+.cite-output {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  font-size: .95rem;
+  line-height: 1.7;
+  color: #e2d5c3;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.author-row { display: flex; gap: .5rem; align-items: center; margin-bottom: .5rem; flex-wrap: wrap; }
+.author-row input { flex: 1; min-width: 120px; }
+.remove-author {
+  background: none; border: none; color: #ff6b6b;
+  font-size: 1.1rem; cursor: pointer; padding: 0 .4rem; line-height: 1;
+}
+</style>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let currentStyle = 'apa';
+let currentType  = 'book';
+let authorCount  = 0;
+
+// ── Pill groups ────────────────────────────────────────────────────
+document.getElementById('styleGroup').addEventListener('click', e => {
+  if (!e.target.dataset.val) return;
+  document.querySelectorAll('#styleGroup .cite-pill').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentStyle = e.target.dataset.val;
+  updateVisibility();
+});
+
+document.getElementById('typeGroup').addEventListener('click', e => {
+  if (!e.target.dataset.val) return;
+  document.querySelectorAll('#typeGroup .cite-pill').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentType = e.target.dataset.val;
+  updateVisibility();
+});
+
+// ── Authors ────────────────────────────────────────────────────────
+function addAuthor() {
+  const id = ++authorCount;
+  const row = document.createElement('div');
+  row.className = 'author-row';
+  row.id = 'author-row-' + id;
+  row.innerHTML = `
+    <input type="text" class="cite-input author-first" placeholder="First name" id="auth-first-${id}" />
+    <input type="text" class="cite-input author-last"  placeholder="Last name"  id="auth-last-${id}" />
+    <button class="remove-author" onclick="removeAuthor(${id})" title="Remove">×</button>
+  `;
+  document.getElementById('authorList').appendChild(row);
+}
+
+function removeAuthor(id) {
+  const row = document.getElementById('author-row-' + id);
+  if (row) row.remove();
+}
+
+function getAuthors() {
+  const rows = document.querySelectorAll('.author-row');
+  const authors = [];
+  rows.forEach(row => {
+    const first = row.querySelector('.author-first')?.value.trim() || '';
+    const last  = row.querySelector('.author-last')?.value.trim()  || '';
+    if (first || last) authors.push({ first, last });
+  });
+  return authors;
+}
+
+// ── Field visibility ───────────────────────────────────────────────
+function show(id) { const el = document.getElementById(id); if (el) el.style.display = ''; }
+function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+
+function updateVisibility() {
+  const t = currentType, s = currentStyle;
+
+  // Reset all optional sections
+  hide('creatorSection'); show('authorSection');
+  hide('fullDateSection'); show('yearSection');
+  hide('editionSection'); hide('subtitleSection');
+  hide('journalSection'); hide('volSection');
+  hide('siteSection'); hide('platformSection');
+  hide('institutionSection'); hide('reportTypeSection');
+  hide('magPagesSection'); hide('accessDateSection');
+  hide('placeSection');
+  show('publisherSection'); show('titleSection'); show('doiSection'); show('pageNumSection');
+
+  document.getElementById('titleLabel').textContent = 'Title';
+  document.getElementById('publisherLabel').textContent = 'Publisher';
+  document.getElementById('doiLabel').textContent = 'DOI or URL (optional)';
+
+  if (t === 'book') {
+    show('subtitleSection'); show('editionSection');
+    if (s === 'chicago' || s === 'harvard') show('placeSection');
+  }
+
+  if (t === 'journal') {
+    show('journalSection'); show('volSection');
+    hide('publisherSection');
+    document.getElementById('titleLabel').textContent = 'Article Title';
+    document.getElementById('doiLabel').textContent = 'DOI (recommended)';
+  }
+
+  if (t === 'website') {
+    hide('yearSection'); show('fullDateSection');
+    hide('publisherSection'); show('siteSection');
+    document.getElementById('titleLabel').textContent = 'Page / Article Title';
+    document.getElementById('doiLabel').textContent = 'URL';
+    if (s === 'harvard' || s === 'mla') show('accessDateSection');
+  }
+
+  if (t === 'magazine') {
+    hide('yearSection'); show('fullDateSection');
+    hide('publisherSection'); show('magPagesSection');
+    document.getElementById('titleLabel').textContent = 'Article Title';
+    document.getElementById('doiLabel').textContent = 'URL (optional)';
+  }
+
+  if (t === 'video') {
+    hide('authorSection'); show('creatorSection');
+    hide('yearSection'); show('fullDateSection');
+    hide('publisherSection'); show('platformSection');
+    document.getElementById('titleLabel').textContent = 'Video Title';
+    document.getElementById('doiLabel').textContent = 'URL';
+  }
+
+  if (t === 'report') {
+    show('subtitleSection'); show('institutionSection'); show('reportTypeSection');
+    hide('publisherSection');
+    document.getElementById('titleLabel').textContent = 'Report / Thesis Title';
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_MLA   = ['Jan.','Feb.','Mar.','Apr.','May','June','July','Aug.','Sept.','Oct.','Nov.','Dec.'];
+
+function resolveMonth(raw, fmt) {
+  if (!raw) return '';
+  const n = parseInt(raw, 10);
+  if (!isNaN(n) && n >= 1 && n <= 12) {
+    return fmt === 'mla' ? MONTHS_MLA[n - 1] : MONTHS_FULL[n - 1];
+  }
+  // Accept month name
+  const idx = MONTHS_FULL.findIndex(m => m.toLowerCase().startsWith(raw.toLowerCase().substring(0, 3)));
+  if (idx >= 0) return fmt === 'mla' ? MONTHS_MLA[idx] : MONTHS_FULL[idx];
+  return raw;
+}
+
+function initials(name) {
+  if (!name) return '';
+  return name.split(/\s+/).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+}
+
+function italics(text) { return text ? `*${text}*` : ''; }
+
+// Format author list for each style
+function formatAuthors(authors, style) {
+  if (!authors.length) return '';
+  if (style === 'apa') {
+    const fmt = a => {
+      const last  = a.last  || a.first || '';
+      const first = a.last  ? a.first  : '';
+      return last + (first ? ', ' + initials(first) : '');
+    };
+    if (authors.length === 1) return fmt(authors[0]);
+    if (authors.length <= 20) {
+      const all = authors.map(fmt);
+      return all.slice(0, -1).join(', ') + ', & ' + all[all.length - 1];
+    }
+    return authors.slice(0, 19).map(fmt).join(', ') + ', . . . ' + fmt(authors[authors.length - 1]);
+  }
+  if (style === 'mla') {
+    const fmtFirst = a => (a.last ? a.last + ', ' + a.first : a.first).trim();
+    const fmtOther = a => (a.first + ' ' + a.last).trim();
+    if (authors.length === 1) return fmtFirst(authors[0]);
+    if (authors.length === 2) return fmtFirst(authors[0]) + ', and ' + fmtOther(authors[1]);
+    return fmtFirst(authors[0]) + ', et al.';
+  }
+  if (style === 'chicago') {
+    const fmtFirst = a => (a.last ? a.last + ', ' + a.first : a.first).trim();
+    const fmtOther = a => (a.first + ' ' + a.last).trim();
+    if (authors.length === 1) return fmtFirst(authors[0]);
+    if (authors.length === 2) return fmtFirst(authors[0]) + ' and ' + fmtOther(authors[1]);
+    if (authors.length === 3) return fmtFirst(authors[0]) + ', ' + fmtOther(authors[1]) + ', and ' + fmtOther(authors[2]);
+    return fmtFirst(authors[0]) + ' et al.';
+  }
+  if (style === 'harvard') {
+    const fmt = a => {
+      const last  = a.last  || a.first || '';
+      const first = a.last  ? a.first  : '';
+      return last + (first ? ', ' + initials(first) : '');
+    };
+    if (authors.length === 1) return fmt(authors[0]);
+    if (authors.length <= 3) return authors.map(fmt).join(' and ');
+    return fmt(authors[0]) + ' et al.';
+  }
+  return '';
+}
+
+function lastNameOnly(a, style) {
+  const name = a.last || a.first || '';
+  return name;
+}
+
+// In-text citation
+function buildInText(authors, creatorName, year, fullDate, pageNum, style) {
+  const pg     = pageNum ? ', p. ' + pageNum : '';
+  const pgMla  = pageNum ? ' ' + pageNum : '';
+  const y      = year || fullDate?.year || 'n.d.';
+  let   names  = '';
+  const src    = authors.length ? authors : creatorName ? [{ first: creatorName, last: '' }] : [];
+
+  if (!src.length) {
+    if (style === 'mla')     return `(${pgMla.trim() || 'n.p.'})`;
+    if (style === 'chicago') return `(n.a., ${y}${pg})`;
+    return `(n.d.${pg})`;
+  }
+
+  const first = src[0];
+  const last  = first.last || first.first || 'Unknown';
+
+  if (style === 'apa')     return src.length >= 3 ? `(${last} et al., ${y}${pg})` : `(${formatAuthors(src,'apa').split(',')[0].trim()}, ${y}${pg})`;
+  if (style === 'mla')     return src.length >= 3 ? `(${last} et al.${pgMla})` : `(${last}${pgMla})`;
+  if (style === 'chicago') return src.length >= 3 ? `(${last} et al. ${y}${pg})` : `(${last} ${y}${pg})`;
+  if (style === 'harvard') return src.length >= 3 ? `(${last} et al., ${y}${pg})` : `(${last}, ${y}${pg})`;
+  return '';
+}
+
+// ── Main generator ─────────────────────────────────────────────────
+function generateCitation() {
+  const s = currentStyle, t = currentType;
+  const authors  = getAuthors();
+  const creator  = document.getElementById('creatorName')?.value.trim() || '';
+  const year     = document.getElementById('year')?.value.trim() || '';
+  const dYear    = document.getElementById('dateYear')?.value.trim()  || '';
+  const dMonth   = document.getElementById('dateMonth')?.value.trim() || '';
+  const dDay     = document.getElementById('dateDay')?.value.trim()   || '';
+  const title    = document.getElementById('title')?.value.trim()     || '';
+  const subtitle = document.getElementById('subtitle')?.value.trim()  || '';
+  const edition  = document.getElementById('edition')?.value.trim()   || '';
+  const publisher= document.getElementById('publisher')?.value.trim() || '';
+  const place    = document.getElementById('place')?.value.trim()     || '';
+  const journal  = document.getElementById('journalName')?.value.trim() || '';
+  const volume   = document.getElementById('volume')?.value.trim()    || '';
+  const issue    = document.getElementById('issue')?.value.trim()     || '';
+  const pages    = document.getElementById('pages')?.value.trim()     || '';
+  const magPages = document.getElementById('magPages')?.value.trim()  || '';
+  const siteName = document.getElementById('siteName')?.value.trim()  || '';
+  const platform = document.getElementById('platform')?.value.trim()  || '';
+  const institution = document.getElementById('institution')?.value.trim() || '';
+  const reportType  = document.getElementById('reportType')?.value.trim()  || '';
+  const doi      = document.getElementById('doi')?.value.trim()       || '';
+  const pageNum  = document.getElementById('pageNum')?.value.trim()   || '';
+  const aDay     = document.getElementById('accessDay')?.value.trim()   || '';
+  const aMonth   = document.getElementById('accessMonth')?.value.trim() || '';
+  const aYear    = document.getElementById('accessYear')?.value.trim()  || '';
+
+  const fd  = { year: dYear, month: dMonth, day: dDay };
+  const y   = year || dYear || 'n.d.';
+  const au  = formatAuthors(authors, s);
+  const fullTitle = subtitle ? title + ': ' + subtitle : title;
+
+  let full = '', inText = '';
+
+  inText = buildInText(authors, creator, year, fd, pageNum, s);
+
+  // ── APA 7 ──────────────────────────────────────────────────────
+  if (s === 'apa') {
+    const auStr = au || (t === 'video' ? creator : '');
+    const edStr = edition ? ` (${edition} ed.)` : '';
+    const doiStr = doi ? `\n${doi}` : '';
+    const mFull = resolveMonth(dMonth, 'apa');
+    const dateStr = dYear ? (mFull ? `${dYear}, ${mFull}${dDay ? ' ' + dDay : ''}` : dYear) : 'n.d.';
+
+    if (t === 'book') {
+      full = `${auStr}${auStr ? ' ' : ''}(${y}). *${fullTitle}*${edStr}. ${publisher}.${doiStr}`;
+    } else if (t === 'journal') {
+      const volStr   = volume ? `, *${volume}*` : '';
+      const issueStr = issue  ? `(${issue})`    : '';
+      const pgStr    = pages  ? `, ${pages}`    : '';
+      full = `${auStr}${auStr ? ' ' : ''}(${y}). ${title}.${journal ? ' *' + journal + '*' : ''}${volStr}${issueStr}${pgStr}. ${doiStr || 'https://doi.org/xxxxx'}`;
+    } else if (t === 'website') {
+      full = `${auStr}${auStr ? ' ' : ''}(${dateStr}). *${title}*. ${siteName}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'magazine') {
+      const mFull2 = resolveMonth(dMonth, 'apa');
+      const magDate = dYear ? `${dYear}, ${mFull2}${dDay ? ' ' + dDay : ''}` : 'n.d.';
+      const pgStr = magPages ? `, ${magPages}` : '';
+      full = `${auStr}${auStr ? ' ' : ''}(${magDate}). ${title}. *${publisher}*${pgStr}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'video') {
+      const mFull3 = resolveMonth(dMonth, 'apa');
+      const vDate = dYear ? `${dYear}, ${mFull3}${dDay ? ' ' + dDay : ''}` : 'n.d.';
+      full = `${creator} [${creator}]. (${vDate}). *${title}* [Video]. ${platform}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'report') {
+      const typeStr = reportType ? ` [${reportType}${institution ? ', ' + institution : ''}]` : (institution ? ` [${institution}]` : '');
+      full = `${auStr}${auStr ? ' ' : ''}(${y}). *${fullTitle}*${typeStr}.${doiStr}`;
+    }
+  }
+
+  // ── MLA 9 ──────────────────────────────────────────────────────
+  if (s === 'mla') {
+    const mMla = resolveMonth(dMonth, 'mla');
+    const dateStr = [dDay, mMla, dYear].filter(Boolean).join(' ');
+
+    if (t === 'book') {
+      const edStr = edition ? `, ${edition} ed.` : '';
+      full = `${au}${au ? '. ' : ''}*${fullTitle}*. ${publisher}, ${y}${edStr}.`;
+    } else if (t === 'journal') {
+      const volStr   = volume ? `vol. ${volume}` : '';
+      const issueStr = issue  ? `no. ${issue}`   : '';
+      const pgStr    = pages  ? `pp. ${pages}`   : '';
+      const parts = [journal ? `*${journal}*` : '', volStr, issueStr, y, pgStr].filter(Boolean).join(', ');
+      full = `${au}${au ? '. ' : ''}"${title}." ${parts}${doi ? ',\n' + doi : ''}.`;
+    } else if (t === 'website') {
+      const accessed = aDay && aMonth && aYear ? ` Accessed ${aDay} ${resolveMonth(aMonth,'mla')} ${aYear}.` : '';
+      full = `${au}${au ? '. ' : ''}"${title}." *${siteName}*, ${dateStr},${doi ? '\n' + doi + '.' : '.'}${accessed}`;
+    } else if (t === 'magazine') {
+      const pgStr = magPages ? `, pp. ${magPages}` : '';
+      full = `${au}${au ? '. ' : ''}"${title}." *${publisher}*, ${dateStr}${pgStr}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'video') {
+      full = `"${title}." *${platform || 'YouTube'}*, uploaded by ${creator}, ${dateStr}, ${doi}.`;
+    } else if (t === 'report') {
+      const typeStr = reportType ? ` ${reportType},` : '';
+      full = `${au}${au ? '. ' : ''}*${fullTitle}*.${typeStr} ${institution}, ${y}.${doi ? '\n' + doi : ''}`;
+    }
+  }
+
+  // ── Chicago (Notes-Bibliography) ───────────────────────────────
+  if (s === 'chicago') {
+    const mFull = resolveMonth(dMonth, 'chicago');
+    const dateStr = dYear ? (mFull ? `${mFull}${dDay ? ' ' + dDay : ''}, ${dYear}` : dYear) : 'n.d.';
+
+    if (t === 'book') {
+      const edStr = edition ? `, ${edition} ed.` : '';
+      const loc = place ? `${place}: ` : '';
+      full = `${au}${au ? '. ' : ''}*${fullTitle}*${edStr}. ${loc}${publisher}, ${y}.`;
+    } else if (t === 'journal') {
+      const volStr   = volume ? `${volume}` : '';
+      const issueStr = issue  ? `, no. ${issue}` : '';
+      const pgStr    = pages  ? `: ${pages}` : '';
+      full = `${au}${au ? '. ' : ''}"${title}." *${journal}* ${volStr}${issueStr} (${y})${pgStr}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'website') {
+      full = `${au}${au ? '. ' : ''}"${title}." *${siteName}*. ${dateStr}. ${doi || 'URL'}.`;
+    } else if (t === 'magazine') {
+      const pgStr = magPages ? `, ${magPages}` : '';
+      full = `${au}${au ? '. ' : ''}"${title}." *${publisher}*, ${dateStr}${pgStr}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'video') {
+      full = `${creator}. "${title}." ${platform || 'YouTube'} video, ${dateStr}. ${doi}.`;
+    } else if (t === 'report') {
+      const typeStr = reportType ? `. ${reportType}` : '';
+      full = `${au}${au ? '. ' : ''}*${fullTitle}*${typeStr}. ${institution}, ${y}.${doi ? '\n' + doi : ''}`;
+    }
+  }
+
+  // ── Harvard ────────────────────────────────────────────────────
+  if (s === 'harvard') {
+    const mFull = resolveMonth(dMonth, 'harvard');
+    const dateStr = dYear ? (mFull ? `${dYear}, ${mFull}${dDay ? ' ' + dDay : ''}` : dYear) : 'n.d.';
+    const accessed = aDay && aMonth && aYear
+      ? ` (Accessed: ${aDay} ${resolveMonth(aMonth,'harvard')} ${aYear}).`
+      : '';
+
+    if (t === 'book') {
+      const edStr = edition ? ` ${edition} edn.` : '';
+      const loc   = place ? `${place}: ` : '';
+      full = `${au}${au ? ' ' : ''}(${y}) *${fullTitle}*.${edStr} ${loc}${publisher}.`;
+    } else if (t === 'journal') {
+      const volStr   = volume ? `, vol. ${volume}` : '';
+      const issueStr = issue  ? `, no. ${issue}`   : '';
+      const pgStr    = pages  ? `, pp. ${pages}`   : '';
+      full = `${au}${au ? ' ' : ''}(${y}) '${title}', *${journal}*${volStr}${issueStr}${pgStr}.${doi ? '\nDOI: ' + doi : ''}`;
+    } else if (t === 'website') {
+      full = `${au}${au ? ' ' : ''}(${dateStr}) *${title}*. Available at: ${doi || 'URL'}${accessed}`;
+    } else if (t === 'magazine') {
+      const pgStr = magPages ? `, pp. ${magPages}` : '';
+      full = `${au}${au ? ' ' : ''}(${dateStr}) '${title}', *${publisher}*${pgStr}.${doi ? '\n' + doi : ''}`;
+    } else if (t === 'video') {
+      full = `${creator} (${dateStr}) *${title}* [Video online]. Available at: ${doi || 'URL'}${accessed}`;
+    } else if (t === 'report') {
+      const typeStr = reportType ? ` (${reportType})` : '';
+      full = `${au}${au ? ' ' : ''}(${y}) *${fullTitle}*${typeStr}. ${institution}.${doi ? '\nAvailable at: ' + doi : ''}`;
+    }
+  }
+
+  full = full.replace(/\s{2,}/g, ' ').trim();
+
+  document.getElementById('fullCitationOut').textContent = full;
+  document.getElementById('inTextOut').textContent = inText;
+  document.getElementById('resultsSection').style.display = '';
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+function clearAll() {
+  document.querySelectorAll('.cite-input').forEach(i => i.value = '');
+  document.getElementById('authorList').innerHTML = '';
+  authorCount = 0;
+  document.getElementById('resultsSection').style.display = 'none';
+}
+
+// Init: start with one author row, correct field visibility
+addAuthor();
+updateVisibility();
+</script>
+
+<%- include('partials/footer') %>

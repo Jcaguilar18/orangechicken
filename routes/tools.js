@@ -434,4 +434,8 @@ router.get('/tools/story-maker', async (req, res) => {
   });
 });
 
+router.get('/tools/citation-generator', (req, res) => {
+  res.render('tools-citation', { pageTitle: 'Citation Generator — Orange Chicken' });
+});
+
 module.exports = { router, tempResults };
