@@ -1,54 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <radialGradient id="bgGrad" cx="50%" cy="55%" r="55%">
-      <stop offset="0%" stop-color="#1a0600"/>
-      <stop offset="100%" stop-color="#0D0300"/>
+    <radialGradient id="meatGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#F5A623"/>
+      <stop offset="60%" stop-color="#C8600A"/>
+      <stop offset="100%" stop-color="#8B3A00"/>
     </radialGradient>
-    <radialGradient id="bodyGrad" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#FFB300"/>
-      <stop offset="100%" stop-color="#FF6B1A"/>
+    <radialGradient id="boneGrad" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#F5E6C8"/>
+      <stop offset="100%" stop-color="#D4B896"/>
     </radialGradient>
   </defs>
 
-  <!-- Background circle -->
-  <circle cx="32" cy="32" r="32" fill="url(#bgGrad)"/>
+  <!-- Bone stick -->
+  <rect x="22" y="38" width="9" height="18" rx="4" fill="url(#boneGrad)" transform="rotate(-35 26 47)"/>
+  <!-- Bone knob bottom -->
+  <circle cx="16" cy="55" r="5" fill="url(#boneGrad)"/>
+  <circle cx="11" cy="51" r="3.5" fill="url(#boneGrad)"/>
 
-  <!-- Outer ring -->
-  <circle cx="32" cy="32" r="30" fill="none" stroke="#FF6B1A" stroke-width="1.5" opacity="0.45"/>
+  <!-- Main meat ball -->
+  <circle cx="38" cy="26" r="20" fill="url(#meatGrad)"/>
 
-  <!-- Body -->
-  <ellipse cx="32" cy="42" rx="14" ry="12" fill="url(#bodyGrad)"/>
+  <!-- Sauce drips -->
+  <path d="M30 44 Q28 50 29 54" stroke="#C8600A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M38 46 Q37 52 38 56" stroke="#C8600A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M46 43 Q48 49 47 52" stroke="#C8600A" stroke-width="2" fill="none" stroke-linecap="round"/>
 
-  <!-- Head -->
-  <circle cx="32" cy="24" r="10" fill="#FF8C42"/>
+  <!-- Sesame seed dots -->
+  <ellipse cx="30" cy="20" rx="2" ry="1.2" fill="#FFF5E0" opacity="0.9" transform="rotate(-20 30 20)"/>
+  <ellipse cx="40" cy="16" rx="2" ry="1.2" fill="#FFF5E0" opacity="0.9" transform="rotate(10 40 16)"/>
+  <ellipse cx="48" cy="24" rx="2" ry="1.2" fill="#FFF5E0" opacity="0.9" transform="rotate(-10 48 24)"/>
+  <ellipse cx="44" cy="32" rx="2" ry="1.2" fill="#FFF5E0" opacity="0.9" transform="rotate(25 44 32)"/>
+  <ellipse cx="32" cy="30" rx="2" ry="1.2" fill="#FFF5E0" opacity="0.9" transform="rotate(-15 32 30)"/>
+  <ellipse cx="36" cy="22" rx="1.8" ry="1.1" fill="#FFF5E0" opacity="0.85" transform="rotate(5 36 22)"/>
 
-  <!-- Comb -->
-  <ellipse cx="32" cy="15" rx="3.5" ry="3" fill="#C0392B"/>
-  <ellipse cx="27" cy="16.5" rx="2.5" ry="2.2" fill="#C0392B"/>
-  <ellipse cx="37" cy="16.5" rx="2.5" ry="2.2" fill="#C0392B"/>
-
-  <!-- Eyes -->
-  <circle cx="28" cy="23" r="2" fill="#1a0800"/>
-  <circle cx="36" cy="23" r="2" fill="#1a0800"/>
-  <circle cx="28.6" cy="22.4" r="0.7" fill="#fff"/>
-  <circle cx="36.6" cy="22.4" r="0.7" fill="#fff"/>
-
-  <!-- Beak -->
-  <path d="M30 27 L32 30 L34 27 Z" fill="#FFD060"/>
-
-  <!-- Wattle -->
-  <ellipse cx="32" cy="30.5" rx="2.2" ry="1.8" fill="#C0392B"/>
-
-  <!-- Wings -->
-  <ellipse cx="20" cy="43" rx="4.5" ry="7" fill="#FF8C42" transform="rotate(-12 20 43)"/>
-  <ellipse cx="44" cy="43" rx="4.5" ry="7" fill="#FF8C42" transform="rotate(12 44 43)"/>
-
-  <!-- Rice bowl base -->
-  <ellipse cx="32" cy="57" rx="10" ry="4" fill="#FFF5E6" opacity="0.8"/>
-  <ellipse cx="32" cy="54.5" rx="8" ry="3.2" fill="#FFF5E6" opacity="0.65"/>
-
-  <!-- Rice dots -->
-  <circle cx="29" cy="54" r="1" fill="#FFD060" opacity="0.9"/>
-  <circle cx="32" cy="53" r="1" fill="#FFD060" opacity="0.9"/>
-  <circle cx="35" cy="54" r="1" fill="#FFD060" opacity="0.9"/>
+  <!-- Highlight on meat -->
+  <ellipse cx="32" cy="20" rx="7" ry="5" fill="#FFB84D" opacity="0.35"/>
 </svg>
