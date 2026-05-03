@@ -2,7 +2,7 @@
 
 <style>
 /* ── Reset & base ───────────────────────────────────────────── */
-#ve { display:flex; flex-direction:column; height:calc(100vh - 56px); background:#141414; color:#d4d4d4; font-family:'Inter',sans-serif; font-size:13px; overflow:hidden; user-select:none; }
+#ve { display:flex; flex-direction:column; margin-top:68px; height:calc(100vh - 68px); background:#141414; color:#d4d4d4; font-family:'Inter',sans-serif; font-size:13px; overflow:hidden; user-select:none; }
 
 /* ── Toolbar ────────────────────────────────────────────────── */
 #ve-toolbar { display:flex; align-items:center; gap:6px; padding:0 12px; height:44px; background:#1f1f1f; border-bottom:1px solid #333; flex-shrink:0; }
@@ -201,6 +201,11 @@
             <label class="ve-fx-check"><input type="checkbox" id="ve-fx-fadein" onchange="applyFx()"> Fade In</label>
             <label class="ve-fx-check"><input type="checkbox" id="ve-fx-fadeout" onchange="applyFx()"> Fade Out</label>
           </div>
+          <div class="ve-fx-row" id="ve-fx-scale-row">
+            <div class="ve-fx-label"><span>Scale</span><span id="ve-fx-scale-val">100%</span></div>
+            <input type="range" class="ve-fx-slider" id="ve-fx-scale" min="25" max="300" value="100" step="5" oninput="applyTransformFx()">
+          </div>
+          <button onclick="resetTransform()" style="width:100%;margin-top:6px;padding:5px 0;background:transparent;border:1px solid #3a3a3a;border-radius:5px;color:#888;font-size:11px;cursor:pointer" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#888'">Reset Position & Crop</button>
         </div>
       </div>
     </div>
@@ -320,6 +325,7 @@ function secToPx(sec) { return sec * S.zoom; }
 
 function getClipById(id) { return S.clips.find(c => c.id === id); }
 function getMediaById(id) { return S.media.find(m => m.id === id); }
+function defaultTransform() { return { panX:0, panY:0, scale:1, cropL:0, cropR:0, cropT:0, cropB:0 }; }
 
 // ═══════════════════════════════════════════════════════════════
 // LAYOUT / RESIZE
@@ -526,7 +532,8 @@ function addClip(mediaId, trackId, start) {
     id: uid(), trackId, start,
     trimIn: 0, trimOut: m.duration,
     mediaId,
-    fx: { opacity: 100, volume: 100, fadeIn: false, fadeOut: false }
+    fx: { opacity: 100, volume: 100, fadeIn: false, fadeOut: false },
+    transform: defaultTransform()
   };
   // Snap to adjacent clips
   clip.start = snapStart(clip);
@@ -761,6 +768,12 @@ function updateFxPanel() {
   document.getElementById('ve-fx-volume-val').textContent  = clip.fx.volume + '%';
   document.getElementById('ve-fx-fadein').checked    = clip.fx.fadeIn;
   document.getElementById('ve-fx-fadeout').checked   = clip.fx.fadeOut;
+
+  const scaleRow = document.getElementById('ve-fx-scale-row');
+  scaleRow.style.display = m?.type !== 'audio' ? '' : 'none';
+  const scaleVal = Math.round((clip.transform?.scale || 1) * 100);
+  document.getElementById('ve-fx-scale').value = scaleVal;
+  document.getElementById('ve-fx-scale-val').textContent = scaleVal + '%';
 }
 
 function applyFx() {
@@ -776,6 +789,24 @@ function applyFx() {
   // Live update clip appearance
   const el = document.querySelector(`.ve-clip[data-clip-id="${clip.id}"]`);
   if (el) el.style.opacity = clip.fx.opacity / 100;
+}
+
+function applyTransformFx() {
+  const clip = S.selectedClipId ? getClipById(S.selectedClipId) : null;
+  if (!clip) return;
+  if (!clip.transform) clip.transform = defaultTransform();
+  clip.transform.scale = document.getElementById('ve-fx-scale').value / 100;
+  document.getElementById('ve-fx-scale-val').textContent = document.getElementById('ve-fx-scale').value + '%';
+  drawPreviewFrame();
+}
+
+function resetTransform() {
+  const clip = S.selectedClipId ? getClipById(S.selectedClipId) : null;
+  if (!clip) return;
+  clip.transform = defaultTransform();
+  document.getElementById('ve-fx-scale').value = 100;
+  document.getElementById('ve-fx-scale-val').textContent = '100%';
+  drawPreviewFrame();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -856,7 +887,6 @@ function drawPreviewFrame() {
   previewCtx.fillStyle = '#000';
   previewCtx.fillRect(0, 0, previewCv.width, previewCv.height);
 
-  // Render video tracks bottom-up (v2 under v1)
   const videoTracks = ['v2','v1'];
   let drewSomething = false;
 
@@ -867,16 +897,11 @@ function drawPreviewFrame() {
     if (!m) continue;
 
     if (m.type === 'video' || m.type === 'image') {
-      let src;
-      if (m.type === 'video') {
-        src = mediaEls[m.serverSourceId] || getOrCreateVideoEl(m);
-      } else {
-        src = getOrCreateImageEl(m);
-      }
+      let src = m.type === 'video'
+        ? (mediaEls[m.serverSourceId] || getOrCreateVideoEl(m))
+        : getOrCreateImageEl(m);
       if (src && (src.readyState >= 2 || src instanceof HTMLImageElement)) {
-        previewCtx.globalAlpha = clip.fx.opacity / 100;
-        previewCtx.drawImage(src, 0, 0, previewCv.width, previewCv.height);
-        previewCtx.globalAlpha = 1;
+        drawClipOnCanvas(src, clip, m);
         drewSomething = true;
       }
     }
@@ -911,6 +936,203 @@ function getOrCreateVideoEl(m) {
   if (m.serverSourceId) mediaEls[m.serverSourceId] = v;
   return v;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSFORM / CROP DRAW
+// ═══════════════════════════════════════════════════════════════
+function getFittedRect(m, t) {
+  const cvW = previewCv.width, cvH = previewCv.height;
+  const srcW = m.w > 0 ? m.w : 1920;
+  const srcH = m.h > 0 ? m.h : 1080;
+  const fit  = Math.min(cvW / srcW, cvH / srcH) * t.scale;
+  const dw   = srcW * fit, dh = srcH * fit;
+  return { x: (cvW - dw) / 2 + t.panX, y: (cvH - dh) / 2 + t.panY, w: dw, h: dh };
+}
+
+function getCropRect(r, t) {
+  return {
+    x: r.x + t.cropL,
+    y: r.y + t.cropT,
+    w: Math.max(4, r.w - t.cropL - t.cropR),
+    h: Math.max(4, r.h - t.cropT - t.cropB),
+  };
+}
+
+function drawClipOnCanvas(src, clip, m) {
+  const t   = clip.transform || defaultTransform();
+  const r   = getFittedRect(m, t);
+  const cr  = getCropRect(r, t);
+  const ctx = previewCtx;
+
+  ctx.save();
+  ctx.globalAlpha = clip.fx.opacity / 100;
+  ctx.beginPath();
+  ctx.rect(cr.x, cr.y, cr.w, cr.h);
+  ctx.clip();
+  ctx.drawImage(src, r.x, r.y, r.w, r.h);
+  ctx.restore();
+
+  if (clip.id === S.selectedClipId) drawCropHandles(r, cr);
+}
+
+const HSIZE = 6;
+
+function drawCropHandles(r, cr) {
+  const ctx = previewCtx;
+
+  // Dim outside crop
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.48)';
+  if (r.y < cr.y)           ctx.fillRect(r.x, r.y,        r.w, cr.y - r.y);
+  if (cr.y + cr.h < r.y + r.h) ctx.fillRect(r.x, cr.y + cr.h, r.w, r.y + r.h - cr.y - cr.h);
+  if (r.x < cr.x)           ctx.fillRect(r.x, cr.y,       cr.x - r.x, cr.h);
+  if (cr.x + cr.w < r.x + r.w) ctx.fillRect(cr.x + cr.w, cr.y, r.x + r.w - cr.x - cr.w, cr.h);
+  ctx.restore();
+
+  // Dashed border
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 3]);
+  ctx.strokeRect(cr.x, cr.y, cr.w, cr.h);
+
+  // Rule-of-thirds
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([]);
+  for (let i = 1; i < 3; i++) {
+    const gx = cr.x + cr.w * i / 3, gy = cr.y + cr.h * i / 3;
+    ctx.beginPath(); ctx.moveTo(gx, cr.y); ctx.lineTo(gx, cr.y + cr.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cr.x, gy); ctx.lineTo(cr.x + cr.w, gy); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Handles
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 1;
+  [
+    [cr.x,           cr.y          ],
+    [cr.x + cr.w,    cr.y          ],
+    [cr.x,           cr.y + cr.h   ],
+    [cr.x + cr.w,    cr.y + cr.h   ],
+    [cr.x + cr.w/2,  cr.y          ],
+    [cr.x + cr.w/2,  cr.y + cr.h   ],
+    [cr.x,           cr.y + cr.h/2 ],
+    [cr.x + cr.w,    cr.y + cr.h/2 ],
+  ].forEach(([hx, hy]) => {
+    ctx.fillRect(hx - HSIZE, hy - HSIZE, HSIZE * 2, HSIZE * 2);
+    ctx.strokeRect(hx - HSIZE, hy - HSIZE, HSIZE * 2, HSIZE * 2);
+  });
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PREVIEW CANVAS INTERACTION (pan + crop)
+// ═══════════════════════════════════════════════════════════════
+function getPreviewCoords(e) {
+  const rect = previewCv.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (previewCv.width  / rect.width),
+    y: (e.clientY - rect.top)  * (previewCv.height / rect.height),
+  };
+}
+
+function hitHandle(hx, hy, x, y) { return Math.abs(x - hx) < 12 && Math.abs(y - hy) < 12; }
+
+function getPreviewHit(x, y, clip) {
+  const m = getMediaById(clip.mediaId);
+  if (!m || m.type === 'audio') return null;
+  const t  = clip.transform || defaultTransform();
+  const r  = getFittedRect(m, t);
+  const cr = getCropRect(r, t);
+
+  if (hitHandle(cr.x,          cr.y,          x, y)) return 'crop-tl';
+  if (hitHandle(cr.x + cr.w,   cr.y,          x, y)) return 'crop-tr';
+  if (hitHandle(cr.x,          cr.y + cr.h,   x, y)) return 'crop-bl';
+  if (hitHandle(cr.x + cr.w,   cr.y + cr.h,   x, y)) return 'crop-br';
+  if (hitHandle(cr.x + cr.w/2, cr.y,          x, y)) return 'crop-t';
+  if (hitHandle(cr.x + cr.w/2, cr.y + cr.h,   x, y)) return 'crop-b';
+  if (hitHandle(cr.x,          cr.y + cr.h/2, x, y)) return 'crop-l';
+  if (hitHandle(cr.x + cr.w,   cr.y + cr.h/2, x, y)) return 'crop-r';
+  if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return 'pan';
+  return null;
+}
+
+const HIT_CURSOR = {
+  'crop-tl':'nw-resize','crop-tr':'ne-resize','crop-bl':'sw-resize','crop-br':'se-resize',
+  'crop-t':'n-resize','crop-b':'s-resize','crop-l':'w-resize','crop-r':'e-resize',
+  'pan':'grab',
+};
+
+let previewInteract = null;
+
+previewCv.addEventListener('pointermove', e => {
+  if (previewInteract) { onPreviewDrag(e); return; }
+  const clip = S.selectedClipId ? getClipById(S.selectedClipId) : null;
+  if (!clip) { previewCv.style.cursor = ''; return; }
+  const { x, y } = getPreviewCoords(e);
+  previewCv.style.cursor = HIT_CURSOR[getPreviewHit(x, y, clip)] || '';
+});
+
+previewCv.addEventListener('pointerdown', e => {
+  const clip = S.selectedClipId ? getClipById(S.selectedClipId) : null;
+  if (!clip) return;
+  const { x, y } = getPreviewCoords(e);
+  const hit = getPreviewHit(x, y, clip);
+  if (!hit) return;
+  e.preventDefault();
+  previewCv.setPointerCapture(e.pointerId);
+  const m = getMediaById(clip.mediaId);
+  const t = clip.transform;
+  previewInteract = {
+    hit, clip,
+    startX: x, startY: y,
+    startT: { ...t },
+    startR: getFittedRect(m, t),
+  };
+  previewCv.style.cursor = hit === 'pan' ? 'grabbing' : HIT_CURSOR[hit];
+});
+
+function onPreviewDrag(e) {
+  const { hit, clip, startX, startY, startT, startR } = previewInteract;
+  const { x, y } = getPreviewCoords(e);
+  const dx = x - startX, dy = y - startY;
+  const t  = clip.transform;
+  const maxCropW = startR.w - 10, maxCropH = startR.h - 10;
+
+  switch (hit) {
+    case 'pan':
+      t.panX = startT.panX + dx; t.panY = startT.panY + dy; break;
+    case 'crop-l':
+      t.cropL = Math.max(0, Math.min(startT.cropL + dx, maxCropW - startT.cropR)); break;
+    case 'crop-r':
+      t.cropR = Math.max(0, Math.min(startT.cropR - dx, maxCropW - startT.cropL)); break;
+    case 'crop-t':
+      t.cropT = Math.max(0, Math.min(startT.cropT + dy, maxCropH - startT.cropB)); break;
+    case 'crop-b':
+      t.cropB = Math.max(0, Math.min(startT.cropB - dy, maxCropH - startT.cropT)); break;
+    case 'crop-tl':
+      t.cropL = Math.max(0, Math.min(startT.cropL + dx, maxCropW - startT.cropR));
+      t.cropT = Math.max(0, Math.min(startT.cropT + dy, maxCropH - startT.cropB)); break;
+    case 'crop-tr':
+      t.cropR = Math.max(0, Math.min(startT.cropR - dx, maxCropW - startT.cropL));
+      t.cropT = Math.max(0, Math.min(startT.cropT + dy, maxCropH - startT.cropB)); break;
+    case 'crop-bl':
+      t.cropL = Math.max(0, Math.min(startT.cropL + dx, maxCropW - startT.cropR));
+      t.cropB = Math.max(0, Math.min(startT.cropB - dy, maxCropH - startT.cropT)); break;
+    case 'crop-br':
+      t.cropR = Math.max(0, Math.min(startT.cropR - dx, maxCropW - startT.cropL));
+      t.cropB = Math.max(0, Math.min(startT.cropB - dy, maxCropH - startT.cropT)); break;
+  }
+  drawPreviewFrame();
+}
+
+previewCv.addEventListener('pointerup', e => {
+  previewInteract = null;
+  previewCv.style.cursor = '';
+});
 
 // ═══════════════════════════════════════════════════════════════
 // AUDIO SYNC  (direct element approach — no AudioContext)
