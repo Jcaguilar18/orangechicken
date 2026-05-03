@@ -1,0 +1,437 @@
+<%- include('partials/header', { pageTitle: 'Video Editor — Orange Chicken' }) %>
+
+<div class="container" style="max-width:900px">
+  <section class="hero" style="padding-bottom:1.5rem">
+    <p class="hero-label">TOOLS</p>
+    <h1 class="hero-title" style="font-size:2.2rem">Video Editor</h1>
+    <p class="hero-sub">Trim, merge clips, add music, and export in TikTok, YouTube, or any format. 500 MB max per file.</p>
+  </section>
+  <div class="glow-line"></div>
+
+  <% if (!currentUser) { %>
+  <div class="glass-card" style="padding:2rem;text-align:center;margin-top:1.5rem">
+    <div style="font-size:2.5rem;margin-bottom:1rem">🎬</div>
+    <h3 style="color:#fff;margin-bottom:.5rem">Sign in to use the Video Editor</h3>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem">Free users get 1 export/day. PRO subscribers get unlimited.</p>
+    <a href="/login" class="btn btn-primary" style="margin-right:.75rem">Log In</a>
+    <a href="/register" class="btn btn-ghost">Join the Coop</a>
+  </div>
+  <%- include('partials/footer') %>
+  <% return %>
+  <% } %>
+
+  <!-- Usage notice -->
+  <div class="rate-limit-banner" style="margin-bottom:1.5rem">
+    <% if (isSubscriber) { %>
+      <span style="color:var(--amber)">✦</span> <strong style="color:var(--amber)">PRO</strong> — Unlimited exports
+    <% } else { %>
+      <span>◈</span> <strong>1</strong> free export/day &nbsp;·&nbsp; <a href="/subscribe" class="btn btn-ghost btn-sm">Upgrade to PRO →</a>
+    <% } %>
+  </div>
+
+  <!-- Step 1: Upload -->
+  <div class="glass-card ve-card" id="uploadCard">
+    <h3 class="ve-section-title">1 — Upload Clips</h3>
+    <div id="dropZone" class="ve-drop">
+      <div style="font-size:2.5rem;margin-bottom:.75rem">🎬</div>
+      <p style="color:#e2d5c3;margin:0 0 .3rem">Drag & drop video files here</p>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:0 0 1rem">MP4, MOV, MKV, AVI, WebM — up to 500 MB each</p>
+      <label class="btn btn-primary" style="cursor:pointer">
+        Choose Videos
+        <input type="file" id="videoInput" accept="video/*" multiple style="display:none" onchange="handleVideoFiles(this.files)" />
+      </label>
+    </div>
+
+    <div id="clipList" style="margin-top:1rem"></div>
+
+    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+      <h4 style="color:var(--text-muted);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.75rem">Background Music <span style="font-weight:400">(optional)</span></h4>
+      <div id="musicDropZone" class="ve-drop ve-drop-sm">
+        <span style="font-size:1.5rem">🎵</span>
+        <span style="color:var(--text-muted);font-size:.85rem;margin:0 .75rem">Drop audio file or</span>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+          Choose Audio
+          <input type="file" id="musicInput" accept="audio/*" style="display:none" onchange="handleMusicFile(this.files[0])" />
+        </label>
+      </div>
+      <div id="musicInfo" style="display:none;margin-top:.6rem;font-size:.85rem;color:#e2d5c3"></div>
+    </div>
+  </div>
+
+  <!-- Step 2: Settings -->
+  <div class="glass-card ve-card" id="settingsCard" style="display:none">
+    <h3 class="ve-section-title">2 — Export Settings</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:2rem">
+      <div style="flex:1;min-width:200px">
+        <label class="ve-label">Output Format</label>
+        <div class="cite-pill-group" id="formatGroup">
+          <button class="cite-pill active" data-val="tiktok">TikTok 9:16</button>
+          <button class="cite-pill" data-val="youtube">YouTube 16:9</button>
+          <button class="cite-pill" data-val="square">Square 1:1</button>
+          <button class="cite-pill" data-val="original">Original</button>
+        </div>
+      </div>
+      <div style="flex:1;min-width:180px" id="audioModeWrap">
+        <label class="ve-label">Audio</label>
+        <div class="cite-pill-group" id="audioModeGroup">
+          <button class="cite-pill active" data-val="original">Keep original</button>
+          <button class="cite-pill" data-val="replace">Replace with music</button>
+          <button class="cite-pill" data-val="mix">Mix both</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" id="processBtn" onclick="startProcessing()" style="padding:.75rem 2rem">
+        Export Video
+      </button>
+      <span id="processStatus" style="font-size:.85rem;color:var(--text-muted)"></span>
+    </div>
+  </div>
+
+  <!-- Step 3: Download -->
+  <div class="glass-card ve-card" id="downloadCard" style="display:none">
+    <h3 class="ve-section-title">3 — Download</h3>
+    <div id="downloadArea" style="text-align:center;padding:1.5rem 0">
+      <div style="font-size:3rem;margin-bottom:1rem">✅</div>
+      <p style="color:#e2d5c3;margin-bottom:1.5rem">Your video is ready!</p>
+      <a id="downloadLink" class="btn btn-primary" style="padding:.75rem 2.5rem" download>Download Video</a>
+    </div>
+  </div>
+</div>
+
+<style>
+.ve-card { padding: 1.5rem; margin-bottom: 1.25rem; }
+.ve-section-title { color: var(--amber); font-family: 'Rye', serif; font-size: .85rem; letter-spacing: .08em; margin-bottom: 1.25rem; }
+.ve-label { display: block; font-size: .78rem; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; font-weight: 600; }
+.ve-drop {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: border-color .2s;
+  cursor: default;
+}
+.ve-drop.drag-over { border-color: rgba(200,110,20,.8); background: rgba(200,110,20,.05); }
+.ve-drop-sm { padding: .75rem 1rem; display: flex; align-items: center; justify-content: center; gap: 0; }
+.clip-row {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: .75rem;
+}
+.clip-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; flex-wrap: wrap; }
+.clip-filename { color: #e2d5c3; font-size: .9rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-size { color: var(--text-muted); font-size: .78rem; flex-shrink: 0; }
+.clip-video { width: 100%; max-height: 220px; border-radius: 6px; background: #000; display: block; margin-bottom: .75rem; }
+.trim-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+.trim-field { display: flex; flex-direction: column; gap: .3rem; }
+.trim-field label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.trim-input {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .4rem .7rem;
+  color: #fff;
+  font-family: monospace;
+  font-size: .88rem;
+  width: 90px;
+}
+.trim-input:focus { outline: none; border-color: rgba(200,110,20,.6); }
+.clip-order-btns { display: flex; gap: .3rem; }
+.order-btn {
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  width: 28px; height: 28px;
+  cursor: pointer; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.order-btn:hover { color: #fff; border-color: rgba(200,110,20,.5); }
+.remove-clip-btn {
+  background: rgba(255,60,60,.12);
+  border: 1px solid rgba(255,60,60,.25);
+  color: #ff6b6b;
+  border-radius: 6px;
+  padding: .25rem .6rem;
+  cursor: pointer;
+  font-size: .78rem;
+}
+.remove-clip-btn:hover { background: rgba(255,60,60,.2); }
+.cite-pill-group { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .3rem; }
+.cite-pill { padding: .35rem .85rem; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: .8rem; cursor: pointer; transition: all .18s; }
+.cite-pill:hover { border-color: rgba(200,110,20,.5); color: #fff; }
+.cite-pill.active { background: rgba(200,110,20,.2); border-color: rgba(200,110,20,.7); color: var(--amber); }
+.progress-ring { display: inline-block; margin-left: .5rem; animation: spin 1.2s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+const clips = [];    // { sourceId, filename, size, startTime, endTime, el }
+let musicSourceId = null;
+let currentFormat    = 'tiktok';
+let currentAudioMode = 'original';
+
+// ── Pill groups ────────────────────────────────────────────────────
+document.getElementById('formatGroup').addEventListener('click', e => {
+  if (!e.target.dataset.val) return;
+  document.querySelectorAll('#formatGroup .cite-pill').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentFormat = e.target.dataset.val;
+});
+document.getElementById('audioModeGroup').addEventListener('click', e => {
+  if (!e.target.dataset.val) return;
+  document.querySelectorAll('#audioModeGroup .cite-pill').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentAudioMode = e.target.dataset.val;
+});
+
+// ── Drag & drop ────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  handleVideoFiles(e.dataTransfer.files);
+});
+const musicDrop = document.getElementById('musicDropZone');
+musicDrop.addEventListener('dragover', e => { e.preventDefault(); musicDrop.classList.add('drag-over'); });
+musicDrop.addEventListener('dragleave', () => musicDrop.classList.remove('drag-over'));
+musicDrop.addEventListener('drop', e => {
+  e.preventDefault(); musicDrop.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleMusicFile(e.dataTransfer.files[0]);
+});
+
+function fmtSize(bytes) {
+  if (bytes > 1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+  return (bytes/1024).toFixed(0) + ' KB';
+}
+
+function fmtTime(secs) {
+  if (isNaN(secs)) return '0:00';
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function parseSecs(str) {
+  str = (str || '').trim();
+  if (str.includes(':')) {
+    const parts = str.split(':').map(Number);
+    return parts.length === 2 ? parts[0]*60 + parts[1] : parts[0]*3600 + parts[1]*60 + parts[2];
+  }
+  return parseFloat(str) || 0;
+}
+
+// ── Video upload ───────────────────────────────────────────────────
+async function handleVideoFiles(files) {
+  const MAX = 500 * 1024 * 1024;
+  const valid = Array.from(files).filter(f => {
+    if (f.size > MAX) { alert(`"${f.name}" exceeds 500 MB limit.`); return false; }
+    return f.type.startsWith('video/');
+  });
+  if (!valid.length) return;
+
+  const fd = new FormData();
+  valid.forEach(f => fd.append('files', f));
+
+  const res = await fetch('/tools/video/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.ok) return alert('Upload failed: ' + data.error);
+
+  for (const src of data.sources) {
+    if (src.isAudio) continue;
+    addClip(src);
+  }
+  updateUI();
+}
+
+function addClip(src) {
+  const idx  = clips.length;
+  const row  = document.createElement('div');
+  row.className = 'clip-row';
+  row.id = 'clip-' + src.id;
+  row.innerHTML = `
+    <div class="clip-header">
+      <span class="clip-order-btns">
+        <button class="order-btn" onclick="moveClip('${src.id}',-1)" title="Move up">↑</button>
+        <button class="order-btn" onclick="moveClip('${src.id}',1)" title="Move down">↓</button>
+      </span>
+      <span class="clip-filename">${src.filename}</span>
+      <span class="clip-size">${fmtSize(src.size)}</span>
+      <button class="remove-clip-btn" onclick="removeClip('${src.id}')">Remove</button>
+    </div>
+    <video class="clip-video" id="vid-${src.id}" src="/tools/video/source/${src.id}" preload="metadata" controls></video>
+    <div class="trim-controls">
+      <div class="trim-field">
+        <label>Start</label>
+        <input type="text" class="trim-input" id="start-${src.id}" value="0:00" placeholder="0:00" onchange="syncTrim('${src.id}')" />
+      </div>
+      <div class="trim-field">
+        <label>End</label>
+        <input type="text" class="trim-input" id="end-${src.id}" value="" placeholder="full" onchange="syncTrim('${src.id}')" />
+      </div>
+      <div class="trim-field">
+        <label>Duration</label>
+        <span id="dur-${src.id}" style="color:var(--text-muted);font-size:.85rem;padding-top:.4rem">—</span>
+      </div>
+    </div>
+  `;
+  document.getElementById('clipList').appendChild(row);
+
+  const vid = document.getElementById('vid-' + src.id);
+  vid.addEventListener('loadedmetadata', () => {
+    const d = vid.duration;
+    document.getElementById('end-' + src.id).value = fmtTime(d);
+    document.getElementById('end-' + src.id).placeholder = fmtTime(d);
+    updateDur(src.id);
+  });
+
+  clips.push({ sourceId: src.id, filename: src.filename, size: src.size, startTime: 0, endTime: null });
+}
+
+function syncTrim(id) {
+  const clip = clips.find(c => c.sourceId === id);
+  if (!clip) return;
+  clip.startTime = parseSecs(document.getElementById('start-' + id).value);
+  const endVal   = document.getElementById('end-' + id).value.trim();
+  clip.endTime   = endVal ? parseSecs(endVal) : null;
+  updateDur(id);
+}
+
+function updateDur(id) {
+  const clip = clips.find(c => c.sourceId === id);
+  if (!clip) return;
+  const vid  = document.getElementById('vid-' + id);
+  const total = vid?.duration || 0;
+  const end   = clip.endTime || total;
+  const dur   = Math.max(0, end - clip.startTime);
+  document.getElementById('dur-' + id).textContent = fmtTime(dur);
+}
+
+function removeClip(id) {
+  const idx = clips.findIndex(c => c.sourceId === id);
+  if (idx >= 0) clips.splice(idx, 1);
+  const row = document.getElementById('clip-' + id);
+  if (row) row.remove();
+  updateUI();
+}
+
+function moveClip(id, dir) {
+  const idx = clips.findIndex(c => c.sourceId === id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= clips.length) return;
+  [clips[idx], clips[newIdx]] = [clips[newIdx], clips[idx]];
+  const list = document.getElementById('clipList');
+  const rows = Array.from(list.querySelectorAll('.clip-row'));
+  if (dir === -1 && rows[idx] && rows[idx].previousElementSibling)
+    list.insertBefore(rows[idx], rows[idx].previousElementSibling);
+  else if (dir === 1 && rows[idx] && rows[idx].nextElementSibling?.nextElementSibling)
+    list.insertBefore(rows[idx], rows[idx].nextElementSibling.nextElementSibling);
+  else if (dir === 1)
+    list.appendChild(rows[idx]);
+}
+
+// ── Music upload ───────────────────────────────────────────────────
+async function handleMusicFile(file) {
+  if (!file.type.startsWith('audio/')) return alert('Please upload an audio file.');
+  if (file.size > 100 * 1024 * 1024) return alert('Audio file must be under 100 MB.');
+  const fd = new FormData();
+  fd.append('files', file);
+  const res  = await fetch('/tools/video/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.ok) return alert('Audio upload failed.');
+  musicSourceId = data.sources[0].id;
+  document.getElementById('musicInfo').style.display = '';
+  document.getElementById('musicInfo').innerHTML = `🎵 <strong>${file.name}</strong> (${fmtSize(file.size)}) &nbsp;<button onclick="removeMusic()" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:.82rem">Remove</button>`;
+  // Show audio mode options
+  document.getElementById('audioModeWrap').style.display = '';
+}
+
+function removeMusic() {
+  musicSourceId = null;
+  document.getElementById('musicInfo').style.display = 'none';
+  document.getElementById('musicInfo').innerHTML = '';
+  document.getElementById('audioModeWrap').style.display = 'none';
+  document.querySelectorAll('#audioModeGroup .cite-pill').forEach((b,i) => b.classList.toggle('active', i===0));
+  currentAudioMode = 'original';
+}
+
+// ── UI state ───────────────────────────────────────────────────────
+function updateUI() {
+  document.getElementById('settingsCard').style.display = clips.length ? '' : 'none';
+  document.getElementById('audioModeWrap').style.display = musicSourceId ? '' : 'none';
+}
+
+// ── Process ────────────────────────────────────────────────────────
+async function startProcessing() {
+  if (!clips.length) return alert('Please add at least one video clip.');
+
+  // Sync trim values from inputs
+  clips.forEach(c => {
+    c.startTime = parseSecs(document.getElementById('start-' + c.sourceId)?.value || '0');
+    const ev    = document.getElementById('end-'   + c.sourceId)?.value.trim();
+    c.endTime   = ev ? parseSecs(ev) : null;
+  });
+
+  const btn = document.getElementById('processBtn');
+  const status = document.getElementById('processStatus');
+  btn.disabled = true;
+  status.innerHTML = '<span class="progress-ring">⟳</span> Processing…';
+
+  const payload = {
+    clips:     clips.map(c => ({ sourceId: c.sourceId, startTime: c.startTime, endTime: c.endTime })),
+    musicId:   musicSourceId,
+    audioMode: currentAudioMode,
+    format:    currentFormat,
+  };
+
+  try {
+    const resp = await fetch('/tools/video/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      status.innerHTML = `<span style="color:#ff6b6b">${data.error}</span>`;
+      btn.disabled = false;
+      return;
+    }
+    pollStatus(data.jobId, btn, status);
+  } catch (e) {
+    status.innerHTML = '<span style="color:#ff6b6b">Network error. Please try again.</span>';
+    btn.disabled = false;
+  }
+}
+
+function pollStatus(jobId, btn, status) {
+  const interval = setInterval(async () => {
+    try {
+      const resp = await fetch('/tools/video/status/' + jobId);
+      const data = await resp.json();
+      if (data.status === 'done') {
+        clearInterval(interval);
+        btn.disabled = false;
+        status.innerHTML = '';
+        document.getElementById('downloadCard').style.display = '';
+        const link = document.getElementById('downloadLink');
+        link.href     = '/tools/download/' + data.resultId;
+        link.download = data.filename;
+        document.getElementById('downloadCard').scrollIntoView({ behavior: 'smooth' });
+      } else if (data.status === 'error') {
+        clearInterval(interval);
+        btn.disabled = false;
+        status.innerHTML = `<span style="color:#ff6b6b">Error: ${data.error}</span>`;
+      }
+    } catch (_) {}
+  }, 2500);
+}
+
+// Init
+updateUI();
+</script>
+
+<%- include('partials/footer') %>

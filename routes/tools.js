@@ -16,6 +16,7 @@ const archiver  = require('archiver');
 
 const { ToolUsage, Subscription } = require('../models');
 const { checkSpace, cleanStale }   = require('../utils/storage');
+const citation = require('../utils/citation');
 
 const router = express.Router();
 
@@ -76,6 +77,15 @@ const toolStorage = multer.diskStorage({
 });
 const toolUpload = multer({ storage: toolStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
+const videoUpload = multer({
+  storage: toolStorage,
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /^(video\/|audio\/)/.test(file.mimetype);
+    ok ? cb(null, true) : cb(new Error('Video/audio files only.'));
+  },
+});
+
 // ── Rate limit helpers ─────────────────────────────────────────────
 async function checkRateLimit(req) {
   if (req.session.user) {
@@ -131,6 +141,56 @@ function cleanFile(filePath) {
 function rateLimitErr() {
   return { ok: false, error: 'Daily limit reached (3 uses/day). <a href="/subscribe" style="color:var(--cyan)">Subscribe for unlimited access →</a>' };
 }
+
+function toolLimitErr(limit) {
+  return { ok: false, error: `Daily limit reached (${limit} use${limit === 1 ? '' : 's'}/day). <a href="/subscribe" style="color:var(--amber)">Upgrade to PRO for unlimited →</a>` };
+}
+
+async function checkToolLimit(req, toolName, limit) {
+  if (req.session.user) {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const sub = await Subscription.findOne({ where: { userId: req.session.user.id, status: 'active' } });
+      if (sub && sub.endDate >= today) return { allowed: true, unlimited: true };
+    } catch (_) {}
+  }
+  const today  = new Date().toISOString().slice(0, 10);
+  const userId = req.session.user?.id || null;
+  const ip     = (req.ip || '').replace('::ffff:', '');
+  try {
+    const where = userId
+      ? { userId, date: today, toolName }
+      : { userId: null, ipAddress: ip, date: today, toolName };
+    const [usage] = await ToolUsage.findOrCreate({
+      where,
+      defaults: { userId, ipAddress: ip || '0.0.0.0', date: today, toolName, count: 0 },
+    });
+    if (usage.count >= limit) return { allowed: false, unlimited: false };
+    await usage.increment('count');
+    return { allowed: true, unlimited: false };
+  } catch (err) {
+    console.error('checkToolLimit error:', err);
+    return { allowed: true, unlimited: false };
+  }
+}
+
+// ── Video job tracker ──────────────────────────────────────────────
+const videoJobs = new Map();
+// source files uploaded by users (not yet processed)
+const videoSources = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, info] of videoSources) {
+    if (info.expires < now) {
+      fs.unlink(info.filePath, () => {});
+      videoSources.delete(id);
+    }
+  }
+  for (const [id, job] of videoJobs) {
+    if (job.expires < now) videoJobs.delete(id);
+  }
+}, 5 * 60 * 1000);
 
 // ── Tools landing page ─────────────────────────────────────────────
 router.get('/tools', async (req, res) => {
@@ -437,5 +497,173 @@ router.get('/tools/story-maker', async (req, res) => {
 router.get('/tools/citation-generator', (req, res) => {
   res.render('tools-citation', { pageTitle: 'Citation Generator — Orange Chicken' });
 });
+
+router.post('/tools/citation/generate', express.json(), async (req, res) => {
+  const rl = await checkToolLimit(req, 'citation', 3);
+  if (!rl.allowed) return res.json(toolLimitErr(3));
+  try {
+    const result = citation.generate(req.body);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('Citation generate error:', err);
+    res.json({ ok: false, error: 'Failed to generate citation.' });
+  }
+});
+
+// ── Video Editor ───────────────────────────────────────────────────
+router.get('/tools/video-editor', async (req, res) => {
+  res.render('tools-video', { pageTitle: 'Video Editor — Orange Chicken' });
+});
+
+// Upload video/audio source files
+router.post('/tools/video/upload', videoUpload.array('files', 10), async (req, res) => {
+  if (!req.files || req.files.length === 0) return res.json({ ok: false, error: 'No files uploaded.' });
+  const sources = req.files.map(f => {
+    const id = crypto.randomBytes(12).toString('hex');
+    videoSources.set(id, {
+      filePath: f.path,
+      filename: f.originalname,
+      mimeType: f.mimetype,
+      size: f.size,
+      expires: Date.now() + 2 * 60 * 60 * 1000,
+    });
+    return { id, filename: f.originalname, size: f.size, isAudio: f.mimetype.startsWith('audio/') };
+  });
+  res.json({ ok: true, sources });
+});
+
+// Serve source file for browser preview
+router.get('/tools/video/source/:id', (req, res) => {
+  const info = videoSources.get(req.params.id);
+  if (!info || !fs.existsSync(info.filePath)) return res.status(404).send('Not found.');
+  res.setHeader('Content-Type', info.mimeType);
+  res.setHeader('Accept-Ranges', 'bytes');
+  const stat = fs.statSync(info.filePath);
+  const range = req.headers.range;
+  if (range) {
+    const [startStr, endStr] = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(startStr, 10);
+    const end   = endStr ? parseInt(endStr, 10) : stat.size - 1;
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+    res.setHeader('Content-Length', end - start + 1);
+    fs.createReadStream(info.filePath, { start, end }).pipe(res);
+  } else {
+    res.setHeader('Content-Length', stat.size);
+    fs.createReadStream(info.filePath).pipe(res);
+  }
+});
+
+// Process video
+router.post('/tools/video/process', express.json({ limit: '64kb' }), async (req, res) => {
+  const rl = await checkToolLimit(req, 'video', 1);
+  if (!rl.allowed) return res.json(toolLimitErr(1));
+
+  const { clips, musicId, audioMode, format } = req.body;
+  if (!clips || !clips.length) return res.json({ ok: false, error: 'No clips provided.' });
+
+  // Validate all source IDs exist
+  for (const c of clips) {
+    if (!videoSources.has(c.sourceId)) return res.json({ ok: false, error: 'One or more source files expired. Please re-upload.' });
+  }
+
+  const jobId = crypto.randomBytes(12).toString('hex');
+  videoJobs.set(jobId, { status: 'processing', expires: Date.now() + 60 * 60 * 1000 });
+
+  // Run processing async
+  processVideo({ clips, musicId, audioMode, format, jobId }).catch(err => {
+    console.error('Video processing error:', err);
+    videoJobs.set(jobId, { status: 'error', error: err.message, expires: Date.now() + 30 * 60 * 1000 });
+  });
+
+  res.json({ ok: true, jobId });
+});
+
+// Job status poll
+router.get('/tools/video/status/:jobId', (req, res) => {
+  const job = videoJobs.get(req.params.jobId);
+  if (!job) return res.json({ status: 'not_found' });
+  if (job.status === 'done') return res.json({ status: 'done', resultId: job.resultId, filename: job.filename });
+  if (job.status === 'error') return res.json({ status: 'error', error: job.error });
+  res.json({ status: 'processing' });
+});
+
+async function processVideo({ clips, musicId, audioMode, format, jobId }) {
+  const ts = Date.now();
+  const tmpFiles = [];
+
+  function getScaleFilter(fmt) {
+    if (fmt === 'tiktok')   return 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1';
+    if (fmt === 'youtube')  return 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1';
+    if (fmt === 'square')   return 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1';
+    return null;
+  }
+
+  try {
+    // Step 1: Trim + scale each clip
+    const trimmedPaths = [];
+    for (let i = 0; i < clips.length; i++) {
+      const c = clips[i];
+      const src = videoSources.get(c.sourceId);
+      const outPath = `/tmp/uploads/trim_${ts}_${i}.mp4`;
+      tmpFiles.push(outPath);
+
+      const startSec = Math.max(0, parseFloat(c.startTime) || 0);
+      const endSec   = parseFloat(c.endTime) || null;
+      const timeArgs = endSec !== null ? `-ss ${startSec} -to ${endSec}` : (startSec > 0 ? `-ss ${startSec}` : '');
+      const scaleFilter = getScaleFilter(format);
+      const vfArg = scaleFilter ? `-vf "${scaleFilter}"` : '';
+
+      const cmd = `ffmpeg -y ${timeArgs} -i "${src.filePath}" ${vfArg} -c:v libx264 -preset fast -crf 23 -c:a aac -ac 2 -ar 44100 "${outPath}"`;
+      await execAsync(cmd, { timeout: 5 * 60 * 1000 });
+      trimmedPaths.push(outPath);
+    }
+
+    // Step 2: Concatenate clips
+    let videoPath;
+    if (trimmedPaths.length === 1) {
+      videoPath = trimmedPaths[0];
+    } else {
+      const listPath = `/tmp/uploads/concat_${ts}.txt`;
+      const finalConcatPath = `/tmp/uploads/concat_${ts}.mp4`;
+      tmpFiles.push(listPath, finalConcatPath);
+      fs.writeFileSync(listPath, trimmedPaths.map(p => `file '${p}'`).join('\n'));
+      await execAsync(`ffmpeg -y -f concat -safe 0 -i "${listPath}" -c copy "${finalConcatPath}"`, { timeout: 5 * 60 * 1000 });
+      videoPath = finalConcatPath;
+    }
+
+    // Step 3: Add music
+    const finalPath = `/tmp/uploads/video_final_${ts}.mp4`;
+    tmpFiles.push(finalPath);
+
+    if (musicId && videoSources.has(musicId)) {
+      const musicSrc = videoSources.get(musicId);
+      if (audioMode === 'replace') {
+        await execAsync(`ffmpeg -y -i "${videoPath}" -i "${musicSrc.filePath}" -map 0:v -map 1:a -shortest "${finalPath}"`, { timeout: 5 * 60 * 1000 });
+      } else {
+        // mix
+        await execAsync(`ffmpeg -y -i "${videoPath}" -i "${musicSrc.filePath}" -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[aout]" -map 0:v -map "[aout]" -shortest "${finalPath}"`, { timeout: 5 * 60 * 1000 });
+      }
+    } else {
+      // No music change — just rename
+      fs.renameSync(videoPath, finalPath);
+    }
+
+    // Save as temp result
+    const formatLabels = { tiktok: 'tiktok_9x16', youtube: 'youtube_16x9', square: 'square_1x1', original: 'original' };
+    const label = formatLabels[format] || 'video';
+    const result = saveTempResult(finalPath, `orangechicken_${label}_${ts}.mp4`, 'video/mp4');
+
+    // Clean temp trim files (not finalPath, that's managed by tempResults)
+    for (const p of tmpFiles) {
+      if (p !== finalPath) fs.unlink(p, () => {});
+    }
+
+    videoJobs.set(jobId, { status: 'done', resultId: result.id, filename: result.filename, expires: Date.now() + 30 * 60 * 1000 });
+  } catch (err) {
+    for (const p of tmpFiles) fs.unlink(p, () => {});
+    throw err;
+  }
+}
 
 module.exports = { router, tempResults };

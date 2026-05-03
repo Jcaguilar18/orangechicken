@@ -164,6 +164,7 @@ async function start() {
     'ALTER TABLE "Subscriptions" ADD COLUMN "paymentMethod" VARCHAR(20) NOT NULL DEFAULT \'gcash\'',
     'ALTER TABLE "Subscriptions" ADD COLUMN "plan" VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
     'ALTER TABLE "Subscriptions" ADD COLUMN "welcomeSeen" BOOLEAN NOT NULL DEFAULT 0',
+    'ALTER TABLE "ToolUsages" ADD COLUMN "toolName" VARCHAR(40)',
   ];
   for (const sql of patches) {
     try { await sequelize.query(sql); } catch (_) {}

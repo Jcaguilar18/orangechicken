@@ -164,8 +164,10 @@
       <input type="text" id="doi" class="cite-input" placeholder="https://doi.org/... or https://..." />
     </div>
 
+    <div id="citeAlert" style="display:none;margin-top:1rem;padding:.75rem 1rem;background:rgba(255,100,100,.08);border:1px solid rgba(255,100,100,.3);border-radius:8px;color:#ff6b6b;font-size:.88rem"></div>
+
     <div style="margin-top:1.5rem">
-      <button class="btn btn-primary" onclick="generateCitation()" style="padding:.75rem 2rem">Generate Citation</button>
+      <button id="generateBtn" class="btn btn-primary" onclick="generateCitation()" style="padding:.75rem 2rem">Generate Citation</button>
       <button class="btn btn-ghost" onclick="clearAll()" style="margin-left:.75rem">Clear</button>
     </div>
   </div>
@@ -363,32 +365,10 @@ function updateVisibility() {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
-const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const MONTHS_MLA   = ['Jan.','Feb.','Mar.','Apr.','May','June','July','Aug.','Sept.','Oct.','Nov.','Dec.'];
-
-function resolveMonth(raw, fmt) {
-  if (!raw) return '';
-  const n = parseInt(raw, 10);
-  if (!isNaN(n) && n >= 1 && n <= 12) {
-    return fmt === 'mla' ? MONTHS_MLA[n - 1] : MONTHS_FULL[n - 1];
-  }
-  // Accept month name
-  const idx = MONTHS_FULL.findIndex(m => m.toLowerCase().startsWith(raw.toLowerCase().substring(0, 3)));
-  if (idx >= 0) return fmt === 'mla' ? MONTHS_MLA[idx] : MONTHS_FULL[idx];
-  return raw;
-}
-
-function initials(name) {
-  if (!name) return '';
-  return name.split(/\s+/).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
-}
-
-function italics(text) { return text ? `*${text}*` : ''; }
-
-// Format author list for each style
 function formatAuthors(authors, style) {
   if (!authors.length) return '';
   if (style === 'apa') {
+    const initials = n => n.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + '.').join(' ');
     const fmt = a => {
       const last  = a.last  || a.first || '';
       const first = a.last  ? a.first  : '';
@@ -458,167 +438,66 @@ function buildInText(authors, creatorName, year, fullDate, pageNum, style) {
   return '';
 }
 
-// ── Main generator ─────────────────────────────────────────────────
-function generateCitation() {
-  const s = currentStyle, t = currentType;
-  const authors  = getAuthors();
-  const creator  = document.getElementById('creatorName')?.value.trim() || '';
-  const year     = document.getElementById('year')?.value.trim() || '';
-  const dYear    = document.getElementById('dateYear')?.value.trim()  || '';
-  const dMonth   = document.getElementById('dateMonth')?.value.trim() || '';
-  const dDay     = document.getElementById('dateDay')?.value.trim()   || '';
-  const title    = document.getElementById('title')?.value.trim()     || '';
-  const subtitle = document.getElementById('subtitle')?.value.trim()  || '';
-  const edition  = document.getElementById('edition')?.value.trim()   || '';
-  const publisher= document.getElementById('publisher')?.value.trim() || '';
-  const place    = document.getElementById('place')?.value.trim()     || '';
-  const journal  = document.getElementById('journalName')?.value.trim() || '';
-  const volume   = document.getElementById('volume')?.value.trim()    || '';
-  const issue    = document.getElementById('issue')?.value.trim()     || '';
-  const pages    = document.getElementById('pages')?.value.trim()     || '';
-  const magPages = document.getElementById('magPages')?.value.trim()  || '';
-  const siteName = document.getElementById('siteName')?.value.trim()  || '';
-  const platform = document.getElementById('platform')?.value.trim()  || '';
-  const institution = document.getElementById('institution')?.value.trim() || '';
-  const reportType  = document.getElementById('reportType')?.value.trim()  || '';
-  const doi      = document.getElementById('doi')?.value.trim()       || '';
-  const pageNum  = document.getElementById('pageNum')?.value.trim()   || '';
-  const aDay     = document.getElementById('accessDay')?.value.trim()   || '';
-  const aMonth   = document.getElementById('accessMonth')?.value.trim() || '';
-  const aYear    = document.getElementById('accessYear')?.value.trim()  || '';
+// ── Main generator (calls server) ─────────────────────────────────
+async function generateCitation() {
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
 
-  const fd  = { year: dYear, month: dMonth, day: dDay };
-  const y   = year || dYear || 'n.d.';
-  const au  = formatAuthors(authors, s);
-  const fullTitle = subtitle ? title + ': ' + subtitle : title;
+  const payload = {
+    style: currentStyle, type: currentType,
+    authors:     getAuthors(),
+    creator:     document.getElementById('creatorName')?.value.trim()   || '',
+    year:        document.getElementById('year')?.value.trim()          || '',
+    dYear:       document.getElementById('dateYear')?.value.trim()      || '',
+    dMonth:      document.getElementById('dateMonth')?.value.trim()     || '',
+    dDay:        document.getElementById('dateDay')?.value.trim()       || '',
+    title:       document.getElementById('title')?.value.trim()         || '',
+    subtitle:    document.getElementById('subtitle')?.value.trim()      || '',
+    edition:     document.getElementById('edition')?.value.trim()       || '',
+    publisher:   document.getElementById('publisher')?.value.trim()     || '',
+    place:       document.getElementById('place')?.value.trim()         || '',
+    journalName: document.getElementById('journalName')?.value.trim()   || '',
+    volume:      document.getElementById('volume')?.value.trim()        || '',
+    issue:       document.getElementById('issue')?.value.trim()         || '',
+    pages:       document.getElementById('pages')?.value.trim()         || '',
+    magPages:    document.getElementById('magPages')?.value.trim()      || '',
+    siteName:    document.getElementById('siteName')?.value.trim()      || '',
+    platform:    document.getElementById('platform')?.value.trim()      || '',
+    institution: document.getElementById('institution')?.value.trim()   || '',
+    reportType:  document.getElementById('reportType')?.value.trim()    || '',
+    doi:         document.getElementById('doi')?.value.trim()           || '',
+    pageNum:     document.getElementById('pageNum')?.value.trim()       || '',
+    aDay:        document.getElementById('accessDay')?.value.trim()     || '',
+    aMonth:      document.getElementById('accessMonth')?.value.trim()   || '',
+    aYear:       document.getElementById('accessYear')?.value.trim()    || '',
+  };
 
-  let full = '', inText = '';
-
-  inText = buildInText(authors, creator, year, fd, pageNum, s);
-
-  // ── APA 7 ──────────────────────────────────────────────────────
-  if (s === 'apa') {
-    const auStr = au || (t === 'video' ? creator : '');
-    const edStr = edition ? ` (${edition} ed.)` : '';
-    const doiStr = doi ? `\n${doi}` : '';
-    const mFull = resolveMonth(dMonth, 'apa');
-    const dateStr = dYear ? (mFull ? `${dYear}, ${mFull}${dDay ? ' ' + dDay : ''}` : dYear) : 'n.d.';
-
-    if (t === 'book') {
-      full = `${auStr}${auStr ? ' ' : ''}(${y}). *${fullTitle}*${edStr}. ${publisher}.${doiStr}`;
-    } else if (t === 'journal') {
-      const volStr   = volume ? `, *${volume}*` : '';
-      const issueStr = issue  ? `(${issue})`    : '';
-      const pgStr    = pages  ? `, ${pages}`    : '';
-      full = `${auStr}${auStr ? ' ' : ''}(${y}). ${title}.${journal ? ' *' + journal + '*' : ''}${volStr}${issueStr}${pgStr}. ${doiStr || 'https://doi.org/xxxxx'}`;
-    } else if (t === 'website') {
-      full = `${auStr}${auStr ? ' ' : ''}(${dateStr}). *${title}*. ${siteName}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'magazine') {
-      const mFull2 = resolveMonth(dMonth, 'apa');
-      const magDate = dYear ? `${dYear}, ${mFull2}${dDay ? ' ' + dDay : ''}` : 'n.d.';
-      const pgStr = magPages ? `, ${magPages}` : '';
-      full = `${auStr}${auStr ? ' ' : ''}(${magDate}). ${title}. *${publisher}*${pgStr}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'video') {
-      const mFull3 = resolveMonth(dMonth, 'apa');
-      const vDate = dYear ? `${dYear}, ${mFull3}${dDay ? ' ' + dDay : ''}` : 'n.d.';
-      full = `${creator} [${creator}]. (${vDate}). *${title}* [Video]. ${platform}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'report') {
-      const typeStr = reportType ? ` [${reportType}${institution ? ', ' + institution : ''}]` : (institution ? ` [${institution}]` : '');
-      full = `${auStr}${auStr ? ' ' : ''}(${y}). *${fullTitle}*${typeStr}.${doiStr}`;
+  try {
+    const resp = await fetch('/tools/citation/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      document.getElementById('citeAlert').innerHTML = data.error;
+      document.getElementById('citeAlert').style.display = '';
+      document.getElementById('resultsSection').style.display = 'none';
+    } else {
+      document.getElementById('citeAlert').style.display = 'none';
+      document.getElementById('fullCitationOut').textContent = data.full;
+      document.getElementById('inTextOut').textContent = data.inText;
+      document.getElementById('resultsSection').style.display = '';
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+  } catch (e) {
+    document.getElementById('citeAlert').textContent = 'Network error. Please try again.';
+    document.getElementById('citeAlert').style.display = '';
   }
 
-  // ── MLA 9 ──────────────────────────────────────────────────────
-  if (s === 'mla') {
-    const mMla = resolveMonth(dMonth, 'mla');
-    const dateStr = [dDay, mMla, dYear].filter(Boolean).join(' ');
-
-    if (t === 'book') {
-      const edStr = edition ? `, ${edition} ed.` : '';
-      full = `${au}${au ? '. ' : ''}*${fullTitle}*. ${publisher}, ${y}${edStr}.`;
-    } else if (t === 'journal') {
-      const volStr   = volume ? `vol. ${volume}` : '';
-      const issueStr = issue  ? `no. ${issue}`   : '';
-      const pgStr    = pages  ? `pp. ${pages}`   : '';
-      const parts = [journal ? `*${journal}*` : '', volStr, issueStr, y, pgStr].filter(Boolean).join(', ');
-      full = `${au}${au ? '. ' : ''}"${title}." ${parts}${doi ? ',\n' + doi : ''}.`;
-    } else if (t === 'website') {
-      const accessed = aDay && aMonth && aYear ? ` Accessed ${aDay} ${resolveMonth(aMonth,'mla')} ${aYear}.` : '';
-      full = `${au}${au ? '. ' : ''}"${title}." *${siteName}*, ${dateStr},${doi ? '\n' + doi + '.' : '.'}${accessed}`;
-    } else if (t === 'magazine') {
-      const pgStr = magPages ? `, pp. ${magPages}` : '';
-      full = `${au}${au ? '. ' : ''}"${title}." *${publisher}*, ${dateStr}${pgStr}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'video') {
-      full = `"${title}." *${platform || 'YouTube'}*, uploaded by ${creator}, ${dateStr}, ${doi}.`;
-    } else if (t === 'report') {
-      const typeStr = reportType ? ` ${reportType},` : '';
-      full = `${au}${au ? '. ' : ''}*${fullTitle}*.${typeStr} ${institution}, ${y}.${doi ? '\n' + doi : ''}`;
-    }
-  }
-
-  // ── Chicago (Notes-Bibliography) ───────────────────────────────
-  if (s === 'chicago') {
-    const mFull = resolveMonth(dMonth, 'chicago');
-    const dateStr = dYear ? (mFull ? `${mFull}${dDay ? ' ' + dDay : ''}, ${dYear}` : dYear) : 'n.d.';
-
-    if (t === 'book') {
-      const edStr = edition ? `, ${edition} ed.` : '';
-      const loc = place ? `${place}: ` : '';
-      full = `${au}${au ? '. ' : ''}*${fullTitle}*${edStr}. ${loc}${publisher}, ${y}.`;
-    } else if (t === 'journal') {
-      const volStr   = volume ? `${volume}` : '';
-      const issueStr = issue  ? `, no. ${issue}` : '';
-      const pgStr    = pages  ? `: ${pages}` : '';
-      full = `${au}${au ? '. ' : ''}"${title}." *${journal}* ${volStr}${issueStr} (${y})${pgStr}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'website') {
-      full = `${au}${au ? '. ' : ''}"${title}." *${siteName}*. ${dateStr}. ${doi || 'URL'}.`;
-    } else if (t === 'magazine') {
-      const pgStr = magPages ? `, ${magPages}` : '';
-      full = `${au}${au ? '. ' : ''}"${title}." *${publisher}*, ${dateStr}${pgStr}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'video') {
-      full = `${creator}. "${title}." ${platform || 'YouTube'} video, ${dateStr}. ${doi}.`;
-    } else if (t === 'report') {
-      const typeStr = reportType ? `. ${reportType}` : '';
-      full = `${au}${au ? '. ' : ''}*${fullTitle}*${typeStr}. ${institution}, ${y}.${doi ? '\n' + doi : ''}`;
-    }
-  }
-
-  // ── Harvard ────────────────────────────────────────────────────
-  if (s === 'harvard') {
-    const mFull = resolveMonth(dMonth, 'harvard');
-    const dateStr = dYear ? (mFull ? `${dYear}, ${mFull}${dDay ? ' ' + dDay : ''}` : dYear) : 'n.d.';
-    const accessed = aDay && aMonth && aYear
-      ? ` (Accessed: ${aDay} ${resolveMonth(aMonth,'harvard')} ${aYear}).`
-      : '';
-
-    if (t === 'book') {
-      const edStr = edition ? ` ${edition} edn.` : '';
-      const loc   = place ? `${place}: ` : '';
-      full = `${au}${au ? ' ' : ''}(${y}) *${fullTitle}*.${edStr} ${loc}${publisher}.`;
-    } else if (t === 'journal') {
-      const volStr   = volume ? `, vol. ${volume}` : '';
-      const issueStr = issue  ? `, no. ${issue}`   : '';
-      const pgStr    = pages  ? `, pp. ${pages}`   : '';
-      full = `${au}${au ? ' ' : ''}(${y}) '${title}', *${journal}*${volStr}${issueStr}${pgStr}.${doi ? '\nDOI: ' + doi : ''}`;
-    } else if (t === 'website') {
-      full = `${au}${au ? ' ' : ''}(${dateStr}) *${title}*. Available at: ${doi || 'URL'}${accessed}`;
-    } else if (t === 'magazine') {
-      const pgStr = magPages ? `, pp. ${magPages}` : '';
-      full = `${au}${au ? ' ' : ''}(${dateStr}) '${title}', *${publisher}*${pgStr}.${doi ? '\n' + doi : ''}`;
-    } else if (t === 'video') {
-      full = `${creator} (${dateStr}) *${title}* [Video online]. Available at: ${doi || 'URL'}${accessed}`;
-    } else if (t === 'report') {
-      const typeStr = reportType ? ` (${reportType})` : '';
-      full = `${au}${au ? ' ' : ''}(${y}) *${fullTitle}*${typeStr}. ${institution}.${doi ? '\nAvailable at: ' + doi : ''}`;
-    }
-  }
-
-  full = full.replace(/\s{2,}/g, ' ').trim();
-
-  document.getElementById('fullCitationOut').textContent = full;
-  document.getElementById('inTextOut').textContent = inText;
-  document.getElementById('resultsSection').style.display = '';
-  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  btn.disabled = false;
+  btn.textContent = 'Generate Citation';
 }
 
 function copyText(id) {
