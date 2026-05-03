@@ -29,7 +29,9 @@ const uploadFields = articleUpload.fields([
 ]);
 
 // Main feed
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => res.redirect('/tools'));
+
+router.get('/home', async (req, res) => {
   try {
     const articles = await Article.findAll({
       include: [{ model: User, as: 'author', attributes: ['username', 'avatar'] }],
