@@ -58,10 +58,11 @@ async function sendPasswordResetEmail(toEmail, username, token) {
 const btnStyle = 'background:linear-gradient(135deg,#C8600A,#F5A623);color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;display:inline-block';
 
 function emailTemplate(body) {
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
   return `
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#1a0e00;color:#e2d5c3;padding:2rem;border-radius:12px;border:1px solid rgba(200,110,20,0.35)">
       <div style="text-align:center;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(200,110,20,0.2)">
-        <div style="font-size:2.2rem;line-height:1;margin-bottom:.5rem">🍗</div>
+        <img src="${appUrl}/img/orangechick_logo.png" alt="Orange Chicken" width="90" style="display:inline-block;margin-bottom:.5rem" />
         <h1 style="font-family:Georgia,serif;color:#F5A623;margin:.25rem 0;font-size:1.3rem;letter-spacing:3px;text-transform:uppercase">Orange Chicken</h1>
       </div>
       ${body}

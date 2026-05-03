@@ -94,12 +94,10 @@ a { color: inherit; text-decoration: none; }
 }
 
 .brand-mascot {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255, 107, 26, 0.5);
-  box-shadow: 0 0 12px rgba(255, 107, 26, 0.4);
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(255, 107, 26, 0.5));
 }
 
 .brand-icon {
