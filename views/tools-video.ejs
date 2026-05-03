@@ -16,9 +16,7 @@
     <a href="/login" class="btn btn-primary" style="margin-right:.75rem">Log In</a>
     <a href="/register" class="btn btn-ghost">Join the Coop</a>
   </div>
-  <%- include('partials/footer') %>
-  <% return %>
-  <% } %>
+  <% } else { %>
 
   <!-- Usage notice -->
   <div class="rate-limit-banner" style="margin-bottom:1.5rem">
@@ -433,5 +431,6 @@ function pollStatus(jobId, btn, status) {
 // Init
 updateUI();
 </script>
+<% } %>
 
 <%- include('partials/footer') %>

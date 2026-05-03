@@ -1,0 +1,325 @@
+<%- include('partials/header', { pageTitle: 'E-Signature Maker — Orange Chicken' }) %>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Pacifico&family=Satisfy&family=Sacramento&family=Caveat:wght@600&display=swap" rel="stylesheet">
+
+<div class="container" style="max-width:860px">
+  <section class="hero" style="padding-bottom:1.5rem">
+    <p class="hero-label">TOOLS</p>
+    <h1 class="hero-title" style="font-size:2.2rem">E-Signature Maker</h1>
+    <p class="hero-sub">Draw or type your signature. Download as PNG with transparent or white background.</p>
+  </section>
+  <div class="glow-line"></div>
+
+  <!-- Mode Tabs -->
+  <div class="sig-tabs" style="margin:1.5rem 0 1.25rem">
+    <button class="sig-tab active" id="tabDraw" onclick="switchTab('draw')">✏️ Draw</button>
+    <button class="sig-tab" id="tabType" onclick="switchTab('type')">T Type</button>
+  </div>
+
+  <!-- ── DRAW PANEL ─────────────────────────────────────────── -->
+  <div id="panelDraw">
+    <div class="glass-card sig-card">
+      <div class="sig-toolbar">
+        <div class="sig-tool-group">
+          <label class="sig-label">Color</label>
+          <div class="sig-color-row">
+            <button class="sig-color-btn active" data-color="#000000" style="background:#000000" title="Black" onclick="setPenColor('#000000',this)"></button>
+            <button class="sig-color-btn" data-color="#1a2340" style="background:#1a2340" title="Navy" onclick="setPenColor('#1a2340',this)"></button>
+            <button class="sig-color-btn" data-color="#1b4fa8" style="background:#1b4fa8" title="Blue" onclick="setPenColor('#1b4fa8',this)"></button>
+            <button class="sig-color-btn" data-color="#c8761e" style="background:#c8761e" title="Amber" onclick="setPenColor('#c8761e',this)"></button>
+            <button class="sig-color-btn" data-color="#444444" style="background:#444444" title="Gray" onclick="setPenColor('#444444',this)"></button>
+            <input type="color" id="customColor" value="#000000" title="Custom color" onchange="setPenColor(this.value, null)" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none">
+          </div>
+        </div>
+        <div class="sig-tool-group">
+          <label class="sig-label">Pen Size</label>
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <input type="range" id="penSize" min="1" max="12" value="3" style="width:100px;accent-color:var(--amber)" oninput="penWidth=+this.value;document.getElementById('penSizeVal').textContent=this.value+'px'">
+            <span id="penSizeVal" style="font-size:.8rem;color:var(--text-muted);min-width:28px">3px</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearCanvas()" style="margin-left:auto">Clear</button>
+      </div>
+
+      <div class="sig-canvas-wrap" id="drawWrap">
+        <canvas id="sigCanvas" width="780" height="240"></canvas>
+        <p class="sig-canvas-hint" id="drawHint">Sign here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TYPE PANEL ─────────────────────────────────────────── -->
+  <div id="panelType" style="display:none">
+    <div class="glass-card sig-card">
+      <div class="sig-toolbar" style="flex-wrap:wrap;gap:1rem">
+        <div class="sig-tool-group" style="flex:1;min-width:200px">
+          <label class="sig-label">Your Name</label>
+          <input type="text" id="sigText" class="form-input" placeholder="Your full name" maxlength="60" oninput="renderTyped()" style="width:100%">
+        </div>
+        <div class="sig-tool-group">
+          <label class="sig-label">Font</label>
+          <div class="sig-font-row" id="fontGroup">
+            <button class="sig-font-btn active" data-font="Dancing Script" onclick="setFont('Dancing Script',this)" style="font-family:'Dancing Script'">Aa</button>
+            <button class="sig-font-btn" data-font="Great Vibes" onclick="setFont('Great Vibes',this)" style="font-family:'Great Vibes'">Aa</button>
+            <button class="sig-font-btn" data-font="Pacifico" onclick="setFont('Pacifico',this)" style="font-family:'Pacifico'">Aa</button>
+            <button class="sig-font-btn" data-font="Satisfy" onclick="setFont('Satisfy',this)" style="font-family:'Satisfy'">Aa</button>
+            <button class="sig-font-btn" data-font="Sacramento" onclick="setFont('Sacramento',this)" style="font-family:'Sacramento'">Aa</button>
+            <button class="sig-font-btn" data-font="Caveat" onclick="setFont('Caveat',this)" style="font-family:'Caveat';font-weight:600">Aa</button>
+          </div>
+        </div>
+        <div class="sig-tool-group">
+          <label class="sig-label">Color</label>
+          <div class="sig-color-row">
+            <button class="sig-color-btn active" data-color="#000000" style="background:#000000" onclick="setTypeColor('#000000',this)"></button>
+            <button class="sig-color-btn" data-color="#1a2340" style="background:#1a2340" onclick="setTypeColor('#1a2340',this)"></button>
+            <button class="sig-color-btn" data-color="#1b4fa8" style="background:#1b4fa8" onclick="setTypeColor('#1b4fa8',this)"></button>
+            <button class="sig-color-btn" data-color="#c8761e" style="background:#c8761e" onclick="setTypeColor('#c8761e',this)"></button>
+            <button class="sig-color-btn" data-color="#444444" style="background:#444444" onclick="setTypeColor('#444444',this)"></button>
+            <input type="color" id="customTypeColor" value="#000000" onchange="setTypeColor(this.value,null)" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none">
+          </div>
+        </div>
+      </div>
+
+      <div class="sig-canvas-wrap" id="typeWrap">
+        <canvas id="typedCanvas" width="780" height="240"></canvas>
+        <p class="sig-canvas-hint" id="typeHint">Type your name above to preview</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Download Options ──────────────────────────────────── -->
+  <div class="glass-card sig-card" style="margin-top:1.25rem">
+    <h3 class="sig-section-title">Download</h3>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:1rem">
+      <div>
+        <label class="sig-label" style="margin-bottom:.5rem">Background</label>
+        <div class="sig-pill-group">
+          <button class="sig-pill active" id="bgTransparent" onclick="setBg('transparent',this)">Transparent</button>
+          <button class="sig-pill" id="bgWhite" onclick="setBg('white',this)">White</button>
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:.75rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="previewSignature()">Preview</button>
+        <button class="btn btn-primary" onclick="downloadSignature()" style="padding:.65rem 1.75rem">⬇ Download PNG</button>
+      </div>
+    </div>
+
+    <div id="previewArea" style="display:none;margin-top:1.25rem">
+      <p class="sig-label" style="margin-bottom:.5rem">Preview</p>
+      <div id="previewBox" style="display:inline-block;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+        <img id="previewImg" alt="Signature preview" style="display:block;max-width:100%">
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.sig-tabs { display:flex; gap:.5rem; }
+.sig-tab {
+  padding:.5rem 1.4rem; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,.04); color:var(--text-muted);
+  font-size:.88rem; font-weight:600; cursor:pointer; transition:all .18s;
+}
+.sig-tab.active { background:var(--amber); color:#111; border-color:var(--amber); }
+.sig-card { padding:1.5rem; margin-bottom:0; }
+.sig-section-title { color:var(--amber); font-family:'Rye',serif; font-size:.85rem; letter-spacing:.08em; margin-bottom:1.1rem; }
+.sig-label { display:block; font-size:.76rem; color:var(--text-muted); letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
+.sig-toolbar { display:flex; align-items:flex-end; gap:1.5rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+.sig-tool-group { display:flex; flex-direction:column; gap:.35rem; }
+.sig-color-row { display:flex; gap:.4rem; align-items:center; }
+.sig-color-btn {
+  width:28px; height:28px; border-radius:50%; border:2px solid transparent; cursor:pointer;
+  transition:border-color .15s, transform .12s;
+}
+.sig-color-btn.active { border-color:#fff; transform:scale(1.18); }
+.sig-canvas-wrap {
+  position:relative; background:rgba(255,255,255,.03);
+  border:2px dashed var(--border); border-radius:10px; overflow:hidden;
+  cursor:crosshair;
+}
+.sig-canvas-wrap canvas { display:block; width:100%; height:240px; touch-action:none; }
+.sig-canvas-hint {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:rgba(255,255,255,.12); font-size:1.1rem; pointer-events:none; user-select:none;
+  transition:opacity .2s;
+}
+.sig-pill-group { display:flex; gap:.4rem; }
+.sig-pill {
+  padding:.38rem .9rem; border-radius:20px; border:1px solid var(--border);
+  background:rgba(255,255,255,.04); color:var(--text-muted);
+  font-size:.82rem; cursor:pointer; transition:all .15s;
+}
+.sig-pill.active { background:var(--amber); color:#111; border-color:var(--amber); font-weight:600; }
+.sig-font-row { display:flex; gap:.4rem; flex-wrap:wrap; }
+.sig-font-btn {
+  padding:.35rem .8rem; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,.04); color:#e2d5c3;
+  font-size:1.15rem; cursor:pointer; transition:all .15s;
+}
+.sig-font-btn.active { border-color:var(--amber); background:rgba(200,118,30,.15); color:var(--amber); }
+</style>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let currentTab    = 'draw';
+let penColor      = '#000000';
+let typeColor     = '#000000';
+let penWidth      = 3;
+let currentFont   = 'Dancing Script';
+let bgMode        = 'transparent';
+let isDrawing     = false;
+let lastX = 0, lastY = 0;
+
+// ── Canvas refs ──────────────────────────────────────────────
+const drawCanvas  = document.getElementById('sigCanvas');
+const drawCtx     = drawCanvas.getContext('2d');
+const typeCanvas  = document.getElementById('typedCanvas');
+const typeCtx     = typeCanvas.getContext('2d');
+
+// ── Tab switch ───────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('panelDraw').style.display = tab === 'draw' ? '' : 'none';
+  document.getElementById('panelType').style.display = tab === 'type' ? '' : 'none';
+  document.getElementById('tabDraw').classList.toggle('active', tab === 'draw');
+  document.getElementById('tabType').classList.toggle('active', tab === 'type');
+  document.getElementById('previewArea').style.display = 'none';
+}
+
+// ── Draw mode ────────────────────────────────────────────────
+function getPos(e, canvas) {
+  const rect  = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const src = e.touches ? e.touches[0] : e;
+  return [(src.clientX - rect.left) * scaleX, (src.clientY - rect.top) * scaleY];
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  isDrawing = true;
+  [lastX, lastY] = getPos(e, drawCanvas);
+  document.getElementById('drawHint').style.opacity = '0';
+}
+function draw(e) {
+  if (!isDrawing) return;
+  e.preventDefault();
+  const [x, y] = getPos(e, drawCanvas);
+  drawCtx.strokeStyle = penColor;
+  drawCtx.lineWidth   = penWidth;
+  drawCtx.lineCap     = 'round';
+  drawCtx.lineJoin    = 'round';
+  drawCtx.beginPath();
+  drawCtx.moveTo(lastX, lastY);
+  drawCtx.lineTo(x, y);
+  drawCtx.stroke();
+  [lastX, lastY] = [x, y];
+}
+function stopDraw() { isDrawing = false; }
+
+drawCanvas.addEventListener('mousedown',  startDraw);
+drawCanvas.addEventListener('mousemove',  draw);
+drawCanvas.addEventListener('mouseup',    stopDraw);
+drawCanvas.addEventListener('mouseleave', stopDraw);
+drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
+drawCanvas.addEventListener('touchmove',  draw,      { passive: false });
+drawCanvas.addEventListener('touchend',   stopDraw);
+
+function clearCanvas() {
+  drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  document.getElementById('drawHint').style.opacity = '';
+  document.getElementById('previewArea').style.display = 'none';
+}
+
+function setPenColor(color, btn) {
+  penColor = color;
+  document.querySelectorAll('#panelDraw .sig-color-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (!btn) document.getElementById('customColor').value = color;
+}
+
+// ── Type mode ────────────────────────────────────────────────
+function renderTyped() {
+  const text = document.getElementById('sigText').value.trim();
+  typeCtx.clearRect(0, 0, typeCanvas.width, typeCanvas.height);
+  document.getElementById('typeHint').style.opacity = text ? '0' : '';
+
+  if (!text) return;
+
+  const size = Math.min(Math.max(typeCanvas.width / (text.length * 0.55 + 1), 36), 100);
+  typeCtx.font         = `${size}px '${currentFont}'`;
+  typeCtx.fillStyle    = typeColor;
+  typeCtx.textAlign    = 'center';
+  typeCtx.textBaseline = 'middle';
+  typeCtx.fillText(text, typeCanvas.width / 2, typeCanvas.height / 2);
+}
+
+function setFont(font, btn) {
+  currentFont = font;
+  document.querySelectorAll('.sig-font-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTyped();
+}
+
+function setTypeColor(color, btn) {
+  typeColor = color;
+  document.querySelectorAll('#panelType .sig-color-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (!btn) document.getElementById('customTypeColor').value = color;
+  renderTyped();
+}
+
+// ── Background + Export ──────────────────────────────────────
+function setBg(mode, btn) {
+  bgMode = mode;
+  document.querySelectorAll('.sig-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function activeCanvas() {
+  return currentTab === 'draw' ? drawCanvas : typeCanvas;
+}
+
+function buildOutputCanvas() {
+  const src    = activeCanvas();
+  const out    = document.createElement('canvas');
+  out.width    = src.width;
+  out.height   = src.height;
+  const ctx    = out.getContext('2d');
+  if (bgMode === 'white') {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, out.width, out.height);
+  }
+  ctx.drawImage(src, 0, 0);
+  return out;
+}
+
+function isEmpty() {
+  const src = activeCanvas();
+  const d   = src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return false;
+  return true;
+}
+
+function previewSignature() {
+  if (isEmpty()) return alert('Please draw or type your signature first.');
+  const out = buildOutputCanvas();
+  const img = document.getElementById('previewImg');
+  img.src   = out.toDataURL('image/png');
+  const box = document.getElementById('previewBox');
+  box.style.background = bgMode === 'white' ? '#fff' : 'repeating-conic-gradient(#666 0% 25%, #999 0% 50%) 0 0 / 16px 16px';
+  document.getElementById('previewArea').style.display = '';
+}
+
+function downloadSignature() {
+  if (isEmpty()) return alert('Please draw or type your signature first.');
+  const out  = buildOutputCanvas();
+  const link = document.createElement('a');
+  link.download = 'signature.png';
+  link.href = out.toDataURL('image/png');
+  link.click();
+}
+</script>
+
+<%- include('partials/footer') %>

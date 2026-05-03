@@ -498,6 +498,11 @@ router.get('/tools/citation-generator', (req, res) => {
   res.render('tools-citation', { pageTitle: 'Citation Generator — Orange Chicken' });
 });
 
+// ── E-Signature Maker ──────────────────────────────────────────────
+router.get('/tools/signature', (req, res) => {
+  res.render('tools-signature', { pageTitle: 'E-Signature Maker — Orange Chicken' });
+});
+
 router.post('/tools/citation/generate', express.json(), async (req, res) => {
   const rl = await checkToolLimit(req, 'citation', 3);
   if (!rl.allowed) return res.json(toolLimitErr(3));
