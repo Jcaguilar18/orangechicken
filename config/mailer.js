@@ -10,9 +10,9 @@ const transporter = nodemailer.createTransport({
 
 async function sendVerificationCode(toEmail, username, code) {
   await transporter.sendMail({
-    from:    `"Orange Chicken" <${process.env.GMAIL_USER}>`,
+    from:    `"Orange Chick" <${process.env.GMAIL_USER}>`,
     to:      toEmail,
-    subject: `${code} — Your Orange Chicken verification code`,
+    subject: `${code} — Your Orange Chick verification code`,
     html: emailTemplate(`
       <h2 style="color:#fff;margin-bottom:.5rem">Welcome, ${username}!</h2>
       <p style="color:#c4a882;line-height:1.6;margin-bottom:1.5rem">
@@ -36,9 +36,9 @@ async function sendPasswordResetEmail(toEmail, username, token) {
   const link   = `${appUrl}/reset-password?token=${token}`;
 
   await transporter.sendMail({
-    from:    `"Orange Chicken" <${process.env.GMAIL_USER}>`,
+    from:    `"Orange Chick" <${process.env.GMAIL_USER}>`,
     to:      toEmail,
-    subject: 'Reset your Orange Chicken password',
+    subject: 'Reset your Orange Chick password',
     html: emailTemplate(`
       <h2 style="color:#fff;margin-bottom:.5rem">Password Reset</h2>
       <p style="color:#c4a882;line-height:1.6;margin-bottom:1.5rem">
@@ -57,7 +57,7 @@ async function sendPasswordResetEmail(toEmail, username, token) {
 async function sendNewSubscriptionRequestEmail(adminEmails, username, method, ref) {
   const appUrl = process.env.APP_URL || 'http://localhost:3000';
   await transporter.sendMail({
-    from:    `"Orange Chicken" <${process.env.GMAIL_USER}>`,
+    from:    `"Orange Chick" <${process.env.GMAIL_USER}>`,
     to:      adminEmails.join(', '),
     subject: `New subscription request from ${username}`,
     html: emailTemplate(`
@@ -80,9 +80,9 @@ async function sendNewSubscriptionRequestEmail(adminEmails, username, method, re
 async function sendProApprovedEmail(toEmail, username, endDate) {
   const formattedEnd = new Date(endDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   await transporter.sendMail({
-    from:    `"Orange Chicken" <${process.env.GMAIL_USER}>`,
+    from:    `"Orange Chick" <${process.env.GMAIL_USER}>`,
     to:      toEmail,
-    subject: 'You\'ve been granted Pro access on Orange Chicken!',
+    subject: 'You\'ve been granted Pro access on Orange Chick!',
     html: emailTemplate(`
       <h2 style="color:#fff;margin-bottom:.5rem">Pro Access Granted! 🍗</h2>
       <p style="color:#c4a882;line-height:1.6;margin-bottom:1.5rem">
@@ -108,12 +108,12 @@ function emailTemplate(body) {
   return `
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#1a0e00;color:#e2d5c3;padding:2rem;border-radius:12px;border:1px solid rgba(200,110,20,0.35)">
       <div style="text-align:center;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(200,110,20,0.2)">
-        <img src="${appUrl}/img/orangechick_logo.png" alt="Orange Chicken" width="90" style="display:inline-block;margin-bottom:.5rem" />
-        <h1 style="font-family:Georgia,serif;color:#F5A623;margin:.25rem 0;font-size:1.3rem;letter-spacing:3px;text-transform:uppercase">Orange Chicken</h1>
+        <img src="${appUrl}/img/orangechick_logo.png" alt="Orange Chick" width="90" style="display:inline-block;margin-bottom:.5rem" />
+        <h1 style="font-family:Georgia,serif;color:#F5A623;margin:.25rem 0;font-size:1.3rem;letter-spacing:3px;text-transform:uppercase">Orange Chick</h1>
       </div>
       ${body}
       <div style="text-align:center;margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(200,110,20,0.2)">
-        <p style="color:#8a6a48;font-size:.75rem;margin:0">© Orange Chicken — The Coop</p>
+        <p style="color:#8a6a48;font-size:.75rem;margin:0">© Orange Chick — The Coop</p>
       </div>
     </div>
   `;

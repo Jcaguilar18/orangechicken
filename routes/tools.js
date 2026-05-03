@@ -202,7 +202,7 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 router.get('/tools/pdf-editor', (req, res) => {
-  res.render('tools-pdf-editor', { pageTitle: 'PDF Editor — Orange Chicken' });
+  res.render('tools-pdf-editor', { pageTitle: 'PDF Editor — Orange Chick' });
 });
 
 router.post('/tools/pdf/upload', toolUpload.single('pdf'), async (req, res) => {
@@ -551,12 +551,12 @@ router.get('/tools/story-maker', async (req, res) => {
 });
 
 router.get('/tools/citation-generator', (req, res) => {
-  res.render('tools-citation', { pageTitle: 'Citation Generator — Orange Chicken' });
+  res.render('tools-citation', { pageTitle: 'Citation Generator — Orange Chick' });
 });
 
 // ── E-Signature Maker ──────────────────────────────────────────────
 router.get('/tools/signature', (req, res) => {
-  res.render('tools-signature', { pageTitle: 'E-Signature Maker — Orange Chicken' });
+  res.render('tools-signature', { pageTitle: 'E-Signature Maker — Orange Chick' });
 });
 
 router.post('/tools/citation/generate', express.json(), async (req, res) => {
@@ -573,7 +573,7 @@ router.post('/tools/citation/generate', express.json(), async (req, res) => {
 
 // ── Video Editor ───────────────────────────────────────────────────
 router.get('/tools/video-editor', async (req, res) => {
-  res.render('tools-video', { pageTitle: 'Video Editor — Orange Chicken' });
+  res.render('tools-video', { pageTitle: 'Video Editor — Orange Chick' });
 });
 
 // Upload video/audio source files

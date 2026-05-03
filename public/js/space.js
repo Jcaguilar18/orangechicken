@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Orange Chicken — Ambient Background
+   Orange Chick — Ambient Background
    Soft glowing orbs · warm palette · gentle drift
    ═══════════════════════════════════════════════════════════════ */
 
