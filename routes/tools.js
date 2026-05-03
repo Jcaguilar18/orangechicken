@@ -192,6 +192,62 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+// ── PDF Editor ────────────────────────────────────────────────────
+const pdfSources = new Map(); // fileId -> { filePath, expires }
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, info] of pdfSources) {
+    if (info.expires < now) { fs.unlink(info.filePath, ()=>{}); pdfSources.delete(id); }
+  }
+}, 10 * 60 * 1000);
+
+router.get('/tools/pdf-editor', (req, res) => {
+  res.render('tools-pdf-editor', { pageTitle: 'PDF Editor — Orange Chicken' });
+});
+
+router.post('/tools/pdf/upload', toolUpload.single('pdf'), async (req, res) => {
+  if (!req.file) return res.json({ ok: false, error: 'No file uploaded.' });
+  try {
+    const bytes   = fs.readFileSync(req.file.path);
+    const pdfDoc  = await PDFDocument.load(bytes);
+    const pageCount = pdfDoc.getPageCount();
+    const fileId  = crypto.randomBytes(16).toString('hex');
+    pdfSources.set(fileId, { filePath: req.file.path, expires: Date.now() + 2 * 60 * 60 * 1000 });
+    res.json({ ok: true, fileId, pageCount });
+  } catch (err) {
+    fs.unlink(req.file.path, ()=>{});
+    res.json({ ok: false, error: 'Could not read PDF. Make sure it is a valid PDF file.' });
+  }
+});
+
+router.post('/tools/pdf/save', express.json({ limit: '80mb' }), async (req, res) => {
+  const { fileId, annotations } = req.body;
+  const info = pdfSources.get(fileId);
+  if (!info || !fs.existsSync(info.filePath))
+    return res.json({ ok: false, error: 'Session expired. Please re-upload the PDF.' });
+  try {
+    const bytes  = fs.readFileSync(info.filePath);
+    const pdfDoc = await PDFDocument.load(bytes);
+
+    for (const [pageIdxStr, anno] of Object.entries(annotations || {})) {
+      if (!anno?.dataUrl) continue;
+      const pageIdx = parseInt(pageIdxStr, 10);
+      const page    = pdfDoc.getPage(pageIdx);
+      const { width: pw, height: ph } = page.getSize();
+      const base64  = anno.dataUrl.replace(/^data:image\/png;base64,/, '');
+      const pngImg  = await pdfDoc.embedPng(Buffer.from(base64, 'base64'));
+      page.drawImage(pngImg, { x: 0, y: 0, width: pw, height: ph });
+    }
+
+    const outPath = `/tmp/uploads/edited_${Date.now()}.pdf`;
+    fs.writeFileSync(outPath, await pdfDoc.save());
+    res.json({ ok: true, ...saveTempResult(outPath, 'edited.pdf', 'application/pdf') });
+  } catch (err) {
+    console.error('PDF save error:', err);
+    res.json({ ok: false, error: 'Failed to apply edits.' });
+  }
+});
+
 // ── Tools landing page ─────────────────────────────────────────────
 router.get('/tools', async (req, res) => {
   const usageInfo = await getUsageInfo(req);

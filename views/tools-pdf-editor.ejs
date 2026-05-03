@@ -1,0 +1,690 @@
+<%- include('partials/header', { pageTitle: 'PDF Editor — Orange Chicken' }) %>
+
+<style>
+/* ── Layout ──────────────────────────────────────────────────── */
+#pde { display:flex; flex-direction:column; margin-top:68px; height:calc(100vh - 68px); background:#141414; color:#d4d4d4; font-size:13px; overflow:hidden; user-select:none; }
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+#pde-toolbar { display:flex; align-items:center; gap:4px; padding:0 10px; height:44px; background:#1f1f1f; border-bottom:1px solid #333; flex-shrink:0; flex-wrap:nowrap; overflow-x:auto; }
+#pde-toolbar::-webkit-scrollbar { display:none; }
+.pde-sep { width:1px; height:22px; background:#3a3a3a; margin:0 4px; flex-shrink:0; }
+.pde-tbtn { display:flex; align-items:center; gap:4px; padding:5px 9px; border-radius:5px; border:1px solid transparent; background:transparent; color:#999; cursor:pointer; font-size:12px; font-weight:500; white-space:nowrap; transition:all .15s; flex-shrink:0; }
+.pde-tbtn:hover { background:#2d2d2d; color:#ddd; }
+.pde-tbtn.active { background:#c8761e22; border-color:#c8761e88; color:#e8962e; }
+.pde-tbtn svg { width:14px; height:14px; flex-shrink:0; }
+.pde-import-btn { padding:5px 12px; background:#c8761e; color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:600; flex-shrink:0; }
+.pde-import-btn:hover { background:#e8962e; }
+.pde-save-btn { padding:5px 14px; background:linear-gradient(135deg,#c8761e,#e8962e); color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:600; flex-shrink:0; margin-left:auto; }
+.pde-save-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* Color swatches */
+.pde-color-swatch { width:20px; height:20px; border-radius:4px; border:2px solid transparent; cursor:pointer; flex-shrink:0; transition:border-color .12s, transform .12s; }
+.pde-color-swatch.active { border-color:#fff; transform:scale(1.2); }
+#pde-custom-color { width:22px; height:22px; border:none; border-radius:4px; cursor:pointer; padding:0; background:none; flex-shrink:0; }
+
+/* Size slider */
+#pde-size-wrap { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+#pde-size-wrap label { font-size:11px; color:#666; }
+#pde-size { width:70px; accent-color:#c8761e; }
+#pde-size-val { font-size:11px; color:#888; min-width:20px; }
+
+/* Page nav */
+#pde-page-nav { display:flex; align-items:center; gap:5px; flex-shrink:0; font-size:12px; }
+#pde-page-nav button { width:26px; height:26px; background:#2a2a2a; border:1px solid #3a3a3a; border-radius:4px; color:#aaa; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+#pde-page-nav button:hover { background:#353535; color:#fff; }
+#pde-page-indicator { color:#888; min-width:60px; text-align:center; }
+
+/* Zoom */
+#pde-zoom-display { font-size:11px; color:#666; min-width:36px; text-align:center; }
+
+/* ── Body ────────────────────────────────────────────────────── */
+#pde-body { display:flex; flex:1; min-height:0; overflow:hidden; }
+
+/* ── Thumbnail panel ─────────────────────────────────────────── */
+#pde-thumbs { width:110px; flex-shrink:0; background:#1c1c1c; border-right:1px solid #2d2d2d; overflow-y:auto; padding:8px 6px; display:flex; flex-direction:column; gap:8px; }
+#pde-thumbs::-webkit-scrollbar { width:3px; }
+#pde-thumbs::-webkit-scrollbar-thumb { background:#3a3a3a; border-radius:2px; }
+.pde-thumb { cursor:pointer; border-radius:4px; overflow:hidden; border:2px solid transparent; transition:border-color .15s; position:relative; background:#252525; }
+.pde-thumb:hover { border-color:#666; }
+.pde-thumb.active { border-color:#c8761e; }
+.pde-thumb canvas { display:block; width:100%; }
+.pde-thumb-num { position:absolute; bottom:2px; right:4px; font-size:9px; color:rgba(255,255,255,.5); }
+#pde-thumbs-empty { font-size:11px; color:#444; text-align:center; padding:12px 4px; }
+
+/* ── Canvas area ─────────────────────────────────────────────── */
+#pde-canvas-area { flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center; background:#0e0e0e; padding:24px; }
+#pde-canvas-area::-webkit-scrollbar { width:6px; height:6px; }
+#pde-canvas-area::-webkit-scrollbar-thumb { background:#2d2d2d; border-radius:3px; }
+#pde-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:#444; height:100%; min-height:300px; text-align:center; }
+#pde-empty svg { width:56px; height:56px; opacity:.25; }
+#pde-empty p { font-size:14px; line-height:1.6; }
+#pde-canvas-wrap { position:relative; display:none; box-shadow:0 4px 32px rgba(0,0,0,.6); }
+#pde-pdf-canvas  { display:block; }
+#pde-anno-canvas { position:absolute; inset:0; display:block; }
+#pde-text-input  {
+  position:absolute; display:none; border:none; outline:none; background:transparent;
+  resize:none; overflow:hidden; font-family:'Georgia',serif; z-index:10; min-width:80px; min-height:28px;
+  padding:2px 4px; border-bottom:1.5px dashed rgba(255,255,255,.4);
+}
+
+/* ── Status toast ────────────────────────────────────────────── */
+#pde-toast { position:fixed; bottom:20px; right:20px; background:#1f1f1f; border:1px solid #3a3a3a; border-radius:8px; padding:10px 16px; font-size:12px; color:#ccc; display:none; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,.5); }
+</style>
+
+<input type="file" id="pde-file-input" accept="application/pdf" style="display:none">
+<div id="pde-toast"></div>
+
+<div id="pde">
+
+  <!-- ── Toolbar ──────────────────────────────────────────── -->
+  <div id="pde-toolbar">
+    <button class="pde-import-btn" onclick="document.getElementById('pde-file-input').click()">+ Open PDF</button>
+    <div class="pde-sep"></div>
+
+    <!-- Tools -->
+    <button class="pde-tbtn active" id="tool-pen"  onclick="setTool('pen')"  title="Pen (P)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-8 8H3v-3z"/></svg> Pen
+    </button>
+    <button class="pde-tbtn" id="tool-highlight" onclick="setTool('highlight')" title="Highlighter (H)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="6" width="12" height="5" rx="1" opacity=".5"/><path d="M6 11l1 3h2l1-3z"/></svg> Highlight
+    </button>
+    <button class="pde-tbtn" id="tool-text" onclick="setTool('text')" title="Text (T)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4h12v2H9v7H7V6H2z"/></svg> Text
+    </button>
+    <button class="pde-tbtn" id="tool-rect" onclick="setTool('rect')" title="Rectangle (R)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/></svg> Shape
+    </button>
+    <button class="pde-tbtn" id="tool-line" onclick="setTool('line')" title="Line (L)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="14" x2="14" y2="2"/></svg> Line
+    </button>
+    <button class="pde-tbtn" id="tool-eraser" onclick="setTool('eraser')" title="Eraser (E)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13L9 3l4 4-6 6z"/><line x1="3" y1="13" x2="13" y2="13"/></svg> Eraser
+    </button>
+
+    <div class="pde-sep"></div>
+
+    <!-- Colors -->
+    <button class="pde-color-swatch active" style="background:#000000" data-color="#000000" onclick="setColor('#000000',this)" title="Black"></button>
+    <button class="pde-color-swatch" style="background:#ffffff" data-color="#ffffff" onclick="setColor('#ffffff',this)" title="White"></button>
+    <button class="pde-color-swatch" style="background:#e53935" data-color="#e53935" onclick="setColor('#e53935',this)" title="Red"></button>
+    <button class="pde-color-swatch" style="background:#1e88e5" data-color="#1e88e5" onclick="setColor('#1e88e5',this)" title="Blue"></button>
+    <button class="pde-color-swatch" style="background:#43a047" data-color="#43a047" onclick="setColor('#43a047',this)" title="Green"></button>
+    <button class="pde-color-swatch" style="background:#fdd835" data-color="#fdd835" onclick="setColor('#fdd835',this)" title="Yellow"></button>
+    <button class="pde-color-swatch" style="background:#c8761e" data-color="#c8761e" onclick="setColor('#c8761e',this)" title="Amber"></button>
+    <input type="color" id="pde-custom-color" value="#000000" onchange="setColor(this.value,null)" title="Custom color">
+
+    <div class="pde-sep"></div>
+
+    <!-- Size -->
+    <div id="pde-size-wrap">
+      <label>Size</label>
+      <input type="range" id="pde-size" min="1" max="40" value="4" oninput="activeSize=+this.value;document.getElementById('pde-size-val').textContent=this.value">
+      <span id="pde-size-val">4</span>
+    </div>
+
+    <div class="pde-sep"></div>
+
+    <!-- Undo / Redo -->
+    <button class="pde-tbtn" onclick="undo()" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a5 5 0 1 0 1-3"/><polyline points="1,4 3,7 6,5"/></svg>
+    </button>
+    <button class="pde-tbtn" onclick="redo()" title="Redo (Ctrl+Y)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 7a5 5 0 1 1-1-3"/><polyline points="15,4 13,7 10,5"/></svg>
+    </button>
+    <button class="pde-tbtn" onclick="clearPage()" title="Clear current page annotations">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,4 13,4"/><path d="M5 4V2h6v2M6 7v5M10 7v5"/><rect x="2" y="4" width="12" height="10" rx="1"/></svg> Clear
+    </button>
+
+    <div class="pde-sep"></div>
+
+    <!-- Zoom -->
+    <button class="pde-tbtn" onclick="zoomOut()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/><line x1="4.5" y1="7" x2="9.5" y2="7"/></svg>
+    </button>
+    <span id="pde-zoom-display">100%</span>
+    <button class="pde-tbtn" onclick="zoomIn()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/><line x1="7" y1="4.5" x2="7" y2="9.5"/><line x1="4.5" y1="7" x2="9.5" y2="7"/></svg>
+    </button>
+
+    <div class="pde-sep"></div>
+
+    <!-- Page nav -->
+    <div id="pde-page-nav">
+      <button onclick="goPage(currentPage - 1)">‹</button>
+      <span id="pde-page-indicator">— / —</span>
+      <button onclick="goPage(currentPage + 1)">›</button>
+    </div>
+
+    <button class="pde-save-btn" id="pde-save-btn" onclick="savePDF()" disabled>⬇ Download PDF</button>
+  </div>
+
+  <!-- ── Body ──────────────────────────────────────────────── -->
+  <div id="pde-body">
+
+    <!-- Thumbnails -->
+    <div id="pde-thumbs">
+      <div id="pde-thumbs-empty">Open a PDF to begin</div>
+    </div>
+
+    <!-- Canvas area -->
+    <div id="pde-canvas-area">
+      <div id="pde-empty">
+        <svg viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="10" y="4" width="32" height="44" rx="3"/><line x1="18" y1="16" x2="38" y2="16"/><line x1="18" y1="22" x2="38" y2="22"/><line x1="18" y1="28" x2="30" y2="28"/></svg>
+        <p>Click <strong>+ Open PDF</strong> to start editing.<br>Annotate, sign, highlight, and draw directly on your document.</p>
+        <button class="pde-import-btn" style="padding:8px 20px;font-size:13px" onclick="document.getElementById('pde-file-input').click()">+ Open PDF</button>
+      </div>
+      <div id="pde-canvas-wrap">
+        <canvas id="pde-pdf-canvas"></canvas>
+        <canvas id="pde-anno-canvas"></canvas>
+        <textarea id="pde-text-input" rows="1" placeholder="Type here…" onkeydown="onTextKeydown(event)" onblur="commitText()"></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let pdfJsDoc    = null;   // pdf.js document
+let fileId      = null;   // server file ID
+let totalPages  = 0;
+let currentPage = 1;
+let zoomLevel   = 1.0;
+let activeTool  = 'pen';
+let activeColor = '#000000';
+let activeSize  = 4;
+let isDrawing   = false;
+let lastX = 0, lastY = 0;
+let shapeStart  = null;   // { x, y } for rect/line drag
+let shapeSnapshot = null; // canvas imageData snapshot before shape preview
+let textPos     = null;   // { x, y } for text tool
+
+// Per-page annotation histories (array of ImageData)
+const history  = {};  // pageIndex -> [ImageData, ...]
+const redoStack = {}; // pageIndex -> [ImageData, ...]
+
+// Cached thumbnails
+const thumbCanvases = {}; // pageIndex -> canvas
+
+// ── Canvas refs ──────────────────────────────────────────────
+const pdfCanvas  = document.getElementById('pde-pdf-canvas');
+const annoCanvas = document.getElementById('pde-anno-canvas');
+const pdfCtx     = pdfCanvas.getContext('2d');
+const annoCtx    = annoCanvas.getContext('2d');
+const textInput  = document.getElementById('pde-text-input');
+
+// ═══════════════════════════════════════════════════════════════
+// FILE OPEN
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('pde-file-input').addEventListener('change', async function () {
+  const file = this.files[0];
+  this.value = '';
+  if (!file) return;
+  showToast('Loading PDF…');
+
+  // Load with PDF.js for rendering
+  const localUrl = URL.createObjectURL(file);
+  try {
+    pdfJsDoc   = await pdfjsLib.getDocument(localUrl).promise;
+    totalPages = pdfJsDoc.numPages;
+  } catch (e) {
+    hideToast(); alert('Could not open PDF.'); return;
+  }
+
+  // Upload to server for save operation
+  const fd = new FormData();
+  fd.append('pdf', file);
+  try {
+    const resp = await fetch('/tools/pdf/upload', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (data.ok) fileId = data.fileId;
+  } catch (_) {}
+
+  // Reset state
+  for (const k in history)   delete history[k];
+  for (const k in redoStack) delete redoStack[k];
+  for (const k in thumbCanvases) delete thumbCanvases[k];
+  currentPage = 1;
+
+  document.getElementById('pde-empty').style.display = 'none';
+  document.getElementById('pde-canvas-wrap').style.display = 'block';
+  document.getElementById('pde-save-btn').disabled = false;
+
+  await renderThumbs();
+  await renderPage(currentPage);
+  hideToast();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+async function renderPage(pageNum) {
+  if (!pdfJsDoc) return;
+  pageNum = Math.max(1, Math.min(pageNum, totalPages));
+  currentPage = pageNum;
+
+  // Commit any pending text
+  commitText();
+
+  const page     = await pdfJsDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale: zoomLevel });
+  const W = Math.floor(viewport.width);
+  const H = Math.floor(viewport.height);
+
+  pdfCanvas.width  = W; pdfCanvas.height  = H;
+  annoCanvas.width = W; annoCanvas.height = H;
+
+  // Render PDF page
+  await page.render({ canvasContext: pdfCtx, viewport }).promise;
+
+  // Restore annotations for this page
+  const pageIdx = pageNum - 1;
+  const states  = history[pageIdx];
+  if (states && states.length) {
+    annoCtx.putImageData(states[states.length - 1], 0, 0);
+  } else {
+    annoCtx.clearRect(0, 0, W, H);
+    saveState(); // push empty initial state
+  }
+
+  updatePageNav();
+  highlightThumb(pageNum);
+  updateCursor();
+}
+
+async function renderThumbs() {
+  const panel = document.getElementById('pde-thumbs');
+  panel.innerHTML = '';
+
+  for (let i = 1; i <= totalPages; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pde-thumb' + (i === currentPage ? ' active' : '');
+    wrap.dataset.page = i;
+    wrap.onclick = () => goPage(i);
+
+    const tc = document.createElement('canvas');
+    wrap.appendChild(tc);
+
+    const num = document.createElement('div');
+    num.className = 'pde-thumb-num';
+    num.textContent = i;
+    wrap.appendChild(num);
+
+    panel.appendChild(wrap);
+    thumbCanvases[i - 1] = tc;
+
+    // Render thumb async without blocking
+    renderThumb(i, tc);
+  }
+}
+
+async function renderThumb(pageNum, canvas) {
+  const page     = await pdfJsDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale: 0.15 });
+  canvas.width   = Math.floor(viewport.width);
+  canvas.height  = Math.floor(viewport.height);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+}
+
+function highlightThumb(pageNum) {
+  document.querySelectorAll('.pde-thumb').forEach(el => {
+    el.classList.toggle('active', +el.dataset.page === pageNum);
+  });
+}
+
+function updatePageNav() {
+  document.getElementById('pde-page-indicator').textContent = `${currentPage} / ${totalPages}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION & ZOOM
+// ═══════════════════════════════════════════════════════════════
+async function goPage(n) {
+  if (!pdfJsDoc) return;
+  await renderPage(Math.max(1, Math.min(n, totalPages)));
+}
+
+function zoomIn()  { zoomLevel = Math.min(3, zoomLevel + 0.25); applyZoom(); }
+function zoomOut() { zoomLevel = Math.max(0.25, zoomLevel - 0.25); applyZoom(); }
+
+async function applyZoom() {
+  document.getElementById('pde-zoom-display').textContent = Math.round(zoomLevel * 100) + '%';
+  await renderPage(currentPage);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOOLS
+// ═══════════════════════════════════════════════════════════════
+function setTool(t) {
+  activeTool = t;
+  document.querySelectorAll('#pde-toolbar .pde-tbtn[id^=tool-]').forEach(b => {
+    b.classList.toggle('active', b.id === 'tool-' + t);
+  });
+  updateCursor();
+  // Commit pending text if switching away
+  if (t !== 'text') commitText();
+}
+
+function setColor(c, btn) {
+  activeColor = c;
+  document.querySelectorAll('.pde-color-swatch').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('pde-custom-color').value = c;
+}
+
+function updateCursor() {
+  const cursors = { pen:'crosshair', highlight:'crosshair', text:'text', rect:'crosshair', line:'crosshair', eraser:'cell' };
+  annoCanvas.style.cursor = cursors[activeTool] || 'default';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNDO / REDO
+// ═══════════════════════════════════════════════════════════════
+function saveState() {
+  const idx = currentPage - 1;
+  if (!history[idx]) history[idx] = [];
+  history[idx].push(annoCtx.getImageData(0, 0, annoCanvas.width, annoCanvas.height));
+  if (history[idx].length > 30) history[idx].shift();
+  if (redoStack[idx]) redoStack[idx] = []; // clear redo on new action
+}
+
+function undo() {
+  const idx    = currentPage - 1;
+  const states = history[idx];
+  if (!states || states.length < 2) return;
+  if (!redoStack[idx]) redoStack[idx] = [];
+  redoStack[idx].push(states.pop());
+  annoCtx.putImageData(states[states.length - 1], 0, 0);
+}
+
+function redo() {
+  const idx   = currentPage - 1;
+  const stack = redoStack[idx];
+  if (!stack || !stack.length) return;
+  const state = stack.pop();
+  history[idx].push(state);
+  annoCtx.putImageData(state, 0, 0);
+}
+
+function clearPage() {
+  if (!pdfJsDoc) return;
+  saveState();
+  annoCtx.clearRect(0, 0, annoCanvas.width, annoCanvas.height);
+  saveState();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS DRAWING EVENTS
+// ═══════════════════════════════════════════════════════════════
+function getPos(e) {
+  const rect = annoCanvas.getBoundingClientRect();
+  const src  = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left) * (annoCanvas.width  / rect.width),
+    y: (src.clientY - rect.top)  * (annoCanvas.height / rect.height),
+  };
+}
+
+annoCanvas.addEventListener('pointerdown', e => {
+  if (!pdfJsDoc) return;
+  e.preventDefault();
+  const { x, y } = getPos(e);
+
+  if (activeTool === 'text') {
+    placeTextInput(x, y); return;
+  }
+
+  isDrawing   = true;
+  lastX = x; lastY = y;
+  annoCanvas.setPointerCapture(e.pointerId);
+
+  if (activeTool === 'pen') {
+    annoCtx.beginPath();
+    annoCtx.moveTo(x, y);
+    annoCtx.lineCap  = 'round';
+    annoCtx.lineJoin = 'round';
+    annoCtx.strokeStyle = activeColor;
+    annoCtx.lineWidth   = activeSize;
+  }
+
+  if (activeTool === 'highlight') {
+    shapeStart    = { x, y };
+    shapeSnapshot = annoCtx.getImageData(0, 0, annoCanvas.width, annoCanvas.height);
+  }
+
+  if (activeTool === 'rect' || activeTool === 'line') {
+    shapeStart    = { x, y };
+    shapeSnapshot = annoCtx.getImageData(0, 0, annoCanvas.width, annoCanvas.height);
+  }
+});
+
+annoCanvas.addEventListener('pointermove', e => {
+  if (!isDrawing || !pdfJsDoc) return;
+  const { x, y } = getPos(e);
+
+  if (activeTool === 'pen') {
+    annoCtx.lineTo(x, y);
+    annoCtx.stroke();
+  }
+
+  if (activeTool === 'highlight' && shapeStart) {
+    annoCtx.putImageData(shapeSnapshot, 0, 0);
+    annoCtx.save();
+    annoCtx.globalAlpha = 0.35;
+    annoCtx.fillStyle   = activeColor;
+    annoCtx.fillRect(shapeStart.x, shapeStart.y, x - shapeStart.x, y - shapeStart.y);
+    annoCtx.restore();
+  }
+
+  if (activeTool === 'rect' && shapeStart) {
+    annoCtx.putImageData(shapeSnapshot, 0, 0);
+    annoCtx.strokeStyle = activeColor;
+    annoCtx.lineWidth   = activeSize;
+    annoCtx.lineCap     = 'square';
+    annoCtx.strokeRect(shapeStart.x, shapeStart.y, x - shapeStart.x, y - shapeStart.y);
+  }
+
+  if (activeTool === 'line' && shapeStart) {
+    annoCtx.putImageData(shapeSnapshot, 0, 0);
+    annoCtx.beginPath();
+    annoCtx.strokeStyle = activeColor;
+    annoCtx.lineWidth   = activeSize;
+    annoCtx.lineCap     = 'round';
+    annoCtx.moveTo(shapeStart.x, shapeStart.y);
+    annoCtx.lineTo(x, y);
+    annoCtx.stroke();
+  }
+
+  if (activeTool === 'eraser') {
+    annoCtx.save();
+    annoCtx.globalCompositeOperation = 'destination-out';
+    annoCtx.beginPath();
+    annoCtx.arc(x, y, activeSize * 2, 0, Math.PI * 2);
+    annoCtx.fill();
+    annoCtx.restore();
+  }
+
+  lastX = x; lastY = y;
+});
+
+annoCanvas.addEventListener('pointerup', e => {
+  if (!isDrawing) return;
+  isDrawing    = false;
+  shapeStart   = null;
+  shapeSnapshot = null;
+  if (activeTool !== 'text') saveState();
+});
+
+annoCanvas.addEventListener('touchstart',  e => e.preventDefault(), { passive: false });
+annoCanvas.addEventListener('touchmove',   e => e.preventDefault(), { passive: false });
+
+// ═══════════════════════════════════════════════════════════════
+// TEXT TOOL
+// ═══════════════════════════════════════════════════════════════
+function placeTextInput(x, y) {
+  commitText(); // commit any pending
+
+  textPos = { x, y };
+  textInput.value   = '';
+  textInput.style.display = 'block';
+  textInput.style.left    = x + 'px';
+  textInput.style.top     = (y - 4) + 'px';
+  textInput.style.fontSize = (activeSize * 3 + 8) + 'px';
+  textInput.style.color    = activeColor;
+  textInput.style.width    = (annoCanvas.width - x - 10) + 'px';
+  textInput.focus();
+}
+
+function onTextKeydown(e) {
+  if (e.key === 'Escape') { textInput.style.display = 'none'; textPos = null; }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
+  // Auto-grow
+  setTimeout(() => {
+    textInput.style.height = 'auto';
+    textInput.style.height = textInput.scrollHeight + 'px';
+  }, 0);
+}
+
+function commitText() {
+  if (!textPos || !textInput.value.trim()) {
+    textInput.style.display = 'none'; textPos = null; return;
+  }
+  const lines    = textInput.value.split('\n');
+  const fontSize = parseInt(textInput.style.fontSize) || 16;
+  annoCtx.font      = `${fontSize}px Georgia, serif`;
+  annoCtx.fillStyle = activeColor;
+  annoCtx.textBaseline = 'top';
+  lines.forEach((line, i) => {
+    annoCtx.fillText(line, textPos.x, textPos.y + i * (fontSize * 1.3));
+  });
+  saveState();
+  textInput.style.display = 'none';
+  textPos = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE / DOWNLOAD
+// ═══════════════════════════════════════════════════════════════
+async function savePDF() {
+  if (!fileId) {
+    // Client-side only: warn that server session might be gone
+    alert('Please re-open the PDF to save. Session may have expired.');
+    return;
+  }
+
+  const btn = document.getElementById('pde-save-btn');
+  btn.disabled = true; btn.textContent = '⟳ Saving…';
+  showToast('Applying annotations…');
+
+  // Collect annotation DataURLs for pages that have been edited
+  const annotations = {};
+  for (const [idxStr, states] of Object.entries(history)) {
+    const idx = parseInt(idxStr);
+    // Check if this page has any annotations (more than the initial empty state)
+    if (states.length < 2) continue;
+    const lastState = states[states.length - 1];
+
+    // Check if the annotation canvas has any non-transparent pixels
+    const data = lastState.data;
+    let hasPixels = false;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) { hasPixels = true; break; }
+    }
+    if (!hasPixels) continue;
+
+    // Render this page's annotation to a temp canvas to get dataUrl
+    const tc = document.createElement('canvas');
+    // We need the actual page dimensions — render at zoom 1
+    const page     = await pdfJsDoc.getPage(idx + 1);
+    const viewport = page.getViewport({ scale: 1 });
+    tc.width  = Math.floor(viewport.width);
+    tc.height = Math.floor(viewport.height);
+    const tctx = tc.getContext('2d');
+
+    // Scale annotations from current zoom to 1x
+    tctx.save();
+    tctx.scale(1 / zoomLevel, 1 / zoomLevel);
+    // Render current annotation imagedata onto a temp canvas at current zoom size, then scale down
+    const tmpC = document.createElement('canvas');
+    tmpC.width  = lastState.width;
+    tmpC.height = lastState.height;
+    tmpC.getContext('2d').putImageData(lastState, 0, 0);
+    tctx.drawImage(tmpC, 0, 0);
+    tctx.restore();
+
+    annotations[idx] = { dataUrl: tc.toDataURL('image/png') };
+  }
+
+  if (!Object.keys(annotations).length) {
+    // No annotations — just offer the original
+    btn.disabled = false; btn.textContent = '⬇ Download PDF';
+    hideToast();
+    alert('No annotations added yet. Draw, highlight, or add text first.');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/tools/pdf/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId, annotations }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      const a   = document.createElement('a');
+      a.href     = '/tools/download/' + data.id;
+      a.download = data.filename;
+      a.click();
+      showToast('Download started!');
+      setTimeout(hideToast, 2500);
+    } else {
+      alert('Save failed: ' + data.error);
+    }
+  } catch (err) {
+    alert('Network error. Please try again.');
+  }
+
+  btn.disabled = false; btn.textContent = '⬇ Download PDF';
+  hideToast();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.target === textInput) return;
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'z') { e.preventDefault(); undo(); }
+    if (e.key === 'y') { e.preventDefault(); redo(); }
+    return;
+  }
+  switch (e.key.toLowerCase()) {
+    case 'p': setTool('pen');       break;
+    case 'h': setTool('highlight'); break;
+    case 't': setTool('text');      break;
+    case 'r': setTool('rect');      break;
+    case 'l': setTool('line');      break;
+    case 'e': setTool('eraser');    break;
+    case 'arrowleft':  goPage(currentPage - 1); break;
+    case 'arrowright': goPage(currentPage + 1); break;
+    case '+': case '=': zoomIn();  break;
+    case '-': case '_': zoomOut(); break;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('pde-toast');
+  t.textContent = msg; t.style.display = 'block';
+}
+function hideToast() { document.getElementById('pde-toast').style.display = 'none'; }
+</script>
+
+<%- include('partials/footer') %>
