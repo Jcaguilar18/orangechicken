@@ -1,389 +1,1073 @@
 <%- include('partials/header', { pageTitle: 'Video Editor — Orange Chicken' }) %>
 
-<div class="container" style="max-width:900px">
-  <section class="hero" style="padding-bottom:1.5rem">
-    <p class="hero-label">TOOLS</p>
-    <h1 class="hero-title" style="font-size:2.2rem">Video Editor</h1>
-    <p class="hero-sub">Trim, merge clips, add music, and export in TikTok, YouTube, or any format. 500 MB max per file.</p>
-  </section>
-  <div class="glow-line"></div>
+<style>
+/* ── Reset & base ───────────────────────────────────────────── */
+#ve { display:flex; flex-direction:column; height:calc(100vh - 56px); background:#141414; color:#d4d4d4; font-family:'Inter',sans-serif; font-size:13px; overflow:hidden; user-select:none; }
 
-  <% if (!currentUser) { %>
-  <div class="glass-card" style="padding:2rem;text-align:center;margin-top:1.5rem">
-    <div style="font-size:2.5rem;margin-bottom:1rem">🎬</div>
-    <h3 style="color:#fff;margin-bottom:.5rem">Sign in to use the Video Editor</h3>
-    <p style="color:var(--text-muted);margin-bottom:1.5rem">Free users get 1 export/day. PRO subscribers get unlimited.</p>
-    <a href="/login" class="btn btn-primary" style="margin-right:.75rem">Log In</a>
-    <a href="/register" class="btn btn-ghost">Join the Coop</a>
+/* ── Toolbar ────────────────────────────────────────────────── */
+#ve-toolbar { display:flex; align-items:center; gap:6px; padding:0 12px; height:44px; background:#1f1f1f; border-bottom:1px solid #333; flex-shrink:0; }
+.ve-tool-sep { width:1px; height:22px; background:#3a3a3a; margin:0 4px; }
+.ve-tbtn { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:5px; border:1px solid transparent; background:transparent; color:#aaa; cursor:pointer; font-size:12px; font-weight:500; transition:all .15s; }
+.ve-tbtn:hover { background:#2d2d2d; color:#ddd; }
+.ve-tbtn.active { background:#c8761e22; border-color:#c8761e88; color:#e8962e; }
+.ve-tbtn svg { width:14px; height:14px; }
+#ve-zoom-display { font-size:11px; color:#666; min-width:36px; text-align:center; }
+.ve-export-btn { margin-left:auto; padding:5px 14px; background:linear-gradient(135deg,#c8761e,#e8962e); color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:600; transition:opacity .15s; }
+.ve-export-btn:hover { opacity:.88; }
+.ve-export-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ── Workspace ──────────────────────────────────────────────── */
+#ve-workspace { display:flex; flex:1; min-height:0; overflow:hidden; }
+
+/* ── Media Panel ────────────────────────────────────────────── */
+#ve-media { width:230px; flex-shrink:0; background:#1f1f1f; border-right:1px solid #333; display:flex; flex-direction:column; overflow:hidden; }
+#ve-media-header { padding:10px 12px 8px; border-bottom:1px solid #2d2d2d; display:flex; align-items:center; justify-content:space-between; }
+#ve-media-header h3 { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#888; margin:0; }
+.ve-import-btn { padding:4px 9px; background:#c8761e; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600; }
+.ve-import-btn:hover { background:#e8962e; }
+#ve-media-grid { flex:1; overflow-y:auto; padding:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start; }
+#ve-media-grid::-webkit-scrollbar { width:4px; }
+#ve-media-grid::-webkit-scrollbar-thumb { background:#3a3a3a; border-radius:2px; }
+.ve-media-item { background:#2a2a2a; border-radius:6px; overflow:hidden; cursor:grab; border:1.5px solid transparent; transition:border-color .15s; aspect-ratio:16/10; position:relative; }
+.ve-media-item:hover { border-color:#c8761e88; }
+.ve-media-item.dragging-source { opacity:.5; }
+.ve-media-thumb { width:100%; height:100%; object-fit:cover; display:block; }
+.ve-media-thumb-icon { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:1.6rem; background:#252525; }
+.ve-media-label { position:absolute; bottom:0; left:0; right:0; padding:3px 5px; background:rgba(0,0,0,.7); font-size:10px; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ve-media-duration { position:absolute; top:4px; right:4px; background:rgba(0,0,0,.7); font-size:9px; color:#bbb; padding:1px 4px; border-radius:3px; }
+#ve-media-empty { padding:24px 16px; text-align:center; color:#555; font-size:12px; grid-column:1/-1; }
+#ve-media-empty svg { display:block; margin:0 auto 8px; opacity:.3; }
+
+/* ── Preview Panel ──────────────────────────────────────────── */
+#ve-preview { flex:1; display:flex; flex-direction:column; align-items:center; background:#141414; padding:16px; gap:10px; min-width:0; }
+#ve-preview-wrap { position:relative; background:#000; border-radius:6px; overflow:hidden; max-width:100%; flex-shrink:0; box-shadow:0 4px 24px rgba(0,0,0,.5); }
+#ve-preview-canvas { display:block; }
+#ve-no-preview { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; color:#333; }
+#ve-no-preview svg { width:40px; height:40px; opacity:.3; }
+#ve-timecode { font-size:13px; font-weight:600; color:#888; font-variant-numeric:tabular-nums; letter-spacing:.04em; }
+#ve-transport { display:flex; align-items:center; gap:4px; }
+.ve-transport-btn { width:32px; height:32px; border-radius:5px; border:none; background:#2a2a2a; color:#bbb; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+.ve-transport-btn:hover { background:#353535; color:#fff; }
+.ve-transport-btn.play-btn { width:40px; height:40px; background:#c8761e; color:#fff; font-size:16px; }
+.ve-transport-btn.play-btn:hover { background:#e8962e; }
+
+/* ── Timeline ───────────────────────────────────────────────── */
+#ve-timeline { height:260px; flex-shrink:0; display:flex; border-top:1px solid #333; background:#1a1a1a; }
+#ve-track-labels { width:120px; flex-shrink:0; background:#1f1f1f; border-right:1px solid #333; display:flex; flex-direction:column; }
+.ve-tl-label-top { height:28px; border-bottom:1px solid #2d2d2d; display:flex; align-items:center; padding:0 10px; font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.06em; }
+.ve-track-label { height:60px; display:flex; align-items:center; padding:0 10px; border-bottom:1px solid #252525; font-size:11px; font-weight:600; color:#777; gap:6px; }
+.ve-track-label-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dot-video { background:#c8761e; }
+.dot-audio { background:#2a8baa; }
+#ve-timeline-scroll-wrap { flex:1; overflow-x:auto; overflow-y:hidden; position:relative; min-width:0; }
+#ve-timeline-scroll-wrap::-webkit-scrollbar { height:6px; }
+#ve-timeline-scroll-wrap::-webkit-scrollbar-thumb { background:#3a3a3a; border-radius:3px; }
+#ve-timeline-inner { position:relative; height:100%; min-width:100%; }
+#ve-ruler-canvas { display:block; height:28px; cursor:pointer; border-bottom:1px solid #2d2d2d; }
+#ve-playhead { position:absolute; top:0; bottom:0; width:2px; background:#ff4040; pointer-events:none; z-index:20; }
+#ve-playhead::before { content:''; position:absolute; top:0; left:-5px; border:6px solid transparent; border-top-color:#ff4040; border-bottom:none; width:0; height:0; }
+#ve-tracks-container { position:absolute; top:28px; left:0; right:0; bottom:0; }
+.ve-track-row { height:60px; border-bottom:1px solid #252525; position:relative; background:#1e1e1e; }
+.ve-track-row:nth-child(odd) { background:#1c1c1c; }
+.ve-track-row.dragover { background:#2a2010; }
+/* Clips */
+.ve-clip { position:absolute; top:4px; bottom:4px; border-radius:4px; cursor:grab; overflow:hidden; border:1.5px solid transparent; transition:border-color .1s; display:flex; align-items:center; min-width:8px; }
+.ve-clip:active { cursor:grabbing; }
+.ve-clip.selected { border-color:#fff !important; }
+.ve-clip-video { background:linear-gradient(180deg,#c8761ecc,#a05a0ecc); border-color:#c8761e44; }
+.ve-clip-audio { background:linear-gradient(180deg,#2a8baacc,#1a6b8acc); border-color:#2a8baa44; }
+.ve-clip-image { background:linear-gradient(180deg,#3a8a3acc,#2a6a2acc); border-color:#3a8a3a44; }
+.ve-clip-label { font-size:10px; font-weight:600; color:rgba(255,255,255,.85); padding:0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; flex:1; }
+.ve-clip-handle { width:6px; flex-shrink:0; cursor:ew-resize; background:rgba(255,255,255,.2); position:absolute; top:0; bottom:0; }
+.ve-clip-handle-l { left:0; border-radius:3px 0 0 3px; }
+.ve-clip-handle-r { right:0; border-radius:0 3px 3px 0; }
+.ve-clip-waveform { position:absolute; inset:0; opacity:.25; pointer-events:none; }
+
+/* ── Effects Panel ──────────────────────────────────────────── */
+#ve-fx-panel { width:0; overflow:hidden; transition:width .2s; background:#1f1f1f; border-left:1px solid #333; flex-shrink:0; }
+#ve-fx-panel.open { width:200px; }
+#ve-fx-inner { width:200px; padding:12px; display:flex; flex-direction:column; gap:12px; }
+#ve-fx-inner h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#666; margin:0; }
+.ve-fx-row { display:flex; flex-direction:column; gap:5px; }
+.ve-fx-label { font-size:11px; color:#999; display:flex; justify-content:space-between; }
+.ve-fx-slider { width:100%; accent-color:#c8761e; }
+.ve-fx-check { display:flex; align-items:center; gap:7px; font-size:12px; color:#aaa; cursor:pointer; }
+.ve-fx-check input { accent-color:#c8761e; width:14px; height:14px; }
+
+/* ── Upload progress ────────────────────────────────────────── */
+#ve-upload-toast { position:fixed; bottom:20px; right:20px; background:#1f1f1f; border:1px solid #3a3a3a; border-radius:8px; padding:10px 14px; font-size:12px; color:#ccc; display:none; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,.5); }
+#ve-export-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:9999; }
+#ve-export-modal-inner { background:#252525; border-radius:10px; padding:24px; width:360px; border:1px solid #3a3a3a; }
+#ve-export-modal-inner h3 { margin:0 0 16px; font-size:15px; color:#e2d5c3; }
+.ve-export-row { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.ve-export-row label { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.06em; }
+.ve-pill-row { display:flex; gap:6px; flex-wrap:wrap; }
+.ve-pill { padding:5px 12px; border-radius:16px; border:1px solid #3a3a3a; background:#1e1e1e; color:#aaa; font-size:12px; cursor:pointer; }
+.ve-pill.active { background:#c8761e22; border-color:#c8761e; color:#e8962e; }
+.ve-export-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+.ve-btn-ghost { padding:7px 16px; border:1px solid #3a3a3a; background:transparent; color:#aaa; border-radius:6px; cursor:pointer; font-size:12px; }
+.ve-btn-primary { padding:7px 16px; background:#c8761e; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+#ve-export-progress { margin-top:10px; font-size:12px; color:#888; }
+</style>
+
+<!-- hidden file input -->
+<input type="file" id="ve-file-input" multiple accept="video/*,audio/*,image/*" style="display:none">
+<div id="ve-upload-toast">⟳ Uploading…</div>
+
+<div id="ve">
+
+  <!-- ── Toolbar ────────────────────────────────────────────── -->
+  <div id="ve-toolbar">
+    <button class="ve-tbtn active" id="tool-select" onclick="setTool('select')" title="Select (V)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 1l10 6-4.5 1.5L7 13z"/></svg> Select
+    </button>
+    <button class="ve-tbtn" id="tool-cut" onclick="setTool('cut')" title="Cut/Razor (C)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="4" r="2.5"/><circle cx="4" cy="12" r="2.5"/><line x1="6.5" y1="5.5" x2="14" y2="2"/><line x1="6.5" y1="10.5" x2="14" y2="14"/><line x1="8" y1="8" x2="14" y2="8"/></svg> Razor
+    </button>
+    <div class="ve-tool-sep"></div>
+    <button class="ve-tbtn" onclick="zoomIn()" title="Zoom In">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/><line x1="7" y1="4.5" x2="7" y2="9.5"/><line x1="4.5" y1="7" x2="9.5" y2="7"/></svg>
+    </button>
+    <span id="ve-zoom-display">80px/s</span>
+    <button class="ve-tbtn" onclick="zoomOut()" title="Zoom Out">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/><line x1="4.5" y1="7" x2="9.5" y2="7"/></svg>
+    </button>
+    <div class="ve-tool-sep"></div>
+    <button class="ve-tbtn" id="fx-toggle-btn" onclick="toggleFx()" title="Effects Panel">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="4" height="4" rx="1"/><rect x="10" y="2" width="4" height="4" rx="1"/><rect x="2" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/></svg> Effects
+    </button>
+    <button class="ve-export-btn" onclick="openExport()">Export Video ↗</button>
   </div>
-  <% } else { %>
 
-  <!-- Usage notice -->
-  <div class="rate-limit-banner" style="margin-bottom:1.5rem">
-    <% if (isSubscriber) { %>
-      <span style="color:var(--amber)">✦</span> <strong style="color:var(--amber)">PRO</strong> — Unlimited exports
-    <% } else { %>
-      <span>◈</span> <strong>1</strong> free export/day &nbsp;·&nbsp; <a href="/subscribe" class="btn btn-ghost btn-sm">Upgrade to PRO →</a>
-    <% } %>
-  </div>
+  <!-- ── Workspace ──────────────────────────────────────────── -->
+  <div id="ve-workspace">
 
-  <!-- Step 1: Upload -->
-  <div class="glass-card ve-card" id="uploadCard">
-    <h3 class="ve-section-title">1 — Upload Clips</h3>
-    <div id="dropZone" class="ve-drop">
-      <div style="font-size:2.5rem;margin-bottom:.75rem">🎬</div>
-      <p style="color:#e2d5c3;margin:0 0 .3rem">Drag & drop video files here</p>
-      <p style="color:var(--text-muted);font-size:.82rem;margin:0 0 1rem">MP4, MOV, MKV, AVI, WebM — up to 500 MB each</p>
-      <label class="btn btn-primary" style="cursor:pointer">
-        Choose Videos
-        <input type="file" id="videoInput" accept="video/*" multiple style="display:none" onchange="handleVideoFiles(this.files)" />
-      </label>
-    </div>
-
-    <div id="clipList" style="margin-top:1rem"></div>
-
-    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
-      <h4 style="color:var(--text-muted);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.75rem">Background Music <span style="font-weight:400">(optional)</span></h4>
-      <div id="musicDropZone" class="ve-drop ve-drop-sm">
-        <span style="font-size:1.5rem">🎵</span>
-        <span style="color:var(--text-muted);font-size:.85rem;margin:0 .75rem">Drop audio file or</span>
-        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-          Choose Audio
-          <input type="file" id="musicInput" accept="audio/*" style="display:none" onchange="handleMusicFile(this.files[0])" />
-        </label>
+    <!-- Media Library -->
+    <div id="ve-media">
+      <div id="ve-media-header">
+        <h3>Media Library</h3>
+        <button class="ve-import-btn" onclick="document.getElementById('ve-file-input').click()">+ Import</button>
       </div>
-      <div id="musicInfo" style="display:none;margin-top:.6rem;font-size:.85rem;color:#e2d5c3"></div>
-    </div>
-  </div>
-
-  <!-- Step 2: Settings -->
-  <div class="glass-card ve-card" id="settingsCard" style="display:none">
-    <h3 class="ve-section-title">2 — Export Settings</h3>
-    <div style="display:flex;flex-wrap:wrap;gap:2rem">
-      <div style="flex:1;min-width:200px">
-        <label class="ve-label">Output Format</label>
-        <div class="cite-pill-group" id="formatGroup">
-          <button class="cite-pill active" data-val="tiktok">TikTok 9:16</button>
-          <button class="cite-pill" data-val="youtube">YouTube 16:9</button>
-          <button class="cite-pill" data-val="square">Square 1:1</button>
-          <button class="cite-pill" data-val="original">Original</button>
+      <div id="ve-media-grid">
+        <div id="ve-media-empty">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><rect x="4" y="8" width="32" height="24" rx="3"/><polygon points="14,16 28,20 14,24" fill="currentColor"/></svg>
+          Import video, audio,<br>or image files to begin
         </div>
       </div>
-      <div style="flex:1;min-width:180px" id="audioModeWrap">
-        <label class="ve-label">Audio</label>
-        <div class="cite-pill-group" id="audioModeGroup">
-          <button class="cite-pill active" data-val="original">Keep original</button>
-          <button class="cite-pill" data-val="replace">Replace with music</button>
-          <button class="cite-pill" data-val="mix">Mix both</button>
+    </div>
+
+    <!-- Preview -->
+    <div id="ve-preview">
+      <div id="ve-preview-wrap">
+        <canvas id="ve-preview-canvas" width="640" height="360"></canvas>
+        <div id="ve-no-preview">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="8" width="32" height="24" rx="3"/><polygon points="15,14 29,20 15,26" fill="currentColor" stroke="none"/></svg>
+          <span style="font-size:12px">Add clips to the timeline</span>
+        </div>
+      </div>
+      <div id="ve-timecode">00:00:00:00 / 00:00:00:00</div>
+      <div id="ve-transport">
+        <button class="ve-transport-btn" onclick="seekRelative(-5)" title="Back 5s">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M8 3v3.5L4 4v8l4-2.5V13l5-5z"/></svg>
+        </button>
+        <button class="ve-transport-btn" onclick="stepFrame(-1)" title="Step back">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M10 3v10L4 8z"/></svg>
+        </button>
+        <button class="ve-transport-btn play-btn" id="ve-play-btn" onclick="togglePlay()">▶</button>
+        <button class="ve-transport-btn" onclick="stepFrame(1)" title="Step forward">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M6 3v10l6-5z"/></svg>
+        </button>
+        <button class="ve-transport-btn" onclick="seekRelative(5)" title="Forward 5s">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M8 3v3.5L12 4v8l-4-2.5V13L3 8z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Effects Panel -->
+    <div id="ve-fx-panel">
+      <div id="ve-fx-inner">
+        <h4>Clip Effects</h4>
+        <div id="ve-fx-no-clip" style="font-size:12px;color:#555">Select a clip to edit effects.</div>
+        <div id="ve-fx-controls" style="display:none">
+          <div class="ve-fx-row" id="ve-fx-opacity-row">
+            <div class="ve-fx-label"><span>Opacity</span><span id="ve-fx-opacity-val">100%</span></div>
+            <input type="range" class="ve-fx-slider" id="ve-fx-opacity" min="0" max="100" value="100" oninput="applyFx()">
+          </div>
+          <div class="ve-fx-row" id="ve-fx-volume-row">
+            <div class="ve-fx-label"><span>Volume</span><span id="ve-fx-volume-val">100%</span></div>
+            <input type="range" class="ve-fx-slider" id="ve-fx-volume" min="0" max="150" value="100" oninput="applyFx()">
+          </div>
+          <div class="ve-fx-row">
+            <label class="ve-fx-check"><input type="checkbox" id="ve-fx-fadein" onchange="applyFx()"> Fade In</label>
+            <label class="ve-fx-check"><input type="checkbox" id="ve-fx-fadeout" onchange="applyFx()"> Fade Out</label>
+          </div>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:1.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-      <button class="btn btn-primary" id="processBtn" onclick="startProcessing()" style="padding:.75rem 2rem">
-        Export Video
-      </button>
-      <span id="processStatus" style="font-size:.85rem;color:var(--text-muted)"></span>
+  </div><!-- /workspace -->
+
+  <!-- ── Timeline ───────────────────────────────────────────── -->
+  <div id="ve-timeline">
+    <div id="ve-track-labels">
+      <div class="ve-tl-label-top">Tracks</div>
+      <div class="ve-track-label"><div class="ve-track-label-dot dot-video"></div>Video 1</div>
+      <div class="ve-track-label"><div class="ve-track-label-dot dot-video"></div>Video 2</div>
+      <div class="ve-track-label"><div class="ve-track-label-dot dot-audio"></div>Audio 1</div>
+      <div class="ve-track-label"><div class="ve-track-label-dot dot-audio"></div>Audio 2</div>
+    </div>
+    <div id="ve-timeline-scroll-wrap">
+      <div id="ve-timeline-inner">
+        <canvas id="ve-ruler-canvas" height="28"></canvas>
+        <div id="ve-playhead"></div>
+        <div id="ve-tracks-container">
+          <div class="ve-track-row" data-track="v1" ondragover="onTrackDragOver(event)" ondrop="onTrackDrop(event,'v1')"></div>
+          <div class="ve-track-row" data-track="v2" ondragover="onTrackDragOver(event)" ondrop="onTrackDrop(event,'v2')"></div>
+          <div class="ve-track-row" data-track="a1" ondragover="onTrackDragOver(event)" ondrop="onTrackDrop(event,'a1')"></div>
+          <div class="ve-track-row" data-track="a2" ondragover="onTrackDragOver(event)" ondrop="onTrackDrop(event,'a2')"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Step 3: Download -->
-  <div class="glass-card ve-card" id="downloadCard" style="display:none">
-    <h3 class="ve-section-title">3 — Download</h3>
-    <div id="downloadArea" style="text-align:center;padding:1.5rem 0">
-      <div style="font-size:3rem;margin-bottom:1rem">✅</div>
-      <p style="color:#e2d5c3;margin-bottom:1.5rem">Your video is ready!</p>
-      <a id="downloadLink" class="btn btn-primary" style="padding:.75rem 2.5rem" download>Download Video</a>
+</div><!-- /ve -->
+
+<!-- Export Modal -->
+<div id="ve-export-modal" onclick="if(event.target===this)closeExport()">
+  <div id="ve-export-modal-inner">
+    <h3>Export Video</h3>
+    <div class="ve-export-row">
+      <label>Format</label>
+      <div class="ve-pill-row">
+        <button class="ve-pill active" data-val="tiktok" onclick="selectPill(this,'fmt')">TikTok 9:16</button>
+        <button class="ve-pill" data-val="youtube" onclick="selectPill(this,'fmt')">YouTube 16:9</button>
+        <button class="ve-pill" data-val="square" onclick="selectPill(this,'fmt')">Square 1:1</button>
+        <button class="ve-pill" data-val="original" onclick="selectPill(this,'fmt')">Original</button>
+      </div>
+    </div>
+    <div class="ve-export-row">
+      <label>Audio</label>
+      <div class="ve-pill-row">
+        <button class="ve-pill active" data-val="original" onclick="selectPill(this,'audio')">Original</button>
+        <button class="ve-pill" data-val="replace" onclick="selectPill(this,'audio')">Replace</button>
+        <button class="ve-pill" data-val="mix" onclick="selectPill(this,'audio')">Mix</button>
+      </div>
+    </div>
+    <div id="ve-export-progress"></div>
+    <div class="ve-export-actions">
+      <button class="ve-btn-ghost" onclick="closeExport()">Cancel</button>
+      <button class="ve-btn-primary" id="ve-export-go-btn" onclick="runExport()">Export →</button>
     </div>
   </div>
 </div>
 
-<style>
-.ve-card { padding: 1.5rem; margin-bottom: 1.25rem; }
-.ve-section-title { color: var(--amber); font-family: 'Rye', serif; font-size: .85rem; letter-spacing: .08em; margin-bottom: 1.25rem; }
-.ve-label { display: block; font-size: .78rem; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; font-weight: 600; }
-.ve-drop {
-  border: 2px dashed var(--border);
-  border-radius: 10px;
-  padding: 2rem 1.5rem;
-  text-align: center;
-  transition: border-color .2s;
-  cursor: default;
-}
-.ve-drop.drag-over { border-color: rgba(200,110,20,.8); background: rgba(200,110,20,.05); }
-.ve-drop-sm { padding: .75rem 1rem; display: flex; align-items: center; justify-content: center; gap: 0; }
-.clip-row {
-  background: rgba(255,255,255,.04);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: .75rem;
-}
-.clip-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; flex-wrap: wrap; }
-.clip-filename { color: #e2d5c3; font-size: .9rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.clip-size { color: var(--text-muted); font-size: .78rem; flex-shrink: 0; }
-.clip-video { width: 100%; max-height: 220px; border-radius: 6px; background: #000; display: block; margin-bottom: .75rem; }
-.trim-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
-.trim-field { display: flex; flex-direction: column; gap: .3rem; }
-.trim-field label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
-.trim-input {
-  background: rgba(255,255,255,.05);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: .4rem .7rem;
-  color: #fff;
-  font-family: monospace;
-  font-size: .88rem;
-  width: 90px;
-}
-.trim-input:focus { outline: none; border-color: rgba(200,110,20,.6); }
-.clip-order-btns { display: flex; gap: .3rem; }
-.order-btn {
-  background: rgba(255,255,255,.06);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: 6px;
-  width: 28px; height: 28px;
-  cursor: pointer; font-size: .9rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.order-btn:hover { color: #fff; border-color: rgba(200,110,20,.5); }
-.remove-clip-btn {
-  background: rgba(255,60,60,.12);
-  border: 1px solid rgba(255,60,60,.25);
-  color: #ff6b6b;
-  border-radius: 6px;
-  padding: .25rem .6rem;
-  cursor: pointer;
-  font-size: .78rem;
-}
-.remove-clip-btn:hover { background: rgba(255,60,60,.2); }
-.cite-pill-group { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .3rem; }
-.cite-pill { padding: .35rem .85rem; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: .8rem; cursor: pointer; transition: all .18s; }
-.cite-pill:hover { border-color: rgba(200,110,20,.5); color: #fff; }
-.cite-pill.active { background: rgba(200,110,20,.2); border-color: rgba(200,110,20,.7); color: var(--amber); }
-.progress-ring { display: inline-block; margin-left: .5rem; animation: spin 1.2s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
-
 <script>
-const clips = [];    // { sourceId, filename, size, startTime, endTime, el }
-let musicSourceId = null;
-let currentFormat    = 'tiktok';
-let currentAudioMode = 'original';
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const TRACK_DEFS = [
+  { id:'v1', type:'video', label:'Video 1' },
+  { id:'v2', type:'video', label:'Video 2' },
+  { id:'a1', type:'audio', label:'Audio 1' },
+  { id:'a2', type:'audio', label:'Audio 2' },
+];
 
-// ── Pill groups ────────────────────────────────────────────────────
-document.getElementById('formatGroup').addEventListener('click', e => {
-  if (!e.target.dataset.val) return;
-  document.querySelectorAll('#formatGroup .cite-pill').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  currentFormat = e.target.dataset.val;
-});
-document.getElementById('audioModeGroup').addEventListener('click', e => {
-  if (!e.target.dataset.val) return;
-  document.querySelectorAll('#audioModeGroup .cite-pill').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  currentAudioMode = e.target.dataset.val;
-});
+const S = {
+  media:          [],   // { id, name, type, url, serverSourceId, duration, w, h }
+  clips:          [],   // { id, trackId, start, trimIn, trimOut, mediaId, fx }
+  playhead:       0,    // seconds
+  playing:        false,
+  zoom:           80,   // px/sec
+  activeTool:     'select',
+  selectedClipId: null,
+  exportFmt:      'tiktok',
+  exportAudio:    'original',
+  _raf:           null,
+  _lastRafT:      null,
+};
 
-// ── Drag & drop ────────────────────────────────────────────────────
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  handleVideoFiles(e.dataTransfer.files);
-});
-const musicDrop = document.getElementById('musicDropZone');
-musicDrop.addEventListener('dragover', e => { e.preventDefault(); musicDrop.classList.add('drag-over'); });
-musicDrop.addEventListener('dragleave', () => musicDrop.classList.remove('drag-over'));
-musicDrop.addEventListener('drop', e => {
-  e.preventDefault(); musicDrop.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) handleMusicFile(e.dataTransfer.files[0]);
-});
+let clipIdSeq  = 0;
+let mediaIdSeq = 0;
 
-function fmtSize(bytes) {
-  if (bytes > 1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
-  return (bytes/1024).toFixed(0) + ' KB';
+// Active video/audio elements keyed by sourceId
+const mediaEls = {};   // sourceId -> <video> or <audio>
+// Drag state
+let dragState = null;
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function uid()  { return ++clipIdSeq; }
+function muid() { return ++mediaIdSeq; }
+
+function fmtTC(s) {
+  s = Math.max(0, s);
+  const h   = Math.floor(s / 3600);
+  const m   = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  const fr  = Math.floor((s % 1) * 30);
+  return `${pad(h)}:${pad(m)}:${pad(sec)}:${pad(fr)}`;
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function timelineDuration() {
+  if (!S.clips.length) return 30;
+  return Math.max(30, ...S.clips.map(c => c.start + (c.trimOut - c.trimIn))) + 5;
 }
 
-function fmtTime(secs) {
-  if (isNaN(secs)) return '0:00';
-  const m = Math.floor(secs / 60);
-  const s = Math.floor(secs % 60);
-  return `${m}:${s.toString().padStart(2,'0')}`;
+function pxToSec(px)  { return px / S.zoom; }
+function secToPx(sec) { return sec * S.zoom; }
+
+function getClipById(id) { return S.clips.find(c => c.id === id); }
+function getMediaById(id) { return S.media.find(m => m.id === id); }
+
+// ═══════════════════════════════════════════════════════════════
+// LAYOUT / RESIZE
+// ═══════════════════════════════════════════════════════════════
+function fitPreviewCanvas() {
+  const wrap  = document.getElementById('ve-preview-wrap');
+  const avail = wrap.parentElement.clientWidth - 32;
+  const maxH  = wrap.parentElement.clientHeight - 90;
+  let w = Math.min(avail, 640);
+  let h = w * 9 / 16;
+  if (h > maxH) { h = maxH; w = h * 16 / 9; }
+  const cv = document.getElementById('ve-preview-canvas');
+  cv.style.width  = w + 'px';
+  cv.style.height = h + 'px';
 }
 
-function parseSecs(str) {
-  str = (str || '').trim();
-  if (str.includes(':')) {
-    const parts = str.split(':').map(Number);
-    return parts.length === 2 ? parts[0]*60 + parts[1] : parts[0]*3600 + parts[1]*60 + parts[2];
+window.addEventListener('resize', () => { fitPreviewCanvas(); renderRuler(); });
+
+// ═══════════════════════════════════════════════════════════════
+// TOOLBAR / TOOLS
+// ═══════════════════════════════════════════════════════════════
+function setTool(t) {
+  S.activeTool = t;
+  document.querySelectorAll('#ve-toolbar .ve-tbtn[id^=tool-]').forEach(b => b.classList.toggle('active', b.id === 'tool-' + t));
+  document.getElementById('ve-tracks-container').style.cursor = t === 'cut' ? 'crosshair' : '';
+}
+
+function zoomIn()  { S.zoom = Math.min(400, S.zoom * 1.4); onZoomChange(); }
+function zoomOut() { S.zoom = Math.max(20,  S.zoom / 1.4); onZoomChange(); }
+
+function onZoomChange() {
+  document.getElementById('ve-zoom-display').textContent = Math.round(S.zoom) + 'px/s';
+  renderTimeline();
+  renderRuler();
+  updatePlayheadEl();
+}
+
+function toggleFx() {
+  const p = document.getElementById('ve-fx-panel');
+  p.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MEDIA IMPORT
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('ve-file-input').addEventListener('change', async function() {
+  const files = Array.from(this.files);
+  this.value = '';
+  if (!files.length) return;
+  showToast('Uploading ' + files.length + ' file(s)…');
+
+  for (const file of files) {
+    const type = file.type.startsWith('video/') ? 'video'
+               : file.type.startsWith('audio/') ? 'audio'
+               : file.type.startsWith('image/') ? 'image' : null;
+    if (!type) continue;
+
+    const localUrl = URL.createObjectURL(file);
+    let duration = 5, w = 0, h = 0;
+
+    if (type === 'video' || type === 'audio') {
+      const el = type === 'video' ? document.createElement('video') : document.createElement('audio');
+      el.src = localUrl;
+      await new Promise(res => { el.onloadedmetadata = res; el.onerror = res; });
+      duration = isFinite(el.duration) ? el.duration : 5;
+      if (type === 'video') { w = el.videoWidth; h = el.videoHeight; }
+    }
+
+    // Upload to server for eventual export
+    let serverSourceId = null;
+    try {
+      const fd = new FormData();
+      fd.append('files', file);
+      const resp = await fetch('/tools/video/upload', { method:'POST', body:fd });
+      const data = await resp.json();
+      if (data.ok && data.sources?.length) serverSourceId = data.sources[0].id;
+    } catch(_) {}
+
+    const m = { id: muid(), name: file.name, type, url: localUrl, serverSourceId, duration, w, h };
+    S.media.push(m);
+
+    // Pre-create element
+    if (type === 'video' || type === 'audio') {
+      const el = document.createElement(type);
+      el.src = localUrl;
+      el.preload = 'auto';
+      el.muted = (type === 'video');
+      if (serverSourceId) mediaEls[serverSourceId] = el;
+    }
   }
-  return parseFloat(str) || 0;
+
+  hideToast();
+  renderMediaLibrary();
+});
+
+function showToast(msg) {
+  const t = document.getElementById('ve-upload-toast');
+  t.textContent = msg; t.style.display = 'block';
 }
+function hideToast() { document.getElementById('ve-upload-toast').style.display = 'none'; }
 
-// ── Video upload ───────────────────────────────────────────────────
-async function handleVideoFiles(files) {
-  const MAX = 500 * 1024 * 1024;
-  const valid = Array.from(files).filter(f => {
-    if (f.size > MAX) { alert(`"${f.name}" exceeds 500 MB limit.`); return false; }
-    return f.type.startsWith('video/');
-  });
-  if (!valid.length) return;
+// ═══════════════════════════════════════════════════════════════
+// MEDIA LIBRARY RENDER
+// ═══════════════════════════════════════════════════════════════
+async function renderMediaLibrary() {
+  const grid  = document.getElementById('ve-media-grid');
+  const empty = document.getElementById('ve-media-empty');
+  if (!S.media.length) { empty.style.display = ''; return; }
+  empty.style.display = 'none';
 
-  const fd = new FormData();
-  valid.forEach(f => fd.append('files', f));
+  // Remove old items, keep empty
+  grid.querySelectorAll('.ve-media-item').forEach(el => el.remove());
 
-  const res = await fetch('/tools/video/upload', { method: 'POST', body: fd });
-  const data = await res.json();
-  if (!data.ok) return alert('Upload failed: ' + data.error);
+  for (const m of S.media) {
+    const item = document.createElement('div');
+    item.className = 've-media-item';
+    item.draggable = true;
+    item.dataset.mediaId = m.id;
 
-  for (const src of data.sources) {
-    if (src.isAudio) continue;
-    addClip(src);
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('mediaId', m.id);
+      item.classList.add('dragging-source');
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging-source'));
+    item.addEventListener('dblclick', () => addClipToNextTrack(m.id));
+
+    if (m.type === 'video') {
+      const thumb = await getVideoThumbnail(m.url);
+      item.innerHTML = `<img class="ve-media-thumb" src="${thumb}">`;
+    } else if (m.type === 'image') {
+      item.innerHTML = `<img class="ve-media-thumb" src="${m.url}">`;
+    } else {
+      item.innerHTML = `<div class="ve-media-thumb-icon">🎵</div>`;
+    }
+
+    const dur = m.duration >= 3600 ? fmtTC(m.duration).slice(0,8) : fmtTC(m.duration).slice(3,8);
+    item.innerHTML += `<div class="ve-media-label">${m.name}</div>`;
+    if (m.type !== 'image') item.innerHTML += `<div class="ve-media-duration">${dur}</div>`;
+
+    grid.appendChild(item);
   }
-  updateUI();
 }
 
-function addClip(src) {
-  const idx  = clips.length;
-  const row  = document.createElement('div');
-  row.className = 'clip-row';
-  row.id = 'clip-' + src.id;
-  row.innerHTML = `
-    <div class="clip-header">
-      <span class="clip-order-btns">
-        <button class="order-btn" onclick="moveClip('${src.id}',-1)" title="Move up">↑</button>
-        <button class="order-btn" onclick="moveClip('${src.id}',1)" title="Move down">↓</button>
-      </span>
-      <span class="clip-filename">${src.filename}</span>
-      <span class="clip-size">${fmtSize(src.size)}</span>
-      <button class="remove-clip-btn" onclick="removeClip('${src.id}')">Remove</button>
-    </div>
-    <video class="clip-video" id="vid-${src.id}" src="/tools/video/source/${src.id}" preload="metadata" controls></video>
-    <div class="trim-controls">
-      <div class="trim-field">
-        <label>Start</label>
-        <input type="text" class="trim-input" id="start-${src.id}" value="0:00" placeholder="0:00" onchange="syncTrim('${src.id}')" />
-      </div>
-      <div class="trim-field">
-        <label>End</label>
-        <input type="text" class="trim-input" id="end-${src.id}" value="" placeholder="full" onchange="syncTrim('${src.id}')" />
-      </div>
-      <div class="trim-field">
-        <label>Duration</label>
-        <span id="dur-${src.id}" style="color:var(--text-muted);font-size:.85rem;padding-top:.4rem">—</span>
-      </div>
-    </div>
-  `;
-  document.getElementById('clipList').appendChild(row);
+function getVideoThumbnail(url) {
+  return new Promise(res => {
+    const v = document.createElement('video');
+    const c = document.createElement('canvas');
+    v.src = url; v.muted = true;
+    v.onloadeddata = () => {
+      v.currentTime = Math.min(0.5, v.duration * 0.1);
+    };
+    v.onseeked = () => {
+      c.width = 160; c.height = 90;
+      c.getContext('2d').drawImage(v, 0, 0, 160, 90);
+      res(c.toDataURL());
+    };
+    v.onerror = () => res('');
+    v.load();
+  });
+}
 
-  const vid = document.getElementById('vid-' + src.id);
-  vid.addEventListener('loadedmetadata', () => {
-    const d = vid.duration;
-    document.getElementById('end-' + src.id).value = fmtTime(d);
-    document.getElementById('end-' + src.id).placeholder = fmtTime(d);
-    updateDur(src.id);
+function addClipToNextTrack(mediaId) {
+  const m = getMediaById(mediaId);
+  if (!m) return;
+  const trackId = m.type === 'audio' ? 'a1' : 'v1';
+  const existing = S.clips.filter(c => c.trackId === trackId);
+  const start = existing.length ? Math.max(...existing.map(c => c.start + (c.trimOut - c.trimIn))) : 0;
+  addClip(mediaId, trackId, start);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TIMELINE DROP
+// ═══════════════════════════════════════════════════════════════
+function onTrackDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('dragover');
+}
+
+document.querySelectorAll('.ve-track-row').forEach(row => {
+  row.addEventListener('dragleave', () => row.classList.remove('dragover'));
+});
+
+function onTrackDrop(e, trackId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  const mediaId = parseInt(e.dataTransfer.getData('mediaId'));
+  if (!mediaId) return;
+  const rect  = e.currentTarget.getBoundingClientRect();
+  const scrollLeft = document.getElementById('ve-timeline-scroll-wrap').scrollLeft;
+  const xInTrack = e.clientX - rect.left + scrollLeft;
+  const start = Math.max(0, pxToSec(xInTrack));
+  addClip(mediaId, trackId, start);
+}
+
+function addClip(mediaId, trackId, start) {
+  const m = getMediaById(mediaId);
+  if (!m) return;
+  const trackType = TRACK_DEFS.find(t => t.id === trackId)?.type;
+  // Validate: don't put audio in video track and vice versa (images ok in video tracks)
+  if (trackType === 'audio' && m.type === 'video') return;
+  if (trackType === 'video' && m.type === 'audio') return;
+
+  const clip = {
+    id: uid(), trackId, start,
+    trimIn: 0, trimOut: m.duration,
+    mediaId,
+    fx: { opacity: 100, volume: 100, fadeIn: false, fadeOut: false }
+  };
+  // Snap to adjacent clips
+  clip.start = snapStart(clip);
+  S.clips.push(clip);
+  renderTimeline();
+  updateNoPreview();
+}
+
+function snapStart(clip) {
+  const SNAP_PX = 8;
+  const snapSec = SNAP_PX / S.zoom;
+  const dur = clip.trimOut - clip.trimIn;
+  for (const other of S.clips) {
+    if (other.id === clip.id) continue;
+    const otherEnd = other.start + (other.trimOut - other.trimIn);
+    // Snap start to another clip's end
+    if (Math.abs(clip.start - otherEnd) < snapSec) return otherEnd;
+    // Snap end to another clip's start
+    if (Math.abs(clip.start + dur - other.start) < snapSec) return other.start - dur;
+  }
+  return clip.start;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TIMELINE RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderTimeline() {
+  const totalDur = timelineDuration();
+  const totalPx  = Math.max(secToPx(totalDur), document.getElementById('ve-timeline-scroll-wrap').clientWidth);
+
+  const inner = document.getElementById('ve-timeline-inner');
+  inner.style.width = totalPx + 'px';
+
+  renderRuler(totalPx);
+
+  TRACK_DEFS.forEach(td => {
+    const row = document.querySelector(`.ve-track-row[data-track="${td.id}"]`);
+    if (!row) return;
+    row.querySelectorAll('.ve-clip').forEach(el => el.remove());
+
+    const trackClips = S.clips.filter(c => c.trackId === td.id);
+    trackClips.forEach(clip => {
+      const m   = getMediaById(clip.mediaId);
+      const dur = clip.trimOut - clip.trimIn;
+      const el  = document.createElement('div');
+      el.className = `ve-clip ve-clip-${m?.type || 'video'}`;
+      el.dataset.clipId = clip.id;
+      el.style.left  = secToPx(clip.start) + 'px';
+      el.style.width = Math.max(8, secToPx(dur)) + 'px';
+      if (S.selectedClipId === clip.id) el.classList.add('selected');
+      el.style.opacity = clip.fx.opacity / 100;
+
+      el.innerHTML = `
+        <div class="ve-clip-handle ve-clip-handle-l" data-side="l"></div>
+        <span class="ve-clip-label">${m?.name || 'Clip'}</span>
+        <div class="ve-clip-handle ve-clip-handle-r" data-side="r"></div>
+      `;
+
+      setupClipPointer(el, clip);
+      row.appendChild(el);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RULER
+// ═══════════════════════════════════════════════════════════════
+function renderRuler(totalPx) {
+  const cv  = document.getElementById('ve-ruler-canvas');
+  const wrap = document.getElementById('ve-timeline-scroll-wrap');
+  const w   = totalPx || Math.max(secToPx(timelineDuration()), wrap.clientWidth);
+  cv.width  = w;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, w, 28);
+  ctx.fillStyle = '#252525';
+  ctx.fillRect(0, 0, w, 28);
+
+  // Decide tick interval based on zoom
+  let interval = 1;
+  if (S.zoom < 30) interval = 10;
+  else if (S.zoom < 60) interval = 5;
+  else if (S.zoom < 150) interval = 1;
+  else interval = 0.5;
+
+  const maxSec = w / S.zoom;
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+
+  for (let t = 0; t <= maxSec + interval; t += interval) {
+    const x = secToPx(t);
+    if (x > w) break;
+    const major = (t % (interval * 5) < 0.001);
+    ctx.fillStyle = major ? '#666' : '#3a3a3a';
+    ctx.fillRect(x, major ? 14 : 20, 1, 28);
+    if (major || S.zoom > 60) {
+      ctx.fillStyle = '#666';
+      const label = t >= 60 ? `${Math.floor(t/60)}:${pad(Math.floor(t%60))}` : t.toFixed(interval < 1 ? 1 : 0) + 's';
+      ctx.fillText(label, x + 3, 11);
+    }
+  }
+
+  // Ruler click → seek
+  cv.onmousedown = e => {
+    const rect = cv.getBoundingClientRect();
+    const scrollLeft = wrap.scrollLeft;
+    const x = e.clientX - rect.left + scrollLeft;
+    seekTo(pxToSec(x));
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLIP POINTER INTERACTIONS
+// ═══════════════════════════════════════════════════════════════
+function setupClipPointer(el, clip) {
+  let dragType = null; // 'move' | 'trim-l' | 'trim-r'
+  let startX, startStart, startTrimIn, startTrimOut;
+
+  el.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+
+    if (S.activeTool === 'cut') {
+      const rect = el.getBoundingClientRect();
+      const scrollLeft = document.getElementById('ve-timeline-scroll-wrap').scrollLeft;
+      const xInClip = e.clientX - rect.left;
+      const cutTime = clip.start + pxToSec(xInClip);
+      cutClipAt(clip, cutTime);
+      return;
+    }
+
+    selectClip(clip.id);
+
+    const side = e.target.dataset?.side;
+    dragType   = side ? 'trim-' + side : 'move';
+    startX     = e.clientX;
+    startStart    = clip.start;
+    startTrimIn   = clip.trimIn;
+    startTrimOut  = clip.trimOut;
+
+    el.setPointerCapture(e.pointerId);
   });
 
-  clips.push({ sourceId: src.id, filename: src.filename, size: src.size, startTime: 0, endTime: null });
-}
+  el.addEventListener('pointermove', e => {
+    if (!dragType) return;
+    const dx  = e.clientX - startX;
+    const dt  = pxToSec(dx);
+    const m   = getMediaById(clip.mediaId);
 
-function syncTrim(id) {
-  const clip = clips.find(c => c.sourceId === id);
-  if (!clip) return;
-  clip.startTime = parseSecs(document.getElementById('start-' + id).value);
-  const endVal   = document.getElementById('end-' + id).value.trim();
-  clip.endTime   = endVal ? parseSecs(endVal) : null;
-  updateDur(id);
-}
-
-function updateDur(id) {
-  const clip = clips.find(c => c.sourceId === id);
-  if (!clip) return;
-  const vid  = document.getElementById('vid-' + id);
-  const total = vid?.duration || 0;
-  const end   = clip.endTime || total;
-  const dur   = Math.max(0, end - clip.startTime);
-  document.getElementById('dur-' + id).textContent = fmtTime(dur);
-}
-
-function removeClip(id) {
-  const idx = clips.findIndex(c => c.sourceId === id);
-  if (idx >= 0) clips.splice(idx, 1);
-  const row = document.getElementById('clip-' + id);
-  if (row) row.remove();
-  updateUI();
-}
-
-function moveClip(id, dir) {
-  const idx = clips.findIndex(c => c.sourceId === id);
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= clips.length) return;
-  [clips[idx], clips[newIdx]] = [clips[newIdx], clips[idx]];
-  const list = document.getElementById('clipList');
-  const rows = Array.from(list.querySelectorAll('.clip-row'));
-  if (dir === -1 && rows[idx] && rows[idx].previousElementSibling)
-    list.insertBefore(rows[idx], rows[idx].previousElementSibling);
-  else if (dir === 1 && rows[idx] && rows[idx].nextElementSibling?.nextElementSibling)
-    list.insertBefore(rows[idx], rows[idx].nextElementSibling.nextElementSibling);
-  else if (dir === 1)
-    list.appendChild(rows[idx]);
-}
-
-// ── Music upload ───────────────────────────────────────────────────
-async function handleMusicFile(file) {
-  if (!file.type.startsWith('audio/')) return alert('Please upload an audio file.');
-  if (file.size > 100 * 1024 * 1024) return alert('Audio file must be under 100 MB.');
-  const fd = new FormData();
-  fd.append('files', file);
-  const res  = await fetch('/tools/video/upload', { method: 'POST', body: fd });
-  const data = await res.json();
-  if (!data.ok) return alert('Audio upload failed.');
-  musicSourceId = data.sources[0].id;
-  document.getElementById('musicInfo').style.display = '';
-  document.getElementById('musicInfo').innerHTML = `🎵 <strong>${file.name}</strong> (${fmtSize(file.size)}) &nbsp;<button onclick="removeMusic()" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:.82rem">Remove</button>`;
-  // Show audio mode options
-  document.getElementById('audioModeWrap').style.display = '';
-}
-
-function removeMusic() {
-  musicSourceId = null;
-  document.getElementById('musicInfo').style.display = 'none';
-  document.getElementById('musicInfo').innerHTML = '';
-  document.getElementById('audioModeWrap').style.display = 'none';
-  document.querySelectorAll('#audioModeGroup .cite-pill').forEach((b,i) => b.classList.toggle('active', i===0));
-  currentAudioMode = 'original';
-}
-
-// ── UI state ───────────────────────────────────────────────────────
-function updateUI() {
-  document.getElementById('settingsCard').style.display = clips.length ? '' : 'none';
-  document.getElementById('audioModeWrap').style.display = musicSourceId ? '' : 'none';
-}
-
-// ── Process ────────────────────────────────────────────────────────
-async function startProcessing() {
-  if (!clips.length) return alert('Please add at least one video clip.');
-
-  // Sync trim values from inputs
-  clips.forEach(c => {
-    c.startTime = parseSecs(document.getElementById('start-' + c.sourceId)?.value || '0');
-    const ev    = document.getElementById('end-'   + c.sourceId)?.value.trim();
-    c.endTime   = ev ? parseSecs(ev) : null;
+    if (dragType === 'move') {
+      clip.start = Math.max(0, startStart + dt);
+      clip.start = snapStart(clip);
+      el.style.left = secToPx(clip.start) + 'px';
+    } else if (dragType === 'trim-l') {
+      const newTrimIn = Math.max(0, Math.min(startTrimIn + dt, clip.trimOut - 0.1));
+      clip.trimIn  = newTrimIn;
+      clip.start   = startStart + (newTrimIn - startTrimIn);
+      el.style.left  = secToPx(clip.start) + 'px';
+      el.style.width = Math.max(8, secToPx(clip.trimOut - clip.trimIn)) + 'px';
+    } else if (dragType === 'trim-r') {
+      const maxOut = m ? m.duration : 9999;
+      clip.trimOut = Math.max(clip.trimIn + 0.1, Math.min(startTrimOut + dt, maxOut));
+      el.style.width = Math.max(8, secToPx(clip.trimOut - clip.trimIn)) + 'px';
+    }
   });
 
-  const btn = document.getElementById('processBtn');
-  const status = document.getElementById('processStatus');
+  el.addEventListener('pointerup', e => {
+    if (!dragType) return;
+    dragType = null;
+    renderTimeline(); // full re-render to normalize
+  });
+
+  el.addEventListener('keydown', e => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && S.selectedClipId === clip.id) {
+      deleteClip(clip.id);
+    }
+  });
+  el.tabIndex = 0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLIP OPS
+// ═══════════════════════════════════════════════════════════════
+function selectClip(id) {
+  S.selectedClipId = id;
+  document.querySelectorAll('.ve-clip').forEach(el => el.classList.toggle('selected', el.dataset.clipId == id));
+  updateFxPanel();
+}
+
+function deleteClip(id) {
+  S.clips = S.clips.filter(c => c.id != id);
+  if (S.selectedClipId == id) { S.selectedClipId = null; updateFxPanel(); }
+  renderTimeline();
+  updateNoPreview();
+}
+
+function cutClipAt(clip, cutTime) {
+  if (cutTime <= clip.start || cutTime >= clip.start + (clip.trimOut - clip.trimIn)) return;
+  const offsetInClip = cutTime - clip.start;
+  const newTrimOut   = clip.trimIn + offsetInClip;
+
+  // Right half
+  const right = {
+    id: uid(), trackId: clip.trackId,
+    start: cutTime,
+    trimIn:  newTrimOut, trimOut: clip.trimOut,
+    mediaId: clip.mediaId,
+    fx: { ...clip.fx }
+  };
+  // Left half
+  clip.trimOut = newTrimOut;
+  S.clips.push(right);
+  renderTimeline();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EFFECTS PANEL
+// ═══════════════════════════════════════════════════════════════
+function updateFxPanel() {
+  const clip  = S.selectedClipId ? getClipById(S.selectedClipId) : null;
+  const ctrl  = document.getElementById('ve-fx-controls');
+  const none  = document.getElementById('ve-fx-no-clip');
+  if (!clip) { ctrl.style.display = 'none'; none.style.display = ''; return; }
+  ctrl.style.display = ''; none.style.display = 'none';
+
+  const m = getMediaById(clip.mediaId);
+  document.getElementById('ve-fx-opacity-row').style.display = m?.type !== 'audio' ? '' : 'none';
+  document.getElementById('ve-fx-volume-row').style.display  = m?.type !== 'image'  ? '' : 'none';
+
+  document.getElementById('ve-fx-opacity').value     = clip.fx.opacity;
+  document.getElementById('ve-fx-opacity-val').textContent = clip.fx.opacity + '%';
+  document.getElementById('ve-fx-volume').value      = clip.fx.volume;
+  document.getElementById('ve-fx-volume-val').textContent  = clip.fx.volume + '%';
+  document.getElementById('ve-fx-fadein').checked    = clip.fx.fadeIn;
+  document.getElementById('ve-fx-fadeout').checked   = clip.fx.fadeOut;
+}
+
+function applyFx() {
+  const clip = S.selectedClipId ? getClipById(S.selectedClipId) : null;
+  if (!clip) return;
+  clip.fx.opacity  = +document.getElementById('ve-fx-opacity').value;
+  clip.fx.volume   = +document.getElementById('ve-fx-volume').value;
+  clip.fx.fadeIn   = document.getElementById('ve-fx-fadein').checked;
+  clip.fx.fadeOut  = document.getElementById('ve-fx-fadeout').checked;
+  document.getElementById('ve-fx-opacity-val').textContent = clip.fx.opacity + '%';
+  document.getElementById('ve-fx-volume-val').textContent  = clip.fx.volume + '%';
+
+  // Live update clip appearance
+  const el = document.querySelector(`.ve-clip[data-clip-id="${clip.id}"]`);
+  if (el) el.style.opacity = clip.fx.opacity / 100;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLAYBACK
+// ═══════════════════════════════════════════════════════════════
+function togglePlay() {
+  S.playing ? pause() : play();
+}
+
+function play() {
+  S.playing = true;
+  document.getElementById('ve-play-btn').textContent = '⏸';
+  S._lastRafT = null;
+  S._raf = requestAnimationFrame(rafLoop);
+  syncMediaToPlayhead();
+  startAudioAt(S.playhead);
+}
+
+function pause() {
+  S.playing = false;
+  document.getElementById('ve-play-btn').textContent = '▶';
+  if (S._raf) { cancelAnimationFrame(S._raf); S._raf = null; }
+  pauseAllMedia();
+}
+
+function rafLoop(ts) {
+  if (!S._lastRafT) S._lastRafT = ts;
+  const dt = (ts - S._lastRafT) / 1000;
+  S._lastRafT = ts;
+
+  const dur = timelineDuration();
+  S.playhead = Math.min(S.playhead + dt, dur);
+  updatePlayheadEl();
+  updateTimecode();
+  drawPreviewFrame();
+  syncMediaToPlayhead();
+
+  if (S.playhead >= dur) { pause(); seekTo(0); return; }
+  S._raf = requestAnimationFrame(rafLoop);
+}
+
+function seekTo(t) {
+  S.playhead = Math.max(0, t);
+  updatePlayheadEl();
+  updateTimecode();
+  if (!S.playing) { drawPreviewFrame(); syncMediaToPlayhead(); }
+}
+
+function seekRelative(dt) { seekTo(S.playhead + dt); }
+
+function stepFrame(dir) { seekTo(S.playhead + dir / 30); }
+
+function updatePlayheadEl() {
+  const el = document.getElementById('ve-playhead');
+  el.style.left = secToPx(S.playhead) + 'px';
+  // Auto-scroll timeline to keep playhead visible
+  const wrap = document.getElementById('ve-timeline-scroll-wrap');
+  const phPx = secToPx(S.playhead);
+  const w    = wrap.clientWidth;
+  if (S.playing && (phPx < wrap.scrollLeft || phPx > wrap.scrollLeft + w - 80)) {
+    wrap.scrollLeft = phPx - 60;
+  }
+}
+
+function updateTimecode() {
+  const total = timelineDuration();
+  document.getElementById('ve-timecode').textContent = `${fmtTC(S.playhead)} / ${fmtTC(total)}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PREVIEW CANVAS DRAW
+// ═══════════════════════════════════════════════════════════════
+const previewCv  = document.getElementById('ve-preview-canvas');
+const previewCtx = previewCv.getContext('2d');
+
+function drawPreviewFrame() {
+  previewCtx.clearRect(0, 0, previewCv.width, previewCv.height);
+  previewCtx.fillStyle = '#000';
+  previewCtx.fillRect(0, 0, previewCv.width, previewCv.height);
+
+  // Render video tracks bottom-up (v2 under v1)
+  const videoTracks = ['v2','v1'];
+  let drewSomething = false;
+
+  for (const trackId of videoTracks) {
+    const clip = getActiveClip(trackId);
+    if (!clip) continue;
+    const m = getMediaById(clip.mediaId);
+    if (!m) continue;
+
+    if (m.type === 'video' || m.type === 'image') {
+      let src;
+      if (m.type === 'video') {
+        src = mediaEls[m.serverSourceId] || getOrCreateVideoEl(m);
+      } else {
+        src = getOrCreateImageEl(m);
+      }
+      if (src && (src.readyState >= 2 || src instanceof HTMLImageElement)) {
+        previewCtx.globalAlpha = clip.fx.opacity / 100;
+        previewCtx.drawImage(src, 0, 0, previewCv.width, previewCv.height);
+        previewCtx.globalAlpha = 1;
+        drewSomething = true;
+      }
+    }
+  }
+
+  document.getElementById('ve-no-preview').style.display = drewSomething ? 'none' : '';
+}
+
+function getActiveClip(trackId) {
+  return S.clips.find(c => {
+    if (c.trackId !== trackId) return false;
+    const end = c.start + (c.trimOut - c.trimIn);
+    return S.playhead >= c.start && S.playhead < end;
+  });
+}
+
+const imageCache = {};
+function getOrCreateImageEl(m) {
+  if (imageCache[m.id]) return imageCache[m.id];
+  const img = new Image();
+  img.src = m.url;
+  imageCache[m.id] = img;
+  return img;
+}
+
+const videoElCache = {};
+function getOrCreateVideoEl(m) {
+  if (videoElCache[m.id]) return videoElCache[m.id];
+  const v = document.createElement('video');
+  v.src = m.url; v.muted = true; v.preload = 'auto';
+  videoElCache[m.id] = v;
+  if (m.serverSourceId) mediaEls[m.serverSourceId] = v;
+  return v;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO SYNC  (direct element approach — no AudioContext)
+// ═══════════════════════════════════════════════════════════════
+// Separate audio elements for sound (videoElCache elements are muted for preview)
+const audioElCache = {}; // mediaId -> <audio> or unmuted <video>
+
+function getOrCreateAudioEl(m) {
+  if (audioElCache[m.id]) return audioElCache[m.id];
+  const el = document.createElement(m.type === 'audio' ? 'audio' : 'video');
+  el.src = m.url; el.preload = 'auto'; el.muted = false;
+  audioElCache[m.id] = el;
+  return el;
+}
+
+function startAudioAt(time) {
+  pauseAllAudio();
+  S.clips.forEach(clip => {
+    const m = getMediaById(clip.mediaId);
+    if (!m || m.type === 'image') return;
+    const end = clip.start + (clip.trimOut - clip.trimIn);
+    if (time >= end) return; // already past
+    const el = getOrCreateAudioEl(m);
+    el.volume  = Math.min(1, clip.fx.volume / 100);
+    el.currentTime = clip.trimIn + Math.max(0, time - clip.start);
+    if (time >= clip.start) el.play().catch(()=>{});
+    // If clip hasn't started yet, will be caught by syncMediaToPlayhead
+  });
+}
+
+function syncMediaToPlayhead() {
+  if (!S.playing) return;
+
+  // Visual preview — muted video elements
+  ['v1','v2'].forEach(trackId => {
+    const clip = getActiveClip(trackId);
+    const m    = clip ? getMediaById(clip.mediaId) : null;
+    if (!m || m.type !== 'video') return;
+    const el = videoElCache[m.id] || getOrCreateVideoEl(m);
+    const targetT = clip.trimIn + (S.playhead - clip.start);
+    if (Math.abs(el.currentTime - targetT) > 0.25) el.currentTime = targetT;
+    if (el.paused) el.play().catch(()=>{});
+  });
+
+  // Audio playback
+  S.clips.forEach(clip => {
+    const m = getMediaById(clip.mediaId);
+    if (!m || m.type === 'image') return;
+    const end = clip.start + (clip.trimOut - clip.trimIn);
+    const el  = getOrCreateAudioEl(m);
+    if (S.playhead >= clip.start && S.playhead < end) {
+      el.volume = Math.min(1, clip.fx.volume / 100);
+      if (el.paused) {
+        el.currentTime = clip.trimIn + (S.playhead - clip.start);
+        el.play().catch(()=>{});
+      }
+    } else {
+      if (!el.paused) el.pause();
+    }
+  });
+}
+
+function pauseAllAudio() {
+  Object.values(audioElCache).forEach(el => { try { el.pause(); } catch(_){} });
+  Object.values(videoElCache).forEach(el => { try { el.pause(); } catch(_){} });
+}
+
+function pauseAllMedia() { pauseAllAudio(); }
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  switch (e.key) {
+    case ' ': e.preventDefault(); togglePlay(); break;
+    case 'v': case 'V': setTool('select'); break;
+    case 'c': case 'C': setTool('cut'); break;
+    case 'Delete': case 'Backspace':
+      if (S.selectedClipId) { deleteClip(S.selectedClipId); } break;
+    case '+': case '=': zoomIn(); break;
+    case '-': case '_': zoomOut(); break;
+    case 'ArrowLeft':  seekRelative(e.shiftKey ? -5 : -1/30); break;
+    case 'ArrowRight': seekRelative(e.shiftKey ?  5 :  1/30); break;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TIMELINE CLICK (for cut tool at ruler level)
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('ve-tracks-container').addEventListener('mousedown', e => {
+  if (S.activeTool !== 'cut') return;
+  if (e.target.classList.contains('ve-track-row')) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scrollLeft = document.getElementById('ve-timeline-scroll-wrap').scrollLeft;
+    seekTo(pxToSec(e.clientX - rect.left + scrollLeft));
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT MODAL
+// ═══════════════════════════════════════════════════════════════
+function selectPill(btn, group) {
+  btn.closest('.ve-pill-row').querySelectorAll('.ve-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (group === 'fmt')   S.exportFmt   = btn.dataset.val;
+  if (group === 'audio') S.exportAudio = btn.dataset.val;
+}
+
+function openExport() {
+  if (!S.clips.length) return alert('Add clips to the timeline before exporting.');
+  document.getElementById('ve-export-modal').style.display = 'flex';
+  document.getElementById('ve-export-progress').textContent = '';
+  document.getElementById('ve-export-go-btn').disabled = false;
+  document.getElementById('ve-export-go-btn').textContent = 'Export →';
+}
+
+function closeExport() {
+  document.getElementById('ve-export-modal').style.display = 'none';
+}
+
+async function runExport() {
+  const btn  = document.getElementById('ve-export-go-btn');
+  const prog = document.getElementById('ve-export-progress');
   btn.disabled = true;
-  status.innerHTML = '<span class="progress-ring">⟳</span> Processing…';
+  btn.textContent = 'Processing…';
+  prog.textContent = '⟳ Sending timeline to server…';
+
+  // Build clips payload using server source IDs
+  const exportClips = S.clips
+    .filter(c => {
+      const m = getMediaById(c.mediaId);
+      return m?.serverSourceId && (m.type === 'video' || m.type === 'audio');
+    })
+    .sort((a, b) => a.start - b.start)
+    .map(c => {
+      const m = getMediaById(c.mediaId);
+      return {
+        sourceId:  m.serverSourceId,
+        startTime: c.trimIn,
+        endTime:   c.trimOut,
+        trackId:   c.trackId,
+        volume:    c.fx.volume / 100,
+      };
+    });
+
+  // Find music track (audio-only clips)
+  const musicClip = S.clips.find(c => {
+    const m = getMediaById(c.mediaId);
+    return m?.type === 'audio' && m?.serverSourceId;
+  });
 
   const payload = {
-    clips:     clips.map(c => ({ sourceId: c.sourceId, startTime: c.startTime, endTime: c.endTime })),
-    musicId:   musicSourceId,
-    audioMode: currentAudioMode,
-    format:    currentFormat,
+    clips:     exportClips.filter(c => c.trackId.startsWith('v')),
+    musicId:   musicClip ? getMediaById(musicClip.mediaId)?.serverSourceId : null,
+    audioMode: S.exportAudio,
+    format:    S.exportFmt,
   };
 
   try {
@@ -394,43 +1078,58 @@ async function startProcessing() {
     });
     const data = await resp.json();
     if (!data.ok) {
-      status.innerHTML = `<span style="color:#ff6b6b">${data.error}</span>`;
-      btn.disabled = false;
+      prog.innerHTML = `<span style="color:#ff6b6b">${data.error}</span>`;
+      btn.disabled = false; btn.textContent = 'Retry';
       return;
     }
-    pollStatus(data.jobId, btn, status);
-  } catch (e) {
-    status.innerHTML = '<span style="color:#ff6b6b">Network error. Please try again.</span>';
-    btn.disabled = false;
+    prog.textContent = '⟳ Rendering video…';
+    pollExport(data.jobId, prog, btn);
+  } catch (err) {
+    prog.innerHTML = '<span style="color:#ff6b6b">Network error. Try again.</span>';
+    btn.disabled = false; btn.textContent = 'Retry';
   }
 }
 
-function pollStatus(jobId, btn, status) {
-  const interval = setInterval(async () => {
-    try {
-      const resp = await fetch('/tools/video/status/' + jobId);
-      const data = await resp.json();
-      if (data.status === 'done') {
-        clearInterval(interval);
-        btn.disabled = false;
-        status.innerHTML = '';
-        document.getElementById('downloadCard').style.display = '';
-        const link = document.getElementById('downloadLink');
-        link.href     = '/tools/download/' + data.resultId;
-        link.download = data.filename;
-        document.getElementById('downloadCard').scrollIntoView({ behavior: 'smooth' });
-      } else if (data.status === 'error') {
-        clearInterval(interval);
-        btn.disabled = false;
-        status.innerHTML = `<span style="color:#ff6b6b">Error: ${data.error}</span>`;
-      }
-    } catch (_) {}
+function pollExport(jobId, prog, btn) {
+  const iv = setInterval(async () => {
+    const resp = await fetch('/tools/video/status/' + jobId);
+    const data = await resp.json();
+    if (data.status === 'done') {
+      clearInterval(iv);
+      prog.innerHTML = '';
+      const a = document.createElement('a');
+      a.href = '/tools/download/' + data.resultId;
+      a.download = data.filename;
+      a.textContent = '⬇ Download: ' + data.filename;
+      a.style.cssText = 'color:#c8761e;font-weight:600;display:block;margin-top:4px';
+      prog.appendChild(a);
+      btn.disabled = false; btn.textContent = 'Export Again';
+    } else if (data.status === 'error') {
+      clearInterval(iv);
+      prog.innerHTML = `<span style="color:#ff6b6b">Error: ${data.error}</span>`;
+      btn.disabled = false; btn.textContent = 'Retry';
+    }
   }, 2500);
 }
 
-// Init
-updateUI();
+// ═══════════════════════════════════════════════════════════════
+// MISC HELPERS
+// ═══════════════════════════════════════════════════════════════
+function updateNoPreview() {
+  const hasClips = S.clips.some(c => {
+    const m = getMediaById(c.mediaId);
+    return m?.type === 'video' || m?.type === 'image';
+  });
+  document.getElementById('ve-no-preview').style.display = hasClips ? 'none' : '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+fitPreviewCanvas();
+renderRuler();
+renderTimeline();
+updateTimecode();
 </script>
-<% } %>
 
 <%- include('partials/footer') %>
