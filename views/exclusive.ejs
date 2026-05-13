@@ -860,6 +860,11 @@ async function showDetail(item) {
 
   try {
     const r = await fetch(`/exclusive/detail/${item.type}/${item.id}`);
+    if (!r.ok) {
+      if (r.status === 401) throw new Error('You must be logged in.');
+      if (r.status === 403) throw new Error('VIP access required.');
+      throw new Error(`Server error (${r.status})`);
+    }
     const d = await r.json();
     if (d.error) throw new Error(d.error);
 

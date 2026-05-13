@@ -23,13 +23,23 @@ function requireVIP(req, res, next) {
   next();
 }
 
+// JSON-only variant for API routes — never sends HTML redirects
+function requireVIPApi(req, res, next) {
+  const user = req.session.user;
+  if (!user) return res.status(401).json({ error: 'Login required.' });
+  if (!user.isAdmin && !user.isProVIP) {
+    return res.status(403).json({ error: 'VIP access required.' });
+  }
+  next();
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────
 router.get('/exclusive', requireVIP, (req, res) => {
   res.render('exclusive', { pageTitle: 'Exclusive Player — Orange Chick' });
 });
 
 // ── Trending ──────────────────────────────────────────────────────────────
-router.get('/exclusive/trending', requireVIP, async (req, res) => {
+router.get('/exclusive/trending', requireVIPApi, async (req, res) => {
   try {
     const [moviesResp, tvResp] = await Promise.all([
       axios.get(`${TMDB_BASE}/trending/movie/week`, {
@@ -59,8 +69,54 @@ router.get('/exclusive/trending', requireVIP, async (req, res) => {
   }
 });
 
+// ── Detail (credits + trailer) ────────────────────────────────────────────
+router.get('/exclusive/detail/:type/:id', requireVIPApi, async (req, res) => {
+  const { type, id } = req.params;
+  const isTV = type === 'tv';
+  try {
+    const [detailsResp, creditsResp, videosResp] = await Promise.all([
+      axios.get(`${TMDB_BASE}/${isTV ? 'tv' : 'movie'}/${id}`, {
+        params: { api_key: TMDB_KEY, language: 'en-US' }, timeout: 8000,
+      }),
+      axios.get(`${TMDB_BASE}/${isTV ? 'tv' : 'movie'}/${id}/credits`, {
+        params: { api_key: TMDB_KEY }, timeout: 8000,
+      }),
+      axios.get(`${TMDB_BASE}/${isTV ? 'tv' : 'movie'}/${id}/videos`, {
+        params: { api_key: TMDB_KEY, language: 'en-US' }, timeout: 8000,
+      }),
+    ]);
+    const d = detailsResp.data;
+    const cast = (creditsResp.data.cast || []).slice(0, 12).map(c => ({
+      name:      c.name,
+      character: c.character,
+      photo:     c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
+    }));
+    const trailer = (videosResp.data.results || [])
+      .find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')) || null;
+    res.json({
+      id:       d.id,
+      type,
+      title:    d.title || d.name,
+      tagline:  d.tagline || '',
+      overview: d.overview || '',
+      backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : null,
+      poster:   d.poster_path   ? `https://image.tmdb.org/t/p/w500${d.poster_path}`   : null,
+      year:     (d.release_date || d.first_air_date || '').slice(0, 4),
+      rating:   d.vote_average  ? d.vote_average.toFixed(1) : null,
+      runtime:  isTV ? (d.number_of_seasons ? `${d.number_of_seasons} Season${d.number_of_seasons > 1 ? 's' : ''}` : null)
+                     : (d.runtime ? `${d.runtime} min` : null),
+      genres:   (d.genres || []).map(g => g.name),
+      cast,
+      trailer:  trailer ? { key: trailer.key, name: trailer.name } : null,
+    });
+  } catch (err) {
+    console.error('[exclusive/detail]', err.message);
+    res.status(500).json({ error: 'Failed to fetch details.' });
+  }
+});
+
 // ── TMDB search ───────────────────────────────────────────────────────────
-router.get('/exclusive/search', requireVIP, async (req, res) => {
+router.get('/exclusive/search', requireVIPApi, async (req, res) => {
   const q = req.query.q?.trim();
   if (!q) return res.json({ results: [] });
   try {
@@ -88,7 +144,7 @@ router.get('/exclusive/search', requireVIP, async (req, res) => {
 });
 
 // ── TV info from TMDB ─────────────────────────────────────────────────────
-router.get('/exclusive/tv/:id/info', requireVIP, async (req, res) => {
+router.get('/exclusive/tv/:id/info', requireVIPApi, async (req, res) => {
   try {
     const resp = await axios.get(`${TMDB_BASE}/tv/${req.params.id}`, {
       params: { api_key: TMDB_KEY },
@@ -105,7 +161,7 @@ router.get('/exclusive/tv/:id/info', requireVIP, async (req, res) => {
 });
 
 // ── Get sources directly from engine ─────────────────────────────────────
-router.get('/exclusive/sources', requireVIP, async (req, res) => {
+router.get('/exclusive/sources', requireVIPApi, async (req, res) => {
   const { id, type, s, e } = req.query;
   if (!id || !type) return res.status(400).json({ error: 'Missing id or type.' });
   try {
