@@ -13,6 +13,15 @@ function featureGuard(featureName) {
     if (flag.mode === 'logged_in' && !req.session?.user) {
       return res.redirect('/login?next=' + encodeURIComponent(req.originalUrl));
     }
+    if (flag.mode === 'subscribers') {
+      if (!req.session?.user) return res.redirect('/login?next=' + encodeURIComponent(req.originalUrl));
+      const isSub = res.locals.isSubscriber || req.session.user.isProVIP;
+      if (!isSub) return res.status(403).render('feature-disabled', { pageTitle: 'Pro Required', reason: 'pro_required' });
+    }
+    if (flag.mode === 'provip') {
+      if (!req.session?.user) return res.redirect('/login?next=' + encodeURIComponent(req.originalUrl));
+      if (!req.session.user.isProVIP) return res.status(403).render('feature-disabled', { pageTitle: 'Pro VIP Required', reason: 'provip_required' });
+    }
     if (flag.mode === 'blocked' && req.session?.user) {
       const ids = (flag.blocked || []).map(Number);
       if (ids.includes(Number(req.session.user.id))) {

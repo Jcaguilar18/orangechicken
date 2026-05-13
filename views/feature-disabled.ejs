@@ -2,13 +2,25 @@
 
 <div style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:3rem 1.25rem;text-align:center">
   <div style="max-width:440px">
-    <div style="font-size:3.5rem;margin-bottom:1.25rem"><%= reason === 'blocked' ? '🚫' : '🔒' %></div>
+    <div style="font-size:3.5rem;margin-bottom:1.25rem">
+      <% if (reason === 'blocked') { %>🚫<% } %>
+      <% if (reason === 'pro_required') { %>⭐<% } %>
+      <% if (reason === 'provip_required') { %>👑<% } %>
+      <% if (reason === 'disabled') { %>🔒<% } %>
+    </div>
     <h1 style="font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:.75rem">
-      <%= reason === 'blocked' ? 'Access Restricted' : 'Feature Unavailable' %>
+      <% if (reason === 'blocked') { %>Access Restricted<% } %>
+      <% if (reason === 'pro_required') { %>Pro Subscription Required<% } %>
+      <% if (reason === 'provip_required') { %>Pro VIP Required<% } %>
+      <% if (reason === 'disabled') { %>Feature Unavailable<% } %>
     </h1>
     <p style="color:#64748b;font-size:.95rem;line-height:1.6;margin-bottom:2rem">
       <% if (reason === 'blocked') { %>
         You don't have access to this feature. Contact the admin if you think this is a mistake.
+      <% } else if (reason === 'pro_required') { %>
+        This feature is available to Pro subscribers and Pro VIP members. <a href="/subscribe" style="color:var(--cyan)">Upgrade your plan</a> to get access.
+      <% } else if (reason === 'provip_required') { %>
+        This feature is exclusive to Pro VIP members. Contact the admin to request access.
       <% } else { %>
         This feature has been temporarily disabled. Check back later.
       <% } %>

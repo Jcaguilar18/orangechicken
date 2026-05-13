@@ -28,6 +28,37 @@ router.get('/exclusive', requireVIP, (req, res) => {
   res.render('exclusive', { pageTitle: 'Exclusive Player — Orange Chick' });
 });
 
+// ── Trending ──────────────────────────────────────────────────────────────
+router.get('/exclusive/trending', requireVIP, async (req, res) => {
+  try {
+    const [moviesResp, tvResp] = await Promise.all([
+      axios.get(`${TMDB_BASE}/trending/movie/week`, {
+        params: { api_key: TMDB_KEY, language: 'en-US' }, timeout: 8000,
+      }),
+      axios.get(`${TMDB_BASE}/trending/tv/week`, {
+        params: { api_key: TMDB_KEY, language: 'en-US' }, timeout: 8000,
+      }),
+    ]);
+    const mapItem = (r, type) => ({
+      id:       r.id,
+      type,
+      title:    r.title || r.name,
+      year:     (r.release_date || r.first_air_date || '').slice(0, 4),
+      poster:   r.poster_path   ? `https://image.tmdb.org/t/p/w342${r.poster_path}`   : null,
+      backdrop: r.backdrop_path ? `https://image.tmdb.org/t/p/w1280${r.backdrop_path}` : null,
+      overview: (r.overview || '').slice(0, 220),
+      rating:   r.vote_average  ? r.vote_average.toFixed(1) : null,
+    });
+    res.json({
+      movies: moviesResp.data.results.slice(0, 20).map(r => mapItem(r, 'movie')),
+      tv:     tvResp.data.results.slice(0, 20).map(r => mapItem(r, 'tv')),
+    });
+  } catch (err) {
+    console.error('[exclusive/trending]', err.message);
+    res.status(500).json({ error: 'Failed to fetch trending.' });
+  }
+});
+
 // ── TMDB search ───────────────────────────────────────────────────────────
 router.get('/exclusive/search', requireVIP, async (req, res) => {
   const q = req.query.q?.trim();

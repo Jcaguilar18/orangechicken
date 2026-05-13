@@ -4,6 +4,7 @@ const path    = require('path');
 const fs      = require('fs');
 const { Project } = require('../models');
 const { requireAdmin } = require('../middleware/auth');
+const { featureGuard } = require('../middleware/featureGuard');
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ const upload = multer({
 });
 
 // Public portfolio page
-router.get('/portfolio', async (req, res) => {
+router.get('/portfolio', featureGuard('portfolio'), async (req, res) => {
   try {
     const projects = await Project.findAll({ order: [['displayOrder','ASC'],['createdAt','DESC']] });
     const parsed = projects.map(p => ({

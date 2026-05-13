@@ -1,496 +1,832 @@
 <%- include('partials/header') %>
 
-<div class="exc-wrap">
+<div class="cp-app" id="cpApp">
 
-  <!-- ── Header ── -->
-  <div class="exc-topbar">
-    <div class="exc-topbar-left">
-      <span class="exc-crown">👑</span>
-      <span class="exc-brand">Exclusive Player</span>
-      <span class="exc-vip-badge">PRO VIP</span>
+  <!-- ── Top Bar ── -->
+  <header class="cp-topbar">
+    <div class="cp-topbar-left">
+      <button class="cp-home-btn" id="homeBtn">
+        <span class="cp-logo-icon">🎬</span>
+        <span class="cp-logo-text">CinePro</span>
+      </button>
+      <nav class="cp-nav">
+        <button class="cp-nav-btn active" data-view="browse">Browse</button>
+        <button class="cp-nav-btn" data-view="search">Search</button>
+      </nav>
     </div>
-    <div id="cinepro-status" class="exc-status" title="CinePro backend status"></div>
+    <div class="cp-topbar-right">
+      <div id="cpStatus" class="cp-status" title="Backend status"></div>
+      <span class="cp-vip-pill">PRO VIP</span>
+    </div>
+  </header>
+
+  <!-- ════════════════════════════════════
+       BROWSE VIEW
+  ════════════════════════════════════ -->
+  <div id="viewBrowse" class="cp-view">
+
+    <!-- Featured hero -->
+    <div id="featuredHero" class="cp-hero hidden">
+      <div class="cp-hero-bg" id="heroBg"></div>
+      <div class="cp-hero-grad"></div>
+      <div class="cp-hero-content">
+        <div class="cp-hero-type" id="heroType"></div>
+        <h1 class="cp-hero-title" id="heroTitle"></h1>
+        <p class="cp-hero-overview" id="heroOverview"></p>
+        <div class="cp-hero-meta" id="heroMeta"></div>
+        <div class="cp-hero-actions">
+          <button class="cp-btn-play" id="heroPlayBtn">▶ Play Now</button>
+          <button class="cp-btn-ghost" id="heroMoreBtn">ⓘ More Info</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content rows -->
+    <div class="cp-rows" id="browseRows">
+      <div class="cp-rows-loading">
+        <div class="cp-spinner-sm"></div> Loading trending content…
+      </div>
+    </div>
+
   </div>
 
-  <!-- ── Search ── -->
-  <div class="exc-search-wrap">
-    <div class="exc-search-inner">
-      <input id="searchInput" class="exc-search-input" type="text"
-             placeholder="Search movies or TV shows…" autocomplete="off" spellcheck="false" />
-      <button id="searchBtn" class="btn exc-search-btn">Search</button>
+  <!-- ════════════════════════════════════
+       SEARCH VIEW
+  ════════════════════════════════════ -->
+  <div id="viewSearch" class="cp-view hidden">
+    <div class="cp-search-wrap">
+      <div class="cp-search-bar-wrap">
+        <span class="cp-search-icon">🔍</span>
+        <input id="searchInput" class="cp-search-input" type="text"
+               placeholder="Search movies and TV shows…" autocomplete="off" />
+        <button id="clearSearch" class="cp-clear-btn hidden">✕</button>
+      </div>
+      <div id="searchStatus" class="cp-search-status hidden"></div>
+      <div id="searchResults" class="cp-grid hidden"></div>
+      <div id="searchPlaceholder" class="cp-search-placeholder">
+        <div style="font-size:3.5rem;margin-bottom:1rem;opacity:.4">🎬</div>
+        <div>Search for any movie or TV show</div>
+      </div>
     </div>
   </div>
 
-  <!-- ── Results ── -->
-  <div id="searchResults" class="exc-results hidden"></div>
+  <!-- ════════════════════════════════════
+       PLAYER VIEW
+  ════════════════════════════════════ -->
+  <div id="viewPlayer" class="cp-view hidden">
+    <div class="cp-player-page">
 
-  <!-- ── Player Section ── -->
-  <div id="playerSection" class="exc-player-section hidden">
+      <button class="cp-back-btn" id="backBtn">← Back</button>
 
-    <!-- Title bar -->
-    <div class="exc-now-playing" id="nowPlayingBar"></div>
+      <!-- Now playing bar -->
+      <div class="cp-np-bar" id="npBar"></div>
 
-    <!-- TV episode selector -->
-    <div id="episodeSelector" class="exc-ep-selector hidden">
-      <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
-        <select id="seasonSelect" class="exc-select">
+      <!-- TV episode selector -->
+      <div id="epSelector" class="cp-ep-selector hidden">
+        <select id="seasonSel" class="cp-select">
           <option>Season…</option>
         </select>
-        <select id="episodeSelect" class="exc-select">
+        <select id="episodeSel" class="cp-select">
           <option>Episode…</option>
         </select>
-        <button id="playEpBtn" class="btn btn-primary btn-sm">▶ Play</button>
+        <button id="playEpBtn" class="cp-btn-primary">▶ Play</button>
       </div>
-    </div>
 
-    <!-- Player -->
-    <div class="exc-player-wrap">
-      <video id="excPlayer" controls playsinline class="exc-video"></video>
-      <div id="playerOverlay" class="exc-player-overlay">
-        <div class="exc-spinner"></div>
+      <!-- Video player -->
+      <div class="cp-video-wrap">
+        <video id="cpPlayer" controls playsinline></video>
+        <div id="videoOverlay" class="cp-video-overlay">
+          <div class="cp-spinner"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Source toolbar -->
-    <div class="exc-toolbar">
-      <div id="sourceList" class="exc-source-list"></div>
-      <div class="exc-toolbar-right">
-        <button id="copyUrlBtn" class="btn btn-ghost btn-sm" title="Copy stream URL">📋 Copy URL</button>
-        <a id="downloadBtn" class="btn btn-ghost btn-sm" href="#" download title="Download stream">⬇ Download</a>
+      <!-- Source switcher + tools -->
+      <div class="cp-player-toolbar">
+        <div id="sourceList" class="cp-source-list"></div>
+        <div class="cp-tool-btns">
+          <button id="copyUrlBtn" class="cp-tool-btn">📋 Copy URL</button>
+          <a id="dlBtn" class="cp-tool-btn" href="#" download>⬇ Download</a>
+        </div>
       </div>
-    </div>
 
-    <!-- Download hint -->
-    <div id="dlHint" class="exc-dl-hint hidden">
-      <span style="color:var(--muted);font-size:.78rem">
-        HLS stream — for full download use:
-        <code id="dlCommand" class="exc-code"></code>
-      </span>
-    </div>
+      <!-- HLS hint -->
+      <div id="dlHint" class="cp-dl-hint hidden">
+        HLS stream — use <code id="dlCmd" class="cp-code"></code> to download
+      </div>
 
+    </div>
   </div>
 
-</div>
+</div><!-- /.cp-app -->
 
-<!-- HLS.js -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
 
 <style>
-  .exc-wrap { max-width:1100px;margin:0 auto;padding:1.5rem 1.25rem 4rem }
+/* ── Reset / container ── */
+.cp-app {
+  min-height:100vh;
+  background:#080808;
+  color:#e5e5e5;
+  font-family: inherit;
+  padding-bottom:4rem;
+}
 
-  /* topbar */
-  .exc-topbar { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem }
-  .exc-topbar-left { display:flex;align-items:center;gap:.65rem }
-  .exc-crown { font-size:1.4rem }
-  .exc-brand { font-family:'Rye',serif;font-size:1.1rem;color:var(--amber);letter-spacing:.06em }
-  .exc-vip-badge {
-    font-size:.6rem;font-weight:800;letter-spacing:.12em;
-    padding:.2rem .55rem;border-radius:20px;
-    background:linear-gradient(135deg,#b45309,#f59e0b);
-    color:#fff;text-transform:uppercase
-  }
-  .exc-status { width:10px;height:10px;border-radius:50%;background:#475569;flex-shrink:0;transition:background .3s }
-  .exc-status.online  { background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5) }
-  .exc-status.offline { background:#ef4444 }
+/* ── Topbar ── */
+.cp-topbar {
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.75rem 1.5rem;
+  background:linear-gradient(to bottom,rgba(8,8,8,.98),rgba(8,8,8,.8));
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.cp-topbar-left { display:flex;align-items:center;gap:1.5rem }
+.cp-home-btn {
+  display:flex;align-items:center;gap:.5rem;
+  background:none;border:none;cursor:pointer;padding:0;
+}
+.cp-logo-icon { font-size:1.3rem }
+.cp-logo-text {
+  font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;
+  color:#f59e0b;letter-spacing:.06em;
+}
+.cp-nav { display:flex;gap:.25rem }
+.cp-nav-btn {
+  background:none;border:none;color:#94a3b8;font-size:.85rem;
+  padding:.4rem .85rem;border-radius:20px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.cp-nav-btn:hover { color:#fff }
+.cp-nav-btn.active { background:rgba(245,158,11,.12);color:#f59e0b;font-weight:600 }
 
-  /* search */
-  .exc-search-wrap { margin-bottom:1.75rem }
-  .exc-search-inner { display:flex;gap:.6rem;max-width:640px }
-  .exc-search-input {
-    flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-    border-radius:10px;color:#fff;padding:.65rem 1rem;font-size:.95rem;outline:none;
-    transition:border-color .2s
-  }
-  .exc-search-input:focus { border-color:var(--amber) }
-  .exc-search-input::placeholder { color:#64748b }
-  .exc-search-btn { background:var(--amber);color:#000;font-weight:700;border-radius:10px;padding:.65rem 1.4rem }
-  .exc-search-btn:hover { background:#fbbf24 }
+.cp-topbar-right { display:flex;align-items:center;gap:.75rem }
+.cp-status {
+  width:8px;height:8px;border-radius:50%;background:#475569;
+  transition:background .3s;flex-shrink:0;
+}
+.cp-status.online  { background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5) }
+.cp-status.offline { background:#ef4444 }
+.cp-vip-pill {
+  font-size:.6rem;font-weight:800;letter-spacing:.12em;
+  padding:.2rem .6rem;border-radius:20px;
+  background:linear-gradient(135deg,#b45309,#f59e0b);
+  color:#000;text-transform:uppercase;
+}
 
-  /* results */
-  .exc-results { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;margin-bottom:2rem }
-  .exc-card {
-    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-    border-radius:12px;overflow:hidden;cursor:pointer;
-    transition:transform .2s,box-shadow .2s,border-color .2s
-  }
-  .exc-card:hover { transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.5);border-color:rgba(251,191,36,.35) }
-  .exc-card-poster { position:relative;aspect-ratio:2/3;overflow:hidden;background:rgba(255,255,255,.04) }
-  .exc-card-poster img { width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s }
-  .exc-card:hover .exc-card-poster img { transform:scale(1.05) }
-  .exc-card-no-poster { width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem }
-  .exc-type-badge {
-    position:absolute;top:.4rem;left:.4rem;
-    font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-    padding:.15rem .45rem;border-radius:20px
-  }
-  .exc-type-movie { background:rgba(168,85,247,.85);color:#fff }
-  .exc-type-tv    { background:rgba(0,180,220,.85);color:#fff }
-  .exc-play-overlay {
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font-size:1.5rem;font-weight:700;color:#fff;
-    background:rgba(0,0,0,.55);opacity:0;transition:opacity .2s
-  }
-  .exc-card:hover .exc-play-overlay { opacity:1 }
-  .exc-card-info { padding:.6rem .7rem }
-  .exc-card-title { font-size:.82rem;font-weight:700;color:#fff;margin-bottom:.2rem;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden }
-  .exc-card-meta { font-size:.7rem;color:#64748b;display:flex;gap:.4rem }
-  .exc-rating { color:#fbbf24 }
+/* ── Views ── */
+.cp-view { animation:cpFade .25s ease }
+@keyframes cpFade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 
-  /* now playing bar */
-  .exc-now-playing {
-    display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;
-    background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.18);
-    border-radius:10px;margin-bottom:1rem
-  }
-  .exc-np-title { font-weight:700;color:#fff;font-size:.95rem }
-  .exc-np-sub   { font-size:.78rem;color:#64748b }
+/* ── Hero ── */
+.cp-hero {
+  position:relative;height:520px;overflow:hidden;margin-bottom:2rem;
+}
+@media(max-width:640px){ .cp-hero { height:400px } }
+.cp-hero-bg {
+  position:absolute;inset:0;background-size:cover;background-position:center top;
+  transition:opacity .5s;
+}
+.cp-hero-grad {
+  position:absolute;inset:0;
+  background:linear-gradient(to right,rgba(8,8,8,.95) 30%,rgba(8,8,8,.3) 70%,rgba(8,8,8,.5) 100%),
+             linear-gradient(to top,rgba(8,8,8,1) 0%,rgba(8,8,8,.0) 40%);
+}
+.cp-hero-content {
+  position:relative;z-index:1;height:100%;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:2.5rem 2rem;max-width:560px;
+}
+.cp-hero-type {
+  font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  padding:.2rem .6rem;border-radius:20px;display:inline-block;
+  margin-bottom:.75rem;width:fit-content;
+  background:rgba(245,158,11,.2);color:#f59e0b;border:1px solid rgba(245,158,11,.35);
+}
+.cp-hero-title {
+  font-size:2.2rem;font-weight:800;line-height:1.1;margin-bottom:.65rem;color:#fff;
+}
+@media(max-width:640px){ .cp-hero-title{font-size:1.5rem} }
+.cp-hero-overview {
+  font-size:.88rem;color:#b0b0b0;line-height:1.6;margin-bottom:.5rem;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+}
+.cp-hero-meta { font-size:.78rem;color:#64748b;margin-bottom:1.1rem }
+.cp-hero-actions { display:flex;gap:.75rem }
+.cp-btn-play {
+  padding:.65rem 1.5rem;border-radius:8px;border:none;
+  background:#f59e0b;color:#000;font-weight:700;font-size:.9rem;
+  cursor:pointer;transition:background .15s;
+}
+.cp-btn-play:hover { background:#fbbf24 }
+.cp-btn-ghost {
+  padding:.65rem 1.25rem;border-radius:8px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  color:#fff;font-size:.9rem;cursor:pointer;transition:background .15s;
+}
+.cp-btn-ghost:hover { background:rgba(255,255,255,.18) }
 
-  /* ep selector */
-  .exc-ep-selector { margin-bottom:1rem;padding:.85rem 1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px }
-  .exc-select {
-    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
-    border-radius:8px;color:#fff;padding:.4rem .75rem;font-size:.85rem;outline:none;cursor:pointer
-  }
-  .exc-select option { background:#1e2533 }
+/* ── Rows ── */
+.cp-rows { padding:0 1.5rem }
+.cp-rows-loading {
+  display:flex;align-items:center;gap:.75rem;
+  color:#64748b;font-size:.9rem;padding:3rem 0;
+}
+.cp-row { margin-bottom:2.5rem }
+.cp-row-title {
+  font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:#94a3b8;margin-bottom:.85rem;
+}
+.cp-row-scroll {
+  display:flex;gap:.75rem;overflow-x:auto;padding-bottom:.5rem;
+  scroll-snap-type:x mandatory;
+}
+.cp-row-scroll::-webkit-scrollbar { height:4px }
+.cp-row-scroll::-webkit-scrollbar-track { background:transparent }
+.cp-row-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1);border-radius:2px }
 
-  /* player */
-  .exc-player-section { animation:fadeIn .3s ease }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+/* ── Cards ── */
+.cp-card {
+  flex-shrink:0;width:140px;scroll-snap-align:start;
+  border-radius:10px;overflow:hidden;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  transition:transform .2s,box-shadow .2s,border-color .2s;
+}
+.cp-card:hover {
+  transform:translateY(-6px) scale(1.02);
+  box-shadow:0 16px 40px rgba(0,0,0,.6);
+  border-color:rgba(245,158,11,.4);
+}
+.cp-card-poster {
+  position:relative;aspect-ratio:2/3;overflow:hidden;
+  background:rgba(255,255,255,.04);
+}
+.cp-card-poster img {
+  width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .3s;
+}
+.cp-card:hover .cp-card-poster img { transform:scale(1.08) }
+.cp-card-no-poster {
+  width:100%;height:100%;display:flex;align-items:center;
+  justify-content:center;font-size:2.5rem;
+}
+.cp-badge {
+  position:absolute;top:.4rem;left:.4rem;
+  font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:.15rem .45rem;border-radius:20px;
+}
+.cp-badge-movie { background:rgba(168,85,247,.85);color:#fff }
+.cp-badge-tv    { background:rgba(0,180,220,.85);color:#fff }
+.cp-play-cover {
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;background:rgba(0,0,0,.55);opacity:0;transition:opacity .2s;
+}
+.cp-card:hover .cp-play-cover { opacity:1 }
+.cp-card-body { padding:.55rem .65rem }
+.cp-card-title {
+  font-size:.78rem;font-weight:700;color:#fff;margin-bottom:.2rem;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.cp-card-meta { font-size:.68rem;color:#64748b;display:flex;gap:.35rem }
+.cp-card-rating { color:#f59e0b }
 
-  .exc-player-wrap { position:relative;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 8px 40px rgba(0,0,0,.6);margin-bottom:.75rem }
-  .exc-video { width:100%;aspect-ratio:16/9;display:block;max-height:72vh }
+/* ── Search ── */
+.cp-search-wrap { padding:1.5rem }
+.cp-search-bar-wrap {
+  display:flex;align-items:center;gap:.75rem;max-width:640px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;padding:.65rem 1rem;margin-bottom:1.5rem;
+  transition:border-color .2s;
+}
+.cp-search-bar-wrap:focus-within { border-color:rgba(245,158,11,.5) }
+.cp-search-icon { font-size:1.1rem;flex-shrink:0 }
+.cp-search-input {
+  flex:1;background:none;border:none;outline:none;
+  color:#fff;font-size:.95rem;
+}
+.cp-search-input::placeholder { color:#475569 }
+.cp-clear-btn {
+  background:none;border:none;color:#64748b;cursor:pointer;
+  font-size:.9rem;padding:.1rem .3rem;transition:color .15s;
+}
+.cp-clear-btn:hover { color:#fff }
+.cp-search-status {
+  text-align:center;color:#64748b;font-size:.9rem;padding:1rem 0;
+}
+.cp-search-placeholder {
+  text-align:center;color:#475569;padding:4rem 0;font-size:.95rem;
+}
 
-  .exc-player-overlay {
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,.6);pointer-events:none;transition:opacity .3s
-  }
-  .exc-player-overlay.hidden { opacity:0 }
-  .exc-spinner {
-    width:44px;height:44px;border:3px solid rgba(255,255,255,.1);
-    border-top-color:#fbbf24;border-radius:50%;animation:spin .7s linear infinite
-  }
-  @keyframes spin { to{transform:rotate(360deg)} }
+/* ── Grid (search results) ── */
+.cp-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:1rem;
+}
 
-  /* toolbar */
-  .exc-toolbar { display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.5rem }
-  .exc-source-list { display:flex;gap:.4rem;flex-wrap:wrap;flex:1 }
-  .exc-source-btn {
-    padding:.3rem .75rem;border-radius:20px;border:1px solid rgba(255,255,255,.12);
-    background:transparent;color:#94a3b8;font-size:.75rem;cursor:pointer;transition:all .15s
-  }
-  .exc-source-btn:hover { border-color:var(--amber);color:var(--amber) }
-  .exc-source-btn.active { background:rgba(251,191,36,.15);border-color:var(--amber);color:var(--amber);font-weight:600 }
-  .exc-source-btn.failed { border-color:rgba(248,81,73,.3);color:#ef4444;opacity:.6 }
-  .exc-toolbar-right { display:flex;gap:.4rem;flex-shrink:0 }
+/* ── Player page ── */
+.cp-player-page { padding:1rem 1.5rem }
+.cp-back-btn {
+  background:none;border:none;color:#94a3b8;cursor:pointer;
+  font-size:.85rem;padding:.4rem 0;margin-bottom:1rem;
+  transition:color .15s;
+}
+.cp-back-btn:hover { color:#fff }
 
-  /* dl hint */
-  .exc-dl-hint { padding:.5rem .75rem;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(255,255,255,.07) }
-  .exc-code { font-family:monospace;font-size:.75rem;color:#94a3b8;background:rgba(0,0,0,.3);padding:.15rem .4rem;border-radius:4px;word-break:break-all }
+.cp-np-bar {
+  display:flex;align-items:center;gap:.75rem;
+  padding:.75rem 1rem;margin-bottom:.85rem;
+  background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.18);
+  border-radius:10px;
+}
+.cp-np-title { font-weight:700;color:#fff;font-size:.95rem }
+.cp-np-sub   { font-size:.78rem;color:#64748b }
 
-  /* loading state for search */
-  .exc-loading { grid-column:1/-1;text-align:center;padding:2rem;color:#64748b;font-size:.9rem }
-  .exc-empty   { grid-column:1/-1;text-align:center;padding:2.5rem;color:#64748b }
+.cp-ep-selector {
+  display:flex;align-items:center;flex-wrap:wrap;gap:.75rem;
+  padding:.85rem 1rem;margin-bottom:.85rem;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;
+}
+.cp-select {
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;color:#fff;padding:.4rem .75rem;font-size:.85rem;outline:none;cursor:pointer;
+}
+.cp-select option { background:#1e2533 }
+.cp-btn-primary {
+  padding:.45rem 1rem;border-radius:8px;border:none;
+  background:#f59e0b;color:#000;font-weight:700;font-size:.85rem;cursor:pointer;
+}
+
+.cp-video-wrap {
+  position:relative;border-radius:14px;overflow:hidden;
+  background:#000;box-shadow:0 8px 40px rgba(0,0,0,.7);margin-bottom:.85rem;
+}
+#cpPlayer { width:100%;aspect-ratio:16/9;max-height:72vh;display:block }
+.cp-video-overlay {
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.6);pointer-events:none;transition:opacity .3s;
+}
+.cp-video-overlay.hidden { opacity:0 }
+
+.cp-player-toolbar {
+  display:flex;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:.5rem;
+}
+.cp-source-list { display:flex;flex-wrap:wrap;gap:.4rem;flex:1 }
+.cp-src-btn {
+  padding:.3rem .75rem;border-radius:20px;
+  border:1px solid rgba(255,255,255,.12);background:transparent;
+  color:#94a3b8;font-size:.75rem;cursor:pointer;transition:all .15s;
+}
+.cp-src-btn:hover { border-color:#f59e0b;color:#f59e0b }
+.cp-src-btn.active { background:rgba(245,158,11,.15);border-color:#f59e0b;color:#f59e0b;font-weight:600 }
+.cp-src-btn.failed { border-color:rgba(248,81,73,.3);color:#ef4444;opacity:.6 }
+
+.cp-tool-btns { display:flex;gap:.4rem;flex-shrink:0 }
+.cp-tool-btn {
+  padding:.3rem .75rem;border-radius:20px;
+  border:1px solid rgba(255,255,255,.1);background:transparent;
+  color:#94a3b8;font-size:.75rem;cursor:pointer;text-decoration:none;
+  transition:all .15s;display:inline-block;
+}
+.cp-tool-btn:hover { border-color:rgba(255,255,255,.3);color:#fff }
+
+.cp-dl-hint {
+  padding:.5rem .75rem;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);border-radius:8px;font-size:.8rem;color:#64748b;
+}
+.cp-code {
+  font-family:monospace;font-size:.75rem;color:#94a3b8;
+  background:rgba(0,0,0,.3);padding:.15rem .4rem;border-radius:4px;word-break:break-all;
+}
+
+/* ── Spinners ── */
+.cp-spinner {
+  width:44px;height:44px;border:3px solid rgba(255,255,255,.1);
+  border-top-color:#f59e0b;border-radius:50%;animation:cpSpin .7s linear infinite;
+}
+.cp-spinner-sm {
+  width:16px;height:16px;border:2px solid rgba(255,255,255,.1);
+  border-top-color:#f59e0b;border-radius:50%;animation:cpSpin .7s linear infinite;
+  display:inline-block;
+}
+@keyframes cpSpin { to{transform:rotate(360deg)} }
+
+/* ── Utility ── */
+.hidden { display:none!important }
 </style>
 
 <script>
 (function () {
+'use strict';
 
-  /* ── refs ── */
-  const searchInput    = document.getElementById('searchInput');
-  const searchBtn      = document.getElementById('searchBtn');
-  const searchResults  = document.getElementById('searchResults');
-  const playerSection  = document.getElementById('playerSection');
-  const nowPlayingBar  = document.getElementById('nowPlayingBar');
-  const episodeSelector= document.getElementById('episodeSelector');
-  const seasonSelect   = document.getElementById('seasonSelect');
-  const episodeSelect  = document.getElementById('episodeSelect');
-  const playEpBtn      = document.getElementById('playEpBtn');
-  const excPlayer      = document.getElementById('excPlayer');
-  const playerOverlay  = document.getElementById('playerOverlay');
-  const sourceList     = document.getElementById('sourceList');
-  const copyUrlBtn     = document.getElementById('copyUrlBtn');
-  const downloadBtn    = document.getElementById('downloadBtn');
-  const dlHint         = document.getElementById('dlHint');
-  const dlCommand      = document.getElementById('dlCommand');
-  const cinéproStatus  = document.getElementById('cinepro-status');
+/* ── State ── */
+let hls         = null;
+let currentMedia = null;
+let allSources   = [];
+let seasonData   = [];
+let trendingData = { movies: [], tv: [] };
 
-  let hlsInstance   = null;
-  let currentMedia  = null;  // { id, type, title, year }
-  let currentSrc    = null;
-  let allSources    = [];
-  let seasonData    = [];    // [{ number, name, episodeCount }]
+/* ── Element refs ── */
+const app         = document.getElementById('cpApp');
+const viewBrowse  = document.getElementById('viewBrowse');
+const viewSearch  = document.getElementById('viewSearch');
+const viewPlayer  = document.getElementById('viewPlayer');
+const browseRows  = document.getElementById('browseRows');
+const featuredHero= document.getElementById('featuredHero');
+const heroBg      = document.getElementById('heroBg');
+const heroType    = document.getElementById('heroType');
+const heroTitle   = document.getElementById('heroTitle');
+const heroOverview= document.getElementById('heroOverview');
+const heroMeta    = document.getElementById('heroMeta');
+const heroPlayBtn = document.getElementById('heroPlayBtn');
+const heroMoreBtn = document.getElementById('heroMoreBtn');
 
-  /* ── CinePro status check ── */
-  (async () => {
-    try {
-      const r = await fetch('/exclusive/sources?id=0&type=movie', { method: 'GET' });
-      // any response (even error) means backend is reachable
-      cinéproStatus.classList.add(r.status < 502 ? 'online' : 'offline');
-    } catch {
-      cinéproStatus.classList.add('offline');
-    }
-  })();
+const searchInput  = document.getElementById('searchInput');
+const clearSearch  = document.getElementById('clearSearch');
+const searchStatus = document.getElementById('searchStatus');
+const searchResults= document.getElementById('searchResults');
+const searchPh     = document.getElementById('searchPlaceholder');
 
-  /* ── search ── */
-  searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-  searchBtn.addEventListener('click', doSearch);
+const npBar       = document.getElementById('npBar');
+const epSelector  = document.getElementById('epSelector');
+const seasonSel   = document.getElementById('seasonSel');
+const episodeSel  = document.getElementById('episodeSel');
+const playEpBtn   = document.getElementById('playEpBtn');
+const cpPlayer    = document.getElementById('cpPlayer');
+const videoOverlay= document.getElementById('videoOverlay');
+const sourceList  = document.getElementById('sourceList');
+const copyUrlBtn  = document.getElementById('copyUrlBtn');
+const dlBtn       = document.getElementById('dlBtn');
+const dlHint      = document.getElementById('dlHint');
+const dlCmd       = document.getElementById('dlCmd');
+const cpStatus    = document.getElementById('cpStatus');
 
-  async function doSearch() {
-    const q = searchInput.value.trim();
-    if (!q) return;
-    searchResults.innerHTML = '<div class="exc-loading">Searching…</div>';
-    searchResults.classList.remove('hidden');
-    try {
-      const r = await fetch(`/exclusive/search?q=${encodeURIComponent(q)}`);
-      const d = await r.json();
-      renderResults(d.results || []);
-    } catch {
-      searchResults.innerHTML = '<div class="exc-empty">Search failed. Try again.</div>';
-    }
+/* ════════════════════════════════════
+   VIEW SWITCHING
+════════════════════════════════════ */
+function showView(name) {
+  [viewBrowse, viewSearch, viewPlayer].forEach(v => v.classList.add('hidden'));
+  document.querySelectorAll('.cp-nav-btn').forEach(b => b.classList.remove('active'));
+
+  if (name === 'browse') {
+    viewBrowse.classList.remove('hidden');
+    document.querySelector('[data-view="browse"]').classList.add('active');
+  } else if (name === 'search') {
+    viewSearch.classList.remove('hidden');
+    document.querySelector('[data-view="search"]').classList.add('active');
+    searchInput.focus();
+  } else if (name === 'player') {
+    viewPlayer.classList.remove('hidden');
   }
+}
 
-  function renderResults(results) {
-    if (!results.length) {
-      searchResults.innerHTML = '<div class="exc-empty">No results found.</div>';
+document.querySelectorAll('.cp-nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+document.getElementById('homeBtn').addEventListener('click', () => showView('browse'));
+document.getElementById('backBtn').addEventListener('click', () => {
+  stopPlayer();
+  showView('browse');
+});
+
+/* ════════════════════════════════════
+   BACKEND STATUS CHECK
+════════════════════════════════════ */
+(async () => {
+  try {
+    const r = await fetch('/exclusive/trending');
+    cpStatus.classList.add(r.ok ? 'online' : 'offline');
+  } catch {
+    cpStatus.classList.add('offline');
+  }
+})();
+
+/* ════════════════════════════════════
+   BROWSE / TRENDING
+════════════════════════════════════ */
+async function loadTrending() {
+  try {
+    const r = await fetch('/exclusive/trending');
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    trendingData = d;
+    renderHero(d.movies[0]);
+    renderRows(d);
+  } catch (err) {
+    browseRows.innerHTML = `<div style="color:#ef4444;padding:2rem 0;font-size:.9rem">Failed to load: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderHero(item) {
+  if (!item) return;
+  if (item.backdrop) {
+    heroBg.style.backgroundImage = `url('${item.backdrop}')`;
+    featuredHero.classList.remove('hidden');
+    heroType.textContent = item.type === 'movie' ? 'Movie' : 'TV Series';
+    heroTitle.textContent = item.title;
+    heroOverview.textContent = item.overview;
+    heroMeta.textContent = [item.year, item.rating ? `★ ${item.rating}` : null].filter(Boolean).join(' · ');
+    heroPlayBtn.onclick = () => selectMedia(item);
+    heroMoreBtn.onclick = () => {
+      searchInput.value = item.title;
+      showView('search');
+      doSearch();
+    };
+  }
+}
+
+function renderRows(data) {
+  browseRows.innerHTML = '';
+  if (data.movies.length) browseRows.appendChild(buildRow('Trending Movies', data.movies));
+  if (data.tv.length)     browseRows.appendChild(buildRow('Trending TV Shows', data.tv));
+}
+
+function buildRow(title, items) {
+  const row = document.createElement('div');
+  row.className = 'cp-row';
+  row.innerHTML = `<div class="cp-row-title">${esc(title)}</div>
+    <div class="cp-row-scroll">${items.map(cardHTML).join('')}</div>`;
+  row.querySelectorAll('.cp-card').forEach((card, i) => {
+    card.addEventListener('click', () => selectMedia(items[i]));
+  });
+  return row;
+}
+
+/* ════════════════════════════════════
+   SEARCH
+════════════════════════════════════ */
+let searchTimer = null;
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  clearSearch.classList.toggle('hidden', !q);
+  clearTimeout(searchTimer);
+  if (!q) { hideSearchResults(); return; }
+  searchTimer = setTimeout(doSearch, 380);
+});
+clearSearch.addEventListener('click', () => {
+  searchInput.value = '';
+  clearSearch.classList.add('hidden');
+  hideSearchResults();
+  searchInput.focus();
+});
+searchInput.addEventListener('keydown', e => { if (e.key === 'Escape') clearSearch.click(); });
+
+function hideSearchResults() {
+  searchResults.classList.add('hidden');
+  searchStatus.classList.add('hidden');
+  searchPh.classList.remove('hidden');
+}
+
+async function doSearch() {
+  const q = searchInput.value.trim();
+  if (!q) return;
+  searchPh.classList.add('hidden');
+  searchResults.classList.add('hidden');
+  searchStatus.textContent = 'Searching…';
+  searchStatus.classList.remove('hidden');
+  try {
+    const r = await fetch(`/exclusive/search?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    const items = d.results || [];
+    searchStatus.classList.add('hidden');
+    if (!items.length) {
+      searchResults.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:#475569">No results found.</div>';
+      searchResults.classList.remove('hidden');
       return;
     }
-    searchResults.innerHTML = results.map(item => `
-      <div class="exc-card" data-id="${item.id}" data-type="${item.type}"
-           data-title="${escAttr(item.title)}" data-year="${item.year || ''}">
-        <div class="exc-card-poster">
-          ${item.poster
-            ? `<img src="${escAttr(item.poster)}" alt="${escAttr(item.title)}" loading="lazy" />`
-            : `<div class="exc-card-no-poster">🎬</div>`}
-          <span class="exc-type-badge exc-type-${item.type === 'movie' ? 'movie' : 'tv'}">
-            ${item.type === 'movie' ? 'Movie' : 'TV'}
-          </span>
-          <div class="exc-play-overlay">▶</div>
-        </div>
-        <div class="exc-card-info">
-          <div class="exc-card-title">${escHtml(item.title)}</div>
-          <div class="exc-card-meta">
-            ${item.year ? `<span>${item.year}</span>` : ''}
-            ${item.rating ? `<span class="exc-rating">★ ${item.rating}</span>` : ''}
-          </div>
-        </div>
-      </div>
-    `).join('');
-
-    searchResults.querySelectorAll('.exc-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const { id, type, title, year } = card.dataset;
-        selectMedia({ id, type, title, year });
-      });
+    searchResults.innerHTML = items.map(cardHTML).join('');
+    searchResults.classList.remove('hidden');
+    searchResults.querySelectorAll('.cp-card').forEach((card, i) => {
+      card.addEventListener('click', () => selectMedia(items[i]));
     });
+  } catch {
+    searchStatus.textContent = 'Search failed. Try again.';
   }
+}
 
-  /* ── select media ── */
-  async function selectMedia(media) {
-    currentMedia = media;
-    playerSection.classList.remove('hidden');
-    playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    resetPlayer();
-
-    nowPlayingBar.innerHTML = `
-      <span style="font-size:1.1rem">${media.type === 'movie' ? '🎬' : '📺'}</span>
-      <div>
-        <div class="exc-np-title">${escHtml(media.title)} ${media.year ? `<span style="color:#64748b;font-weight:400">(${media.year})</span>` : ''}</div>
-        <div class="exc-np-sub">${media.type === 'movie' ? 'Movie' : 'TV Series'}</div>
+/* ════════════════════════════════════
+   CARDS
+════════════════════════════════════ */
+function cardHTML(item) {
+  const badgeCls = item.type === 'movie' ? 'cp-badge-movie' : 'cp-badge-tv';
+  const badgeTxt = item.type === 'movie' ? 'Movie' : 'TV';
+  return `
+  <div class="cp-card" data-id="${item.id}" data-type="${item.type}">
+    <div class="cp-card-poster">
+      ${item.poster
+        ? `<img src="${escAttr(item.poster)}" alt="${escAttr(item.title)}" loading="lazy" />`
+        : `<div class="cp-card-no-poster">🎬</div>`}
+      <span class="cp-badge ${badgeCls}">${badgeTxt}</span>
+      <div class="cp-play-cover">▶</div>
+    </div>
+    <div class="cp-card-body">
+      <div class="cp-card-title">${esc(item.title)}</div>
+      <div class="cp-card-meta">
+        ${item.year ? `<span>${item.year}</span>` : ''}
+        ${item.rating ? `<span class="cp-card-rating">★ ${item.rating}</span>` : ''}
       </div>
-    `;
+    </div>
+  </div>`;
+}
 
-    if (media.type === 'movie') {
-      episodeSelector.classList.add('hidden');
-      fetchSources(media.id, 'movie');
-    } else {
-      episodeSelector.classList.remove('hidden');
-      showOverlay(true);
-      await loadSeasons(media.id);
-    }
+/* ════════════════════════════════════
+   SELECT MEDIA → PLAYER
+════════════════════════════════════ */
+async function selectMedia(item) {
+  currentMedia = item;
+  stopPlayer();
+  showView('player');
+
+  npBar.innerHTML = `
+    <span style="font-size:1.1rem">${item.type === 'movie' ? '🎬' : '📺'}</span>
+    <div>
+      <div class="cp-np-title">${esc(item.title)}${item.year ? ` <span style="color:#64748b;font-weight:400">(${item.year})</span>` : ''}</div>
+      <div class="cp-np-sub">${item.type === 'movie' ? 'Movie' : 'TV Series'}</div>
+    </div>`;
+
+  if (item.type === 'movie') {
+    epSelector.classList.add('hidden');
+    fetchSources(item.id, 'movie');
+  } else {
+    epSelector.classList.remove('hidden');
+    showOverlay(true);
+    sourceList.innerHTML = '<span style="color:#64748b;font-size:.8rem">Choose an episode to play…</span>';
+    await loadSeasons(item.id);
   }
+}
 
-  /* ── load seasons ── */
-  async function loadSeasons(tvId) {
-    try {
-      const r = await fetch(`/exclusive/tv/${tvId}/info`);
-      const d = await r.json();
-      seasonData = d.seasons || [];
-      seasonSelect.innerHTML = seasonData.map(s =>
-        `<option value="${s.number}">${s.name || 'Season ' + s.number}</option>`
-      ).join('');
-      updateEpisodes();
-    } catch {
-      seasonSelect.innerHTML = '<option>Failed to load seasons</option>';
+/* ════════════════════════════════════
+   SEASONS / EPISODES
+════════════════════════════════════ */
+async function loadSeasons(tvId) {
+  try {
+    const r = await fetch(`/exclusive/tv/${tvId}/info`);
+    const d = await r.json();
+    seasonData = d.seasons || [];
+    seasonSel.innerHTML = seasonData.map(s =>
+      `<option value="${s.number}">${esc(s.name || 'Season ' + s.number)}</option>`
+    ).join('');
+    updateEpisodes();
+  } catch {
+    seasonSel.innerHTML = '<option>Failed to load</option>';
+  }
+  showOverlay(false);
+}
+
+seasonSel.addEventListener('change', updateEpisodes);
+
+function updateEpisodes() {
+  const sNum = parseInt(seasonSel.value, 10);
+  const season = seasonData.find(s => s.number === sNum);
+  if (!season) return;
+  episodeSel.innerHTML = Array.from({ length: season.episodeCount }, (_, i) =>
+    `<option value="${i + 1}">Episode ${i + 1}</option>`
+  ).join('');
+}
+
+playEpBtn.addEventListener('click', () => {
+  const s = seasonSel.value, e = episodeSel.value;
+  if (s && e && currentMedia) fetchSources(currentMedia.id, 'tv', s, e);
+});
+
+/* ════════════════════════════════════
+   FETCH SOURCES
+════════════════════════════════════ */
+async function fetchSources(id, type, s, e) {
+  showOverlay(true);
+  sourceList.innerHTML = '<span style="color:#64748b;font-size:.8rem">Loading sources…</span>';
+  allSources = [];
+  resetDlUI();
+
+  let url = `/exclusive/sources?id=${id}&type=${type}`;
+  if (type === 'tv') url += `&s=${s}&e=${e}`;
+
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    const sources = [];
+    if (Array.isArray(d)) {
+      d.forEach(p => { if (p.sources) sources.push(...p.sources); });
+    } else if (d.sources) {
+      sources.push(...d.sources);
+    } else if (d.results) {
+      d.results.forEach(p => { if (p.sources) sources.push(...p.sources); });
     }
+
+    if (!sources.length) {
+      sourceList.innerHTML = '<span style="color:#ef4444;font-size:.8rem">No sources found.</span>';
+      showOverlay(false);
+      return;
+    }
+    allSources = sources;
+    renderSourceBtns(sources);
+    playSource(sources[0]);
+  } catch (err) {
+    sourceList.innerHTML = `<span style="color:#ef4444;font-size:.8rem">${esc(err.message)}</span>`;
     showOverlay(false);
   }
+}
 
-  seasonSelect.addEventListener('change', updateEpisodes);
-
-  function updateEpisodes() {
-    const sNum = parseInt(seasonSelect.value, 10);
-    const season = seasonData.find(s => s.number === sNum);
-    if (!season) return;
-    episodeSelect.innerHTML = Array.from({ length: season.episodeCount }, (_, i) =>
-      `<option value="${i + 1}">Episode ${i + 1}</option>`
-    ).join('');
-  }
-
-  playEpBtn.addEventListener('click', () => {
-    const s = seasonSelect.value;
-    const e = episodeSelect.value;
-    if (!s || !e || !currentMedia) return;
-    fetchSources(currentMedia.id, 'tv', s, e);
-  });
-
-  /* ── fetch sources from CinePro ── */
-  async function fetchSources(id, type, s, e) {
-    showOverlay(true);
-    sourceList.innerHTML = '<span style="color:#64748b;font-size:.8rem">Loading sources…</span>';
-    allSources = [];
-    resetStreamUI();
-
-    let url = `/exclusive/sources?id=${id}&type=${type}`;
-    if (type === 'tv') url += `&s=${s}&e=${e}`;
-
-    try {
-      const r = await fetch(url);
-      const d = await r.json();
-      if (d.error) throw new Error(d.error);
-
-      // collect all sources from all providers
-      const sources = [];
-      if (Array.isArray(d)) {
-        d.forEach(providerResult => {
-          if (providerResult.sources) sources.push(...providerResult.sources);
-        });
-      } else if (d.sources) {
-        sources.push(...d.sources);
-      } else if (d.results) {
-        d.results.forEach(r => { if (r.sources) sources.push(...r.sources); });
-      }
-
-      if (!sources.length) {
-        sourceList.innerHTML = '<span style="color:#ef4444;font-size:.8rem">No sources found from any provider.</span>';
-        showOverlay(false);
-        return;
-      }
-
-      allSources = sources;
-      renderSourceButtons(sources);
-      playSource(sources[0]);
-    } catch (err) {
-      sourceList.innerHTML = `<span style="color:#ef4444;font-size:.8rem">${escHtml(err.message)}</span>`;
-      showOverlay(false);
-    }
-  }
-
-  /* ── render source buttons ── */
-  function renderSourceButtons(sources) {
-    sourceList.innerHTML = sources.map((src, i) => {
-      const providerName = src.provider?.name || `Source ${i + 1}`;
-      const quality = src.quality || '';
-      return `<button class="exc-source-btn${i === 0 ? ' active' : ''}" data-idx="${i}">
-        ${escHtml(providerName)}${quality ? ` <span style="font-size:.65rem;opacity:.7">${escHtml(quality)}</span>` : ''}
-      </button>`;
-    }).join('');
-
-    sourceList.querySelectorAll('.exc-source-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.idx, 10);
-        sourceList.querySelectorAll('.exc-source-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        playSource(allSources[idx]);
-      });
+/* ════════════════════════════════════
+   SOURCE BUTTONS
+════════════════════════════════════ */
+function renderSourceBtns(sources) {
+  sourceList.innerHTML = sources.map((src, i) => {
+    const name = src.provider?.name || `Source ${i + 1}`;
+    const q    = src.quality ? ` <span style="font-size:.65rem;opacity:.7">${esc(src.quality)}</span>` : '';
+    return `<button class="cp-src-btn${i === 0 ? ' active' : ''}" data-idx="${i}">${esc(name)}${q}</button>`;
+  }).join('');
+  sourceList.querySelectorAll('.cp-src-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sourceList.querySelectorAll('.cp-src-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      playSource(allSources[parseInt(btn.dataset.idx, 10)]);
     });
+  });
+}
+
+/* ════════════════════════════════════
+   PLAYER
+════════════════════════════════════ */
+function playSource(source) {
+  if (!source?.url) return;
+  showOverlay(true);
+  if (hls) { hls.destroy(); hls = null; }
+
+  const isHLS = source.type === 'hls' || source.url.includes('.m3u8');
+
+  if (isHLS && Hls.isSupported()) {
+    hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+    hls.loadSource(source.url);
+    hls.attachMedia(cpPlayer);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { showOverlay(false); cpPlayer.play().catch(() => {}); });
+    hls.on(Hls.Events.ERROR, (_, data) => { if (data.fatal) showOverlay(false); });
+  } else if (cpPlayer.canPlayType('application/vnd.apple.mpegurl') && isHLS) {
+    cpPlayer.src = source.url;
+    cpPlayer.addEventListener('loadedmetadata', () => { showOverlay(false); cpPlayer.play(); }, { once: true });
+  } else {
+    cpPlayer.src = source.url;
+    cpPlayer.addEventListener('canplay', () => showOverlay(false), { once: true });
+    cpPlayer.play().catch(() => {});
   }
 
-  /* ── play a source ── */
-  function playSource(source) {
-    if (!source?.url) return;
-    currentSrc = source.url;
-    showOverlay(true);
+  updateDlUI(source.url, isHLS);
+}
 
-    // destroy old HLS
-    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+function stopPlayer() {
+  if (hls) { hls.destroy(); hls = null; }
+  cpPlayer.src = '';
+  showOverlay(true);
+  sourceList.innerHTML = '';
+  resetDlUI();
+}
 
-    const isHLS = source.type === 'hls' || source.url.includes('.m3u8');
+function showOverlay(on) { videoOverlay.classList.toggle('hidden', !on); }
 
-    if (isHLS && Hls.isSupported()) {
-      hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: false });
-      hlsInstance.loadSource(source.url);
-      hlsInstance.attachMedia(excPlayer);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-        showOverlay(false);
-        excPlayer.play().catch(() => {});
-      });
-      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) showOverlay(false);
-      });
-    } else if (excPlayer.canPlayType('application/vnd.apple.mpegurl') && isHLS) {
-      excPlayer.src = source.url;
-      excPlayer.addEventListener('loadedmetadata', () => { showOverlay(false); excPlayer.play(); }, { once: true });
-    } else {
-      excPlayer.src = source.url;
-      excPlayer.addEventListener('canplay', () => showOverlay(false), { once: true });
-      excPlayer.play().catch(() => {});
-    }
+cpPlayer.addEventListener('waiting', () => showOverlay(true));
+cpPlayer.addEventListener('playing', () => showOverlay(false));
+cpPlayer.addEventListener('canplay', () => showOverlay(false));
 
-    // update download UI
-    updateDownloadUI(source.url, isHLS);
-  }
-
-  function updateDownloadUI(url, isHLS) {
-    copyUrlBtn.onclick = () => {
-      navigator.clipboard.writeText(url).then(() => {
-        const orig = copyUrlBtn.textContent;
-        copyUrlBtn.textContent = '✓ Copied!';
-        setTimeout(() => { copyUrlBtn.textContent = orig; }, 1500);
-      });
-    };
-
-    if (isHLS) {
-      downloadBtn.href = url;
-      downloadBtn.removeAttribute('download');
-      downloadBtn.target = '_blank';
-      dlHint.classList.remove('hidden');
-      dlCommand.textContent = `yt-dlp "${url}"`;
-    } else {
-      downloadBtn.href = url;
-      downloadBtn.setAttribute('download', '');
-      downloadBtn.target = '_self';
-      dlHint.classList.add('hidden');
-    }
-  }
-
-  /* ── helpers ── */
-  function showOverlay(on) {
-    playerOverlay.classList.toggle('hidden', !on);
-  }
-
-  function resetPlayer() {
-    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-    excPlayer.src = '';
-    showOverlay(true);
-  }
-
-  function resetStreamUI() {
-    copyUrlBtn.onclick = null;
-    downloadBtn.href = '#';
+/* ════════════════════════════════════
+   DOWNLOAD UI
+════════════════════════════════════ */
+function updateDlUI(url, isHLS) {
+  copyUrlBtn.onclick = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      const t = copyUrlBtn.textContent;
+      copyUrlBtn.textContent = '✓ Copied!';
+      setTimeout(() => { copyUrlBtn.textContent = t; }, 1500);
+    });
+  };
+  if (isHLS) {
+    dlBtn.href = url; dlBtn.removeAttribute('download'); dlBtn.target = '_blank';
+    dlHint.classList.remove('hidden');
+    dlCmd.textContent = `yt-dlp "${url}"`;
+  } else {
+    dlBtn.href = url; dlBtn.setAttribute('download', ''); dlBtn.target = '_self';
     dlHint.classList.add('hidden');
   }
+}
 
-  excPlayer.addEventListener('waiting', () => showOverlay(true));
-  excPlayer.addEventListener('playing', () => showOverlay(false));
-  excPlayer.addEventListener('canplay', () => showOverlay(false));
+function resetDlUI() {
+  copyUrlBtn.onclick = null;
+  dlBtn.href = '#';
+  dlHint.classList.add('hidden');
+}
 
-  function escHtml(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-  function escAttr(s) {
-    return String(s ?? '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+/* ════════════════════════════════════
+   UTILS
+════════════════════════════════════ */
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s ?? '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* ── Boot ── */
+loadTrending();
 
 })();
 </script>

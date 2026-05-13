@@ -7,6 +7,7 @@ const FEATURE_META = {
   exclusive: { label: 'Exclusive',   icon: '👑',  path: '/exclusive' },
   scraper:   { label: 'Web Scraper', icon: '🕷',  path: '/scraper' },
   contact:   { label: 'Contact',     icon: '📬',  path: '/contact' },
+  portfolio: { label: 'Portfolio',   icon: '🛸',  path: '/portfolio' },
 };
 const FEATURES = Object.keys(FEATURE_META);
 %>
@@ -41,26 +42,32 @@ const FEATURES = Object.keys(FEATURE_META);
               <div style="font-size:.75rem;color:#64748b"><%= meta.path %></div>
             </div>
           </div>
+          <%
+            const modeLabels = {
+              all:'Everyone', logged_in:'Logged-in only',
+              subscribers:'Pro+ only', provip:'Pro VIP only',
+              blocked:'Some blocked', disabled:'Disabled',
+            };
+          %>
           <div class="ff-mode-status ff-status-<%= flag.mode %>">
-            <% if (flag.mode === 'all') { %>Everyone<% } %>
-            <% if (flag.mode === 'logged_in') { %>Logged-in only<% } %>
-            <% if (flag.mode === 'blocked') { %>Some blocked<% } %>
-            <% if (flag.mode === 'disabled') { %>Disabled<% } %>
+            <%= modeLabels[flag.mode] || flag.mode %>
           </div>
         </div>
 
         <!-- Mode selector -->
         <div class="ff-modes">
-          <% ['all','logged_in','blocked','disabled'].forEach(m => { %>
+          <% ['all','logged_in','subscribers','provip','blocked','disabled'].forEach(m => { %>
           <label class="ff-mode-opt">
             <input type="radio" name="<%= feat %>_mode" value="<%= m %>"
                    <%= flag.mode === m ? 'checked' : '' %>
                    onchange="updateCard('<%= feat %>')" />
             <span class="ff-mode-label">
-              <% if (m === 'all')       { %><span class="ff-dot ff-dot-green"></span> Everyone<% } %>
-              <% if (m === 'logged_in') { %><span class="ff-dot ff-dot-blue"></span> Logged-in only<% } %>
-              <% if (m === 'blocked')   { %><span class="ff-dot ff-dot-orange"></span> Block specific users<% } %>
-              <% if (m === 'disabled')  { %><span class="ff-dot ff-dot-red"></span> Disabled for all<% } %>
+              <% if (m === 'all')         { %><span class="ff-dot ff-dot-green"></span> Everyone<% } %>
+              <% if (m === 'logged_in')   { %><span class="ff-dot ff-dot-blue"></span> Logged-in only<% } %>
+              <% if (m === 'subscribers') { %><span class="ff-dot ff-dot-purple"></span> Pro+<% } %>
+              <% if (m === 'provip')      { %><span class="ff-dot ff-dot-gold"></span> Pro VIP only<% } %>
+              <% if (m === 'blocked')     { %><span class="ff-dot ff-dot-orange"></span> Block specific users<% } %>
+              <% if (m === 'disabled')    { %><span class="ff-dot ff-dot-red"></span> Disabled for all<% } %>
             </span>
           </label>
           <% }); %>
@@ -108,10 +115,12 @@ const FEATURES = Object.keys(FEATURE_META);
     font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
     padding:.2rem .6rem;border-radius:20px
   }
-  .ff-status-all      { background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3) }
-  .ff-status-logged_in{ background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3) }
-  .ff-status-blocked  { background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3) }
-  .ff-status-disabled { background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3) }
+  .ff-status-all         { background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3) }
+  .ff-status-logged_in   { background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3) }
+  .ff-status-subscribers { background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3) }
+  .ff-status-provip      { background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.3) }
+  .ff-status-blocked     { background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3) }
+  .ff-status-disabled    { background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3) }
 
   .ff-modes {
     display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.1rem
@@ -135,6 +144,8 @@ const FEATURES = Object.keys(FEATURE_META);
   }
   .ff-dot-green  { background:#22c55e }
   .ff-dot-blue   { background:#60a5fa }
+  .ff-dot-purple { background:#c084fc }
+  .ff-dot-gold   { background:#facc15 }
   .ff-dot-orange { background:#fb923c }
   .ff-dot-red    { background:#ef4444 }
 
@@ -169,10 +180,18 @@ function updateCard(feat) {
 
   picker.style.display = mode === 'blocked' ? '' : 'none';
 
-  const labels = { all:'Everyone', logged_in:'Logged-in only', blocked:'Some blocked', disabled:'Disabled' };
-  const cls    = { all:'ff-status-all', logged_in:'ff-status-logged_in', blocked:'ff-status-blocked', disabled:'ff-status-disabled' };
-  status.className = 'ff-mode-status ' + cls[mode];
-  status.textContent = labels[mode];
+  const labels = {
+    all:'Everyone', logged_in:'Logged-in only',
+    subscribers:'Pro+ only', provip:'Pro VIP only',
+    blocked:'Some blocked', disabled:'Disabled',
+  };
+  const cls = {
+    all:'ff-status-all', logged_in:'ff-status-logged_in',
+    subscribers:'ff-status-subscribers', provip:'ff-status-provip',
+    blocked:'ff-status-blocked', disabled:'ff-status-disabled',
+  };
+  status.className = 'ff-mode-status ' + (cls[mode] || 'ff-status-all');
+  status.textContent = labels[mode] || mode;
 }
 </script>
 
