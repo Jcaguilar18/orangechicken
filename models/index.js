@@ -7,6 +7,9 @@ const ToolUsage    = require('./ToolUsage');
 const ScraperUsage = require('./ScraperUsage');
 const Subscription = require('./Subscription');
 const SiteSetting  = require('./SiteSetting');
+const Show         = require('./Show');
+const Episode      = require('./Episode');
+const ShowComment  = require('./ShowComment');
 
 // User <-> Article
 User.hasMany(Article, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -32,4 +35,16 @@ ToolUsage.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(ScraperUsage, { foreignKey: 'userId', onDelete: 'CASCADE' });
 ScraperUsage.belongsTo(User, { foreignKey: 'userId', as: 'scraperUser' });
 
-module.exports = { User, Article, Comment, Project, ContactMessage, ToolUsage, ScraperUsage, Subscription, SiteSetting };
+// Show <-> Episode
+Show.hasMany(Episode,   { foreignKey: 'showId', onDelete: 'CASCADE' });
+Episode.belongsTo(Show, { foreignKey: 'showId', as: 'show' });
+
+// Episode <-> ShowComment
+Episode.hasMany(ShowComment,    { foreignKey: 'episodeId', onDelete: 'CASCADE' });
+ShowComment.belongsTo(Episode,  { foreignKey: 'episodeId' });
+
+// User <-> ShowComment
+User.hasMany(ShowComment,    { foreignKey: 'userId', onDelete: 'CASCADE' });
+ShowComment.belongsTo(User,  { foreignKey: 'userId', as: 'author' });
+
+module.exports = { User, Article, Comment, Project, ContactMessage, ToolUsage, ScraperUsage, Subscription, SiteSetting, Show, Episode, ShowComment };

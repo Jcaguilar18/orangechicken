@@ -1,0 +1,114 @@
+<%- include('partials/header') %>
+<div class="container">
+
+  <section class="hero" style="padding-bottom:2rem">
+    <div class="hero-glow"></div>
+    <p class="hero-label">THE SCREEN</p>
+    <h1 class="hero-title">Shows</h1>
+    <p class="hero-sub">Movies, series, and videos — all in one place.</p>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <% if (popular.length > 0) { %>
+  <!-- Popular Right Now -->
+  <section style="margin:2rem 0 2.5rem">
+    <p class="hero-label" style="margin-bottom:.75rem">🔥 POPULAR RIGHT NOW</p>
+    <div class="shows-popular-scroll">
+      <% popular.forEach(ep => { %>
+      <a href="/shows/<%= ep.showId %>/episodes/<%= ep.id %>" class="shows-pop-card glass-card">
+        <div class="shows-pop-thumb">
+          <% if (ep.show.coverImage) { %>
+            <img src="/uploads/shows/covers/<%= ep.show.coverImage %>" alt="<%= ep.show.title %>" />
+          <% } else { %>
+            <div class="shows-pop-placeholder">🎬</div>
+          <% } %>
+          <div class="shows-pop-overlay">▶</div>
+        </div>
+        <div class="shows-pop-info">
+          <div class="shows-pop-show"><%= ep.show.title %></div>
+          <div class="shows-pop-ep"><%= ep.title %></div>
+          <div class="shows-pop-views"><%= ep.viewCount %> views</div>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- All Shows -->
+  <section>
+    <p class="hero-label" style="margin-bottom:1.25rem">ALL SHOWS</p>
+    <% if (shows.length === 0) { %>
+      <div class="glass-card" style="text-align:center;padding:3rem;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:1rem">🎬</div>
+        <p>No shows available yet. Check back soon!</p>
+      </div>
+    <% } else { %>
+    <div class="shows-grid">
+      <% shows.forEach(show => { %>
+      <a href="/shows/<%= show.id %>" class="shows-card glass-card">
+        <div class="shows-card-poster">
+          <% if (show.coverImage) { %>
+            <img src="/uploads/shows/covers/<%= show.coverImage %>" alt="<%= show.title %>" />
+          <% } else { %>
+            <div class="shows-card-nocover">🎬</div>
+          <% } %>
+          <span class="shows-type-badge" style="background:<%= show.type === 'movie' ? 'rgba(168,85,247,.85)' : 'rgba(0,180,220,.85)' %>">
+            <%= show.type === 'movie' ? 'MOVIE' : 'SERIES' %>
+          </span>
+          <div class="shows-card-overlay">▶ Watch</div>
+        </div>
+        <div class="shows-card-info">
+          <div class="shows-card-title"><%= show.title %></div>
+          <% const epCount = show.Episodes?.length || 0; %>
+          <% if (show.type === 'series') { %>
+            <div class="shows-card-meta"><%= epCount %> episode<%= epCount !== 1 ? 's' : '' %></div>
+          <% } %>
+          <% if (show.tags) { %>
+            <% const tags = JSON.parse(show.tags || '[]'); %>
+            <% if (tags.length) { %>
+            <div class="shows-tags">
+              <% tags.slice(0,3).forEach(tag => { %><span class="shows-tag"><%= tag %></span><% }) %>
+            </div>
+            <% } %>
+          <% } %>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+    <% } %>
+  </section>
+</div>
+
+<style>
+  .shows-popular-scroll { display:flex;gap:1rem;overflow-x:auto;padding-bottom:.75rem;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent }
+  .shows-pop-card { display:flex;flex-direction:column;min-width:160px;max-width:160px;padding:0;overflow:hidden;text-decoration:none;border-radius:12px;transition:transform .2s,box-shadow .2s }
+  .shows-pop-card:hover { transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.4) }
+  .shows-pop-thumb { position:relative;aspect-ratio:2/3;overflow:hidden }
+  .shows-pop-thumb img { width:100%;height:100%;object-fit:cover }
+  .shows-pop-placeholder { width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:rgba(255,255,255,.05) }
+  .shows-pop-overlay { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.75rem;opacity:0;background:rgba(0,0,0,.5);transition:opacity .2s }
+  .shows-pop-card:hover .shows-pop-overlay { opacity:1 }
+  .shows-pop-info { padding:.6rem .75rem }
+  .shows-pop-show { font-size:.7rem;font-family:'Orbitron',sans-serif;color:var(--cyan);letter-spacing:.05em;margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+  .shows-pop-ep { font-size:.82rem;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+  .shows-pop-views { font-size:.72rem;color:var(--muted);margin-top:.2rem }
+
+  .shows-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1.25rem }
+  .shows-card { display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:14px;text-decoration:none;transition:transform .2s,box-shadow .2s }
+  .shows-card:hover { transform:translateY(-5px);box-shadow:0 16px 48px rgba(0,0,0,.45) }
+  .shows-card-poster { position:relative;aspect-ratio:2/3;overflow:hidden }
+  .shows-card-poster img { width:100%;height:100%;object-fit:cover;transition:transform .35s }
+  .shows-card:hover .shows-card-poster img { transform:scale(1.05) }
+  .shows-card-nocover { width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;font-size:3rem;background:rgba(255,255,255,.05) }
+  .shows-type-badge { position:absolute;top:.5rem;left:.5rem;font-size:.6rem;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:.1em;padding:.2rem .5rem;border-radius:20px;color:#fff }
+  .shows-card-overlay { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#fff;opacity:0;background:rgba(0,0,0,.55);transition:opacity .2s;letter-spacing:.05em }
+  .shows-card:hover .shows-card-overlay { opacity:1 }
+  .shows-card-info { padding:.75rem }
+  .shows-card-title { font-size:.95rem;font-weight:700;color:#fff;margin-bottom:.25rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden }
+  .shows-card-meta { font-size:.75rem;color:var(--muted);margin-bottom:.3rem }
+  .shows-tags { display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem }
+  .shows-tag { font-size:.65rem;padding:.15rem .45rem;border-radius:20px;background:rgba(255,255,255,.08);color:var(--muted);border:1px solid rgba(255,255,255,.1) }
+</style>
+<%- include('partials/footer') %>

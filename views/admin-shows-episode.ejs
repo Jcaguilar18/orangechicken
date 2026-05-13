@@ -1,0 +1,92 @@
+<%- include('partials/header') %>
+<div class="container">
+  <section class="hero" style="padding-bottom:1.5rem">
+    <p class="hero-label">ADMIN · <%= show.title %></p>
+    <h1 class="hero-title" style="font-size:2rem"><%= episode ? 'Edit Episode' : 'Upload Episode' %></h1>
+  </section>
+
+  <div style="margin-bottom:1.5rem">
+    <a href="/admin/shows" class="btn btn-ghost">← Back to Shows</a>
+  </div>
+
+  <% if (error) { %><div class="alert alert-error" style="margin-bottom:1.5rem"><%= error %></div><% } %>
+
+  <div class="glass-card" style="max-width:580px">
+    <form action="<%= episode ? `/admin/shows/${show.id}/episodes/${episode.id}/edit` : `/admin/shows/${show.id}/episodes` %>"
+          method="POST" enctype="multipart/form-data" id="episodeForm">
+
+      <div class="form-group">
+        <label class="form-label">Episode Title</label>
+        <input type="text" name="title" class="form-input"
+               value="<%= episode?.title || '' %>"
+               placeholder="<%= show.type === 'movie' ? show.title : 'e.g. Pilot' %>" />
+        <p style="font-size:.78rem;color:var(--muted);margin-top:.25rem">Leave blank to use the filename.</p>
+      </div>
+
+      <% if (show.type === 'series') { %>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Season</label>
+          <input type="number" name="season" class="form-input" min="1" value="<%= episode?.season || 1 %>" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Episode #</label>
+          <input type="number" name="episodeNumber" class="form-input" min="1" value="<%= episode?.episodeNumber || 1 %>" />
+        </div>
+      </div>
+      <% } %>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-input" rows="3" style="resize:vertical"
+                  placeholder="Brief description of this episode..."><%= episode?.description || '' %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Video File <%= episode ? '(optional — replaces existing)' : '*' %></label>
+        <input type="file" name="videoFile" class="form-input" accept="video/*" <%= episode ? '' : 'required' %> />
+        <p style="font-size:.78rem;color:var(--muted);margin-top:.25rem">
+          MP4, WebM, MOV, MKV supported. Large files may take a while to upload — please be patient.
+        </p>
+        <% if (episode?.videoFile) { %>
+        <p style="font-size:.78rem;color:#4ade80;margin-top:.2rem">✓ Video already uploaded</p>
+        <% } %>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Subtitle File <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <input type="file" name="subtitleFile" class="form-input" accept=".srt,.vtt" />
+        <p style="font-size:.78rem;color:var(--muted);margin-top:.25rem">
+          Accepts .srt or .vtt — SRT files are automatically converted.
+        </p>
+        <% if (episode?.subtitleFile) { %>
+        <p style="font-size:.78rem;color:#4ade80;margin-top:.2rem">✓ Subtitle already uploaded</p>
+        <% } %>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Visibility</label>
+        <select name="visibility" class="form-input">
+          <option value="everyone"   <%= (!episode || episode.visibility === 'everyone')   ? 'selected' : '' %>>🌐 Everyone</option>
+          <option value="users_only" <%= (episode?.visibility === 'users_only')            ? 'selected' : '' %>>🔒 Logged-in users only</option>
+          <option value="hidden"     <%= (episode?.visibility === 'hidden')                ? 'selected' : '' %>>👁 Hidden</option>
+        </select>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1rem;margin-top:.5rem">
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <%= episode ? 'Save Changes' : 'Upload Episode' %>
+        </button>
+        <span id="uploadStatus" style="font-size:.82rem;color:var(--muted);display:none">Uploading… please wait</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('episodeForm').addEventListener('submit', () => {
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('uploadStatus').style.display = 'inline';
+  });
+</script>
+<%- include('partials/footer') %>

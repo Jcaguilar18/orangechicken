@@ -1,0 +1,213 @@
+<%- include('partials/header') %>
+
+<div class="watch-wrap">
+
+  <!-- ── Main + Sidebar ── -->
+  <div class="watch-layout">
+
+    <!-- Left: Player -->
+    <div class="watch-main">
+      <div class="watch-player-wrap">
+        <video id="mainPlayer" controls preload="metadata" playsinline class="watch-video">
+          <source src="<%= streamUrl %>" type="<%= episode.videoMime || 'video/mp4' %>">
+          <% if (subtitleUrl) { %>
+          <track kind="subtitles" src="<%= subtitleUrl %>" srclang="<%= episode.subtitleLang || 'en' %>" label="English" default>
+          <% } %>
+        </video>
+      </div>
+
+      <!-- Episode info -->
+      <div class="watch-info">
+        <div class="watch-show-link">
+          <a href="/shows" style="color:var(--muted);font-size:.8rem">Shows</a>
+          <span style="color:var(--muted);margin:0 .4rem">/</span>
+          <a href="/shows/<%= show.id %>" style="color:var(--cyan);font-size:.8rem"><%= show.title %></a>
+        </div>
+        <h1 class="watch-title">
+          <% if (show.type === 'series') { %>
+            <span class="watch-ep-label">S<%= episode.season %> E<%= episode.episodeNumber %></span>
+          <% } %>
+          <%= episode.title %>
+        </h1>
+
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+          <span class="shows-type-badge" style="position:static;font-size:.65rem;padding:.25rem .65rem;border-radius:20px;background:<%= show.type === 'movie' ? 'rgba(168,85,247,.25)' : 'rgba(0,212,255,.18)' %>;color:<%= show.type === 'movie' ? '#a855f7' : 'var(--cyan)' %>;border:1px solid <%= show.type === 'movie' ? 'rgba(168,85,247,.4)' : 'rgba(0,212,255,.3)' %>">
+            <%= show.type.toUpperCase() %>
+          </span>
+          <span style="font-size:.8rem;color:var(--muted)"><%= episode.viewCount %> views</span>
+          <% if (subtitleUrl) { %>
+          <span style="font-size:.78rem;color:var(--muted)">CC subtitles available</span>
+          <% } %>
+        </div>
+
+        <% if (episode.description) { %>
+        <p class="watch-desc"><%= episode.description %></p>
+        <% } %>
+
+        <% const tags = show.tags ? JSON.parse(show.tags) : []; %>
+        <% if (tags.length) { %>
+        <div class="shows-tags" style="margin-top:.75rem">
+          <% tags.forEach(tag => { %><span class="shows-tag"><%= tag %></span><% }) %>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- ── Comments ── -->
+      <div class="watch-comments" id="comments">
+        <h2 class="watch-comments-title">Comments <span style="color:var(--muted);font-weight:400;font-size:.9rem">(<%= comments.length %>)</span></h2>
+
+        <% if (currentUser) { %>
+        <form action="/shows/<%= show.id %>/episodes/<%= episode.id %>/comments" method="POST" class="watch-comment-form">
+          <div style="display:flex;gap:.75rem;align-items:flex-start">
+            <% if (currentUser.avatar) { %>
+              <img src="<%= currentUser.avatar %>" class="nav-avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0" alt="" />
+            <% } else { %>
+              <div class="user-avatar" style="width:36px;height:36px;font-size:.85rem;flex-shrink:0"><%= currentUser.username.charAt(0).toUpperCase() %></div>
+            <% } %>
+            <div style="flex:1">
+              <textarea name="content" class="form-input" rows="2" placeholder="Leave a comment…"
+                        style="resize:vertical;margin-bottom:.5rem" required></textarea>
+              <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+            </div>
+          </div>
+        </form>
+        <% } else { %>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.5rem">
+          <a href="/login" style="color:var(--cyan)">Log in</a> to leave a comment.
+        </p>
+        <% } %>
+
+        <% if (comments.length === 0) { %>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:1rem">No comments yet. Be the first!</p>
+        <% } %>
+
+        <div class="watch-comment-list">
+          <% comments.forEach(c => { %>
+          <div class="watch-comment">
+            <% if (c.author.avatar) { %>
+              <img src="<%= c.author.avatar %>" class="nav-avatar" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0" alt="" />
+            <% } else { %>
+              <div class="user-avatar" style="width:34px;height:34px;font-size:.8rem;flex-shrink:0"><%= c.author.username.charAt(0).toUpperCase() %></div>
+            <% } %>
+            <div class="watch-comment-body">
+              <div class="watch-comment-meta">
+                <span class="watch-comment-user"><%= c.author.username %></span>
+                <span class="watch-comment-time">
+                  <%= new Date(c.createdAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) %>
+                </span>
+              </div>
+              <p class="watch-comment-text"><%= c.content %></p>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div><!-- /.watch-main -->
+
+    <!-- Right: Sidebar -->
+    <aside class="watch-sidebar">
+      <div class="watch-sidebar-inner">
+
+        <!-- Show title / back -->
+        <a href="/shows/<%= show.id %>" class="watch-sidebar-show">
+          <% if (show.coverImage) { %>
+          <img src="/uploads/shows/covers/<%= show.coverImage %>" alt="<%= show.title %>"
+               style="width:40px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0" />
+          <% } %>
+          <div>
+            <div style="font-size:.65rem;font-family:'Orbitron',sans-serif;color:var(--cyan);letter-spacing:.08em">NOW PLAYING</div>
+            <div style="font-size:.9rem;font-weight:700;color:#fff;margin-top:.2rem"><%= show.title %></div>
+          </div>
+        </a>
+
+        <% if (show.type === 'series' && sidebarSeasons.length > 0) { %>
+        <!-- Episode list -->
+        <div class="watch-ep-list">
+          <% sidebarSeasons.forEach(s => { %>
+          <div class="watch-season">
+            <div class="watch-season-label">Season <%= s.season %></div>
+            <% s.episodes.forEach(ep => { %>
+            <a href="/shows/<%= show.id %>/episodes/<%= ep.id %>"
+               class="watch-ep-item <%= ep.isCurrent ? 'watch-ep-item--active' : '' %>"
+               title="<%= ep.title %>">
+              <span class="watch-ep-num">E<%= String(ep.episodeNumber).padStart(2, '0') %></span>
+              <span class="watch-ep-name"><%= ep.title %></span>
+              <% if (ep.isCurrent) { %><span class="watch-ep-playing">▶</span><% } %>
+            </a>
+            <% }) %>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
+
+        <!-- Popular -->
+        <% if (popular.length > 1) { %>
+        <div style="margin-top:1.5rem">
+          <div style="font-size:.65rem;font-family:'Orbitron',sans-serif;color:var(--muted);letter-spacing:.1em;margin-bottom:.75rem">POPULAR RIGHT NOW</div>
+          <% popular.filter(ep => ep.id !== episode.id).slice(0,5).forEach(ep => { %>
+          <a href="/shows/<%= ep.showId %>/episodes/<%= ep.id %>" class="watch-pop-item">
+            <% if (ep.show.coverImage) { %>
+            <img src="/uploads/shows/covers/<%= ep.show.coverImage %>" alt="" style="width:44px;height:62px;object-fit:cover;border-radius:5px;flex-shrink:0" />
+            <% } else { %>
+            <div style="width:44px;height:62px;border-radius:5px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem">🎬</div>
+            <% } %>
+            <div style="overflow:hidden">
+              <div style="font-size:.75rem;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= ep.show.title %></div>
+              <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= ep.title %></div>
+              <div style="font-size:.68rem;color:#64748b;margin-top:.15rem"><%= ep.viewCount %> views</div>
+            </div>
+          </a>
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+    </aside>
+  </div><!-- /.watch-layout -->
+</div><!-- /.watch-wrap -->
+
+<style>
+  .watch-wrap { max-width:1400px;margin:0 auto;padding:1rem 1.25rem 3rem }
+  .watch-layout { display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start }
+  @media (max-width:900px) { .watch-layout { grid-template-columns:1fr } .watch-sidebar { order:-1 } }
+
+  .watch-video { width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;display:block;max-height:75vh }
+  .watch-player-wrap { border-radius:12px;overflow:hidden;background:#000;box-shadow:0 8px 40px rgba(0,0,0,.6) }
+
+  .watch-info { padding:1.25rem 0 1rem }
+  .watch-show-link { margin-bottom:.5rem }
+  .watch-title { font-size:1.5rem;font-weight:800;color:#fff;margin:0 0 .75rem;line-height:1.3 }
+  .watch-ep-label { font-family:'Orbitron',sans-serif;font-size:.7rem;color:var(--cyan);margin-right:.5rem;letter-spacing:.08em }
+  .watch-desc { color:#cbd5e1;font-size:.9rem;line-height:1.65;margin:0 }
+
+  .watch-comments { border-top:1px solid rgba(255,255,255,.08);padding-top:1.5rem;margin-top:1.5rem }
+  .watch-comments-title { font-size:1.1rem;font-weight:700;color:#fff;margin:0 0 1.25rem }
+  .watch-comment-form { margin-bottom:2rem }
+  .watch-comment-list { display:flex;flex-direction:column;gap:1.25rem;margin-top:1.25rem }
+  .watch-comment { display:flex;gap:.75rem;align-items:flex-start }
+  .watch-comment-body { flex:1 }
+  .watch-comment-meta { display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem }
+  .watch-comment-user { font-size:.85rem;font-weight:600;color:#e2e8f0 }
+  .watch-comment-time { font-size:.75rem;color:var(--muted) }
+  .watch-comment-text { color:#cbd5e1;font-size:.88rem;line-height:1.6;margin:0;white-space:pre-wrap;word-break:break-word }
+
+  .watch-sidebar { position:sticky;top:1rem }
+  .watch-sidebar-inner { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden }
+  .watch-sidebar-show { display:flex;align-items:center;gap:.85rem;padding:1rem;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.08);transition:background .2s }
+  .watch-sidebar-show:hover { background:rgba(255,255,255,.04) }
+
+  .watch-ep-list { max-height:55vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent }
+  .watch-season { padding:.5rem 0 }
+  .watch-season-label { font-size:.62rem;font-family:'Orbitron',sans-serif;letter-spacing:.12em;color:var(--muted);padding:.5rem 1rem .35rem;text-transform:uppercase }
+  .watch-ep-item { display:flex;align-items:center;gap:.65rem;padding:.55rem 1rem;text-decoration:none;transition:background .15s;color:#cbd5e1;font-size:.82rem }
+  .watch-ep-item:hover { background:rgba(255,255,255,.06) }
+  .watch-ep-item--active { background:rgba(0,212,255,.1);color:#fff }
+  .watch-ep-item--active .watch-ep-num { color:var(--cyan) }
+  .watch-ep-num { font-size:.68rem;font-family:'Orbitron',sans-serif;color:var(--muted);min-width:28px;flex-shrink:0 }
+  .watch-ep-name { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+  .watch-ep-playing { color:var(--cyan);font-size:.7rem;flex-shrink:0 }
+
+  .watch-pop-item { display:flex;gap:.65rem;align-items:center;padding:.5rem .75rem;text-decoration:none;border-radius:8px;transition:background .15s;margin-bottom:.35rem }
+  .watch-pop-item:hover { background:rgba(255,255,255,.05) }
+</style>
+
+<%- include('partials/footer') %>

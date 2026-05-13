@@ -1,0 +1,116 @@
+<%- include('partials/header') %>
+<div class="container">
+
+  <div class="admin-header">
+    <div>
+      <p class="hero-label">ADMIN</p>
+      <h1 class="page-title" style="font-size:2rem;margin-bottom:.25rem">Shows</h1>
+      <p class="page-sub"><%= shows.length %> show<%= shows.length !== 1 ? 's' : '' %> in the library</p>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <a href="/admin" class="btn btn-ghost">← Admin</a>
+      <a href="/admin/shows/new" class="btn btn-primary">+ New Show</a>
+    </div>
+  </div>
+
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <% if (error)   { %><div class="alert alert-error"><%= error %></div><% } %>
+
+  <% if (shows.length === 0) { %>
+    <div class="glass-card" style="text-align:center;padding:3rem;color:var(--muted)">
+      <div style="font-size:3rem;margin-bottom:1rem">🎬</div>
+      <p>No shows yet. <a href="/admin/shows/new" style="color:var(--cyan)">Upload your first one →</a></p>
+    </div>
+  <% } %>
+
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+    <% shows.forEach(show => { %>
+    <div class="glass-card" style="padding:1.25rem 1.5rem">
+      <div style="display:flex;align-items:flex-start;gap:1.25rem;flex-wrap:wrap">
+
+        <!-- Cover -->
+        <% if (show.coverImage) { %>
+          <img src="/uploads/shows/covers/<%= show.coverImage %>" alt=""
+               style="width:72px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)" />
+        <% } else { %>
+          <div style="width:72px;height:100px;background:rgba(255,255,255,.05);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0">🎬</div>
+        <% } %>
+
+        <!-- Info -->
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.35rem">
+            <span style="font-size:.65rem;font-family:'Orbitron',sans-serif;padding:.2rem .6rem;border-radius:20px;font-weight:700;letter-spacing:.08em;
+              background:<%= show.type === 'movie' ? 'rgba(168,85,247,.2)' : 'rgba(0,212,255,.2)' %>;
+              color:<%= show.type === 'movie' ? '#a855f7' : 'var(--cyan)' %>;
+              border:1px solid <%= show.type === 'movie' ? 'rgba(168,85,247,.4)' : 'rgba(0,212,255,.3)' %>">
+              <%= show.type.toUpperCase() %>
+            </span>
+            <span style="font-size:.7rem;padding:.2rem .55rem;border-radius:20px;
+              background:<%= show.visibility === 'everyone' ? 'rgba(34,197,94,.15)' : show.visibility === 'users_only' ? 'rgba(251,191,36,.12)' : 'rgba(255,100,100,.12)' %>;
+              color:<%= show.visibility === 'everyone' ? '#4ade80' : show.visibility === 'users_only' ? '#fbbf24' : '#f87171' %>">
+              <%= show.visibility === 'everyone' ? '🌐 Everyone' : show.visibility === 'users_only' ? '🔒 Users Only' : '👁 Hidden' %>
+            </span>
+          </div>
+          <div style="font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:.25rem"><%= show.title %></div>
+          <div style="font-size:.8rem;color:var(--muted)">
+            <%= show.Episodes?.length || 0 %> episode<%= (show.Episodes?.length || 0) !== 1 ? 's' : '' %>
+            &nbsp;·&nbsp; Added <%= new Date(show.createdAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) %>
+          </div>
+          <% if (show.Episodes && show.Episodes.length > 0) { %>
+          <div style="font-size:.75rem;color:#64748b;margin-top:.25rem">
+            <a href="/shows/<%= show.id %>" target="_blank" style="color:var(--cyan)">View →</a>
+          </div>
+          <% } %>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-start">
+          <a href="/admin/shows/<%= show.id %>/episodes/new" class="btn btn-primary btn-sm">+ Episode</a>
+          <a href="/admin/shows/<%= show.id %>/edit" class="btn btn-ghost btn-sm">✏ Edit</a>
+          <form action="/admin/shows/<%= show.id %>/visibility" method="POST" style="display:inline">
+            <button class="btn btn-ghost btn-sm" title="Cycle visibility">
+              <%= show.visibility === 'everyone' ? '🌐' : show.visibility === 'users_only' ? '🔒' : '👁' %>
+            </button>
+          </form>
+          <form action="/admin/shows/<%= show.id %>/delete" method="POST" style="display:inline"
+                onsubmit="return confirm('Delete <%= show.title.replace(/'/g, '') %> and all its episodes? This cannot be undone.')">
+            <button class="btn btn-sm btn-danger">🗑</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Episode list -->
+      <% if (show.Episodes && show.Episodes.length > 0) { %>
+      <div style="margin-top:1rem;border-top:1px solid rgba(255,255,255,.06);padding-top:.85rem">
+        <div style="font-size:.7rem;font-family:'Orbitron',sans-serif;color:var(--muted);letter-spacing:.1em;margin-bottom:.6rem">EPISODES</div>
+        <div style="display:flex;flex-direction:column;gap:.35rem">
+          <% show.Episodes.forEach(ep => { %>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.45rem .6rem;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(255,255,255,.05)">
+            <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;min-width:50px">
+              <% if (show.type === 'series') { %>S<%= ep.season %>E<%= String(ep.episodeNumber).padStart(2,'0') %><% } else { %>FILM<% } %>
+            </span>
+            <span style="font-size:.85rem;color:#e2e8f0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= ep.title %></span>
+            <span style="font-size:.7rem;color:<%= ep.visibility === 'everyone' ? '#4ade80' : ep.visibility === 'users_only' ? '#fbbf24' : '#f87171' %>">
+              <%= ep.visibility === 'everyone' ? '🌐' : ep.visibility === 'users_only' ? '🔒' : '👁' %>
+            </span>
+            <span style="font-size:.7rem;color:var(--muted)"><%= ep.viewCount %> views</span>
+            <div style="display:flex;gap:.35rem">
+              <a href="/admin/shows/<%= show.id %>/episodes/<%= ep.id %>/edit" class="btn btn-ghost btn-sm" style="padding:.2rem .5rem;font-size:.7rem">Edit</a>
+              <form action="/admin/shows/<%= show.id %>/episodes/<%= ep.id %>/visibility" method="POST" style="display:inline">
+                <button class="btn btn-ghost btn-sm" style="padding:.2rem .5rem;font-size:.7rem">Cycle</button>
+              </form>
+              <form action="/admin/shows/<%= show.id %>/episodes/<%= ep.id %>/delete" method="POST" style="display:inline"
+                    onsubmit="return confirm('Delete episode?')">
+                <button class="btn btn-danger btn-sm" style="padding:.2rem .5rem;font-size:.7rem">🗑</button>
+              </form>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %>
+    </div>
+    <% }) %>
+  </div>
+</div>
+<%- include('partials/footer') %>

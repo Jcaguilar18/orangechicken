@@ -1,0 +1,71 @@
+<%- include('partials/header') %>
+<div class="container">
+  <section class="hero" style="padding-bottom:1.5rem">
+    <p class="hero-label">ADMIN</p>
+    <h1 class="hero-title" style="font-size:2rem"><%= show ? 'Edit Show' : 'New Show' %></h1>
+  </section>
+
+  <div style="margin-bottom:1.5rem">
+    <a href="/admin/shows" class="btn btn-ghost">← Back to Shows</a>
+  </div>
+
+  <% if (error) { %><div class="alert alert-error" style="margin-bottom:1.5rem"><%= error %></div><% } %>
+
+  <div class="glass-card" style="max-width:580px">
+    <form action="<%= show ? `/admin/shows/${show.id}/edit` : '/admin/shows' %>" method="POST" enctype="multipart/form-data">
+
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" name="title" class="form-input" required value="<%= show?.title || '' %>" placeholder="e.g. Breaking Bad" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select name="type" class="form-input">
+          <option value="series" <%= (!show || show.type === 'series') ? 'selected' : '' %>>📺 Series / TV Show</option>
+          <option value="movie"  <%= (show?.type === 'movie')          ? 'selected' : '' %>>🎬 Movie</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-input" rows="4" placeholder="Optional synopsis or description..."
+                  style="resize:vertical"><%= show?.description || '' %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tags <span style="color:var(--muted);font-weight:400">(comma-separated)</span></label>
+        <input type="text" name="tags" class="form-input"
+               value="<%= show?.tags ? JSON.parse(show.tags).join(', ') : '' %>"
+               placeholder="e.g. drama, thriller, crime" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cover Image</label>
+        <% if (show?.coverImage) { %>
+          <div style="margin-bottom:.75rem">
+            <img src="/uploads/shows/covers/<%= show.coverImage %>" alt="Current cover"
+                 style="width:80px;height:112px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.15)" />
+            <p style="font-size:.78rem;color:var(--muted);margin-top:.35rem">Upload a new image to replace</p>
+          </div>
+        <% } %>
+        <input type="file" name="coverImage" class="form-input" accept="image/*" />
+        <p style="font-size:.78rem;color:var(--muted);margin-top:.25rem">JPG / PNG / WebP, max 10 MB. Recommended: 2:3 ratio (poster format)</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Visibility</label>
+        <select name="visibility" class="form-input">
+          <option value="everyone"   <%= (!show || show.visibility === 'everyone')   ? 'selected' : '' %>>🌐 Everyone</option>
+          <option value="users_only" <%= (show?.visibility === 'users_only')         ? 'selected' : '' %>>🔒 Logged-in users only</option>
+          <option value="hidden"     <%= (show?.visibility === 'hidden')             ? 'selected' : '' %>>👁 Hidden (admin only)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top:.5rem">
+        <%= show ? 'Save Changes' : 'Create Show' %>
+      </button>
+    </form>
+  </div>
+</div>
+<%- include('partials/footer') %>

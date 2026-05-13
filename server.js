@@ -24,6 +24,8 @@ const contactRoutes   = require('./routes/contact');
 const { router: toolRoutes } = require('./routes/tools');
 const subscribeRoutes = require('./routes/subscribe');
 const scraperRoutes   = require('./routes/scraper');
+const showRoutes      = require('./routes/shows');
+const adminShowRoutes = require('./routes/admin-shows');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -123,6 +125,8 @@ app.use('/', contactRoutes);
 app.use('/', toolRoutes);
 app.use('/', subscribeRoutes);
 app.use('/', scraperRoutes);
+app.use('/', showRoutes);
+app.use('/', adminShowRoutes);
 
 // Boot
 async function start() {
@@ -133,6 +137,9 @@ async function start() {
     path.join(__dirname, 'public/uploads/avatars'),
     path.join(__dirname, 'public/uploads/articles'),
     path.join(__dirname, 'public/uploads/comments'),
+    path.join(__dirname, 'public/uploads/shows/covers'),
+    path.join(__dirname, 'storage/shows/videos'),
+    path.join(__dirname, 'storage/shows/subtitles'),
     '/tmp/uploads',
   ];
   for (const dir of dirs) {
