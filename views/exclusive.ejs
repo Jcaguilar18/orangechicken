@@ -1067,8 +1067,13 @@ async function fetchSources(id, type, s, e) {
       return;
     }
 
-    // Sort by quality descending, unknown quality last
-    sources.sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0));
+    // VidSrcEmbed always first, then sort remaining by quality descending
+    sources.sort((a, b) => {
+      const aVse = a.provider?.id === 'vidsrcembed' ? 1 : 0;
+      const bVse = b.provider?.id === 'vidsrcembed' ? 1 : 0;
+      if (aVse !== bVse) return bVse - aVse;
+      return (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0);
+    });
 
     // Deduplicate subtitles by language label
     const seen = new Set();
