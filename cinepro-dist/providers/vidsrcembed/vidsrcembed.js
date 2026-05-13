@@ -17,7 +17,8 @@ class VidSrcEmbedProvider extends framework_1.BaseProvider {
         quality:  null,
         provider: { id: this.id, name: this.name },
       }],
-      subtitles: [],
+      subtitles:   [],
+      diagnostics: [],
     };
   }
 
@@ -29,7 +30,8 @@ class VidSrcEmbedProvider extends framework_1.BaseProvider {
         quality:  null,
         provider: { id: this.id, name: this.name },
       }],
-      subtitles: [],
+      subtitles:   [],
+      diagnostics: [],
     };
   }
 }
