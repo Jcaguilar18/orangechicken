@@ -162,10 +162,18 @@
 
       <!-- Source switcher + tools -->
       <div class="cp-player-toolbar">
-        <div id="sourceList" class="cp-source-list"></div>
+        <div class="cp-src-section">
+          <div class="cp-src-label">Sources</div>
+          <div id="sourceList" class="cp-source-list"></div>
+        </div>
         <div class="cp-tool-btns">
-          <button id="copyUrlBtn" class="cp-tool-btn">📋 Copy URL</button>
-          <a id="dlBtn" class="cp-tool-btn" href="#" download>⬇ Download</a>
+          <!-- Subtitle picker -->
+          <div class="cp-sub-wrap" id="subWrap">
+            <button id="subtitleBtn" class="cp-tool-btn hidden">CC</button>
+            <div id="subDropdown" class="cp-sub-dropdown hidden"></div>
+          </div>
+          <button id="copyUrlBtn" class="cp-tool-btn">📋 Copy</button>
+          <a id="dlBtn" class="cp-tool-btn" href="#" download>⬇ DL</a>
         </div>
       </div>
 
@@ -436,26 +444,62 @@
 .cp-video-overlay.hidden { opacity:0 }
 
 .cp-player-toolbar {
-  display:flex;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:.5rem;
+  display:flex;align-items:flex-start;gap:1rem;margin-bottom:.5rem;flex-wrap:wrap;
 }
-.cp-source-list { display:flex;flex-wrap:wrap;gap:.4rem;flex:1 }
+.cp-src-section { flex:1;min-width:0 }
+.cp-src-label {
+  font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:#475569;margin-bottom:.5rem;
+}
+.cp-source-list { display:flex;flex-wrap:wrap;gap:.4rem }
 .cp-src-btn {
-  padding:.3rem .75rem;border-radius:20px;
-  border:1px solid rgba(255,255,255,.12);background:transparent;
-  color:#94a3b8;font-size:.75rem;cursor:pointer;transition:all .15s;
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.3rem .7rem;border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+  color:#94a3b8;font-size:.75rem;cursor:pointer;transition:all .15s;white-space:nowrap;
 }
-.cp-src-btn:hover { border-color:#f59e0b;color:#f59e0b }
-.cp-src-btn.active { background:rgba(245,158,11,.15);border-color:#f59e0b;color:#f59e0b;font-weight:600 }
-.cp-src-btn.failed { border-color:rgba(248,81,73,.3);color:#ef4444;opacity:.6 }
+.cp-src-btn:hover { border-color:rgba(255,255,255,.25);color:#e2e8f0;background:rgba(255,255,255,.08) }
+.cp-src-btn.active {
+  background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.5);
+  color:#f59e0b;font-weight:600;
+}
+.cp-src-btn.failed { opacity:.45;cursor:default }
+.cp-src-q {
+  font-size:.62rem;font-weight:800;padding:.1rem .35rem;border-radius:4px;letter-spacing:.04em;
+}
+.cp-src-q.q-ultra { background:rgba(234,179,8,.25);color:#fbbf24 }
+.cp-src-q.q-hd    { background:rgba(59,130,246,.25);color:#60a5fa }
+.cp-src-q.q-sd    { background:rgba(107,114,128,.25);color:#9ca3af }
+.cp-src-q.q-lo    { background:rgba(75,85,99,.2);color:#6b7280 }
+.cp-src-name { opacity:.85 }
+.cp-src-type { font-size:.6rem;opacity:.45;text-transform:uppercase }
 
-.cp-tool-btns { display:flex;gap:.4rem;flex-shrink:0 }
+.cp-tool-btns { display:flex;align-items:flex-start;gap:.4rem;flex-shrink:0;padding-top:1.4rem }
 .cp-tool-btn {
-  padding:.3rem .75rem;border-radius:20px;
-  border:1px solid rgba(255,255,255,.1);background:transparent;
+  padding:.3rem .65rem;border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
   color:#94a3b8;font-size:.75rem;cursor:pointer;text-decoration:none;
-  transition:all .15s;display:inline-block;
+  transition:all .15s;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap;
 }
-.cp-tool-btn:hover { border-color:rgba(255,255,255,.3);color:#fff }
+.cp-tool-btn:hover { border-color:rgba(255,255,255,.25);color:#fff;background:rgba(255,255,255,.08) }
+.cp-tool-btn.cc-on { border-color:rgba(245,158,11,.5);color:#f59e0b;background:rgba(245,158,11,.1) }
+
+/* ── Subtitle dropdown ── */
+.cp-sub-wrap { position:relative }
+.cp-sub-dropdown {
+  position:absolute;bottom:calc(100% + .4rem);right:0;
+  background:#1a1f2e;border:1px solid rgba(255,255,255,.12);border-radius:10px;
+  padding:.35rem;min-width:160px;z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+}
+.cp-sub-opt {
+  display:block;width:100%;text-align:left;padding:.4rem .7rem;border-radius:6px;
+  background:none;border:none;color:#94a3b8;font-size:.8rem;cursor:pointer;
+  transition:background .12s,color .12s;white-space:nowrap;
+}
+.cp-sub-opt:hover { background:rgba(255,255,255,.07);color:#e2e8f0 }
+.cp-sub-opt.active { color:#f59e0b;font-weight:600 }
+.cp-sub-divider { height:1px;background:rgba(255,255,255,.07);margin:.3rem 0 }
 
 .cp-dl-hint {
   padding:.5rem .75rem;background:rgba(255,255,255,.03);
@@ -624,12 +668,14 @@
 'use strict';
 
 /* ── State ── */
-let hls          = null;
-let currentMedia = null;
-let allSources   = [];
-let seasonData   = [];
-let trendingData = { movies: [], tv: [] };
-let previousView = 'browse';
+let hls            = null;
+let currentMedia   = null;
+let allSources     = [];
+let allSubtitles   = [];
+let seasonData     = [];
+let trendingData   = { movies: [], tv: [] };
+let previousView   = 'browse';
+let subtitleBlobUrl= null;
 
 /* ── Element refs ── */
 const app         = document.getElementById('cpApp');
@@ -666,7 +712,9 @@ const copyUrlBtn  = document.getElementById('copyUrlBtn');
 const dlBtn       = document.getElementById('dlBtn');
 const dlHint      = document.getElementById('dlHint');
 const dlCmd       = document.getElementById('dlCmd');
-const cpStatus    = document.getElementById('cpStatus');
+const cpStatus     = document.getElementById('cpStatus');
+const subtitleBtn  = document.getElementById('subtitleBtn');
+const subDropdown  = document.getElementById('subDropdown');
 
 /* ════════════════════════════════════
    VIEW SWITCHING
@@ -989,8 +1037,8 @@ playEpBtn.addEventListener('click', () => {
 async function fetchSources(id, type, s, e) {
   showOverlay(true);
   sourceList.innerHTML = '<span style="color:#64748b;font-size:.8rem">Loading sources…</span>';
-  allSources = [];
-  resetDlUI();
+  allSources = []; allSubtitles = [];
+  resetDlUI(); hideSubtitles();
 
   let url = `/exclusive/sources?id=${id}&type=${type}`;
   if (type === 'tv') url += `&s=${s}&e=${e}`;
@@ -1000,22 +1048,29 @@ async function fetchSources(id, type, s, e) {
     const d = await r.json();
     if (d.error) throw new Error(d.error);
 
-    const sources = [];
-    if (Array.isArray(d)) {
-      d.forEach(p => { if (p.sources) sources.push(...p.sources); });
-    } else if (d.sources) {
-      sources.push(...d.sources);
-    } else if (d.results) {
-      d.results.forEach(p => { if (p.sources) sources.push(...p.sources); });
-    }
+    const sources = [], subs = [];
+    const providers = Array.isArray(d) ? d : (d.results || (d.sources ? [d] : []));
+    providers.forEach(p => {
+      if (p.sources)   sources.push(...p.sources);
+      if (p.subtitles) subs.push(...p.subtitles);
+    });
 
     if (!sources.length) {
       sourceList.innerHTML = '<span style="color:#ef4444;font-size:.8rem">No sources found.</span>';
       showOverlay(false);
       return;
     }
+
+    // Sort by quality descending, unknown quality last
+    sources.sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0));
+
+    // Deduplicate subtitles by language label
+    const seen = new Set();
+    subs.forEach(s => { if (!seen.has(s.label)) { seen.add(s.label); allSubtitles.push(s); } });
+
     allSources = sources;
     renderSourceBtns(sources);
+    renderSubtitles(allSubtitles);
     playSource(sources[0]);
   } catch (err) {
     sourceList.innerHTML = `<span style="color:#ef4444;font-size:.8rem">${esc(err.message)}</span>`;
@@ -1028,9 +1083,16 @@ async function fetchSources(id, type, s, e) {
 ════════════════════════════════════ */
 function renderSourceBtns(sources) {
   sourceList.innerHTML = sources.map((src, i) => {
-    const name = src.provider?.name || `Source ${i + 1}`;
-    const q    = src.quality ? ` <span style="font-size:.65rem;opacity:.7">${esc(src.quality)}</span>` : '';
-    return `<button class="cp-src-btn${i === 0 ? ' active' : ''}" data-idx="${i}">${esc(name)}${q}</button>`;
+    const name  = src.provider?.name || `Source ${i + 1}`;
+    const q     = src.quality ? parseInt(src.quality) : 0;
+    const qLabel= q ? `${q}p` : (src.quality || '');
+    const qCls  = q >= 1080 ? 'q-ultra' : q >= 720 ? 'q-hd' : q >= 480 ? 'q-sd' : 'q-lo';
+    const typeTxt = src.type && src.type !== 'hls' ? src.type.toUpperCase() : '';
+    return `<button class="cp-src-btn${i === 0 ? ' active' : ''}" data-idx="${i}">
+      ${qLabel ? `<span class="cp-src-q ${qCls}">${qLabel}</span>` : ''}
+      <span class="cp-src-name">${esc(name)}</span>
+      ${typeTxt ? `<span class="cp-src-type">${typeTxt}</span>` : ''}
+    </button>`;
   }).join('');
   sourceList.querySelectorAll('.cp-src-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1042,11 +1104,97 @@ function renderSourceBtns(sources) {
 }
 
 /* ════════════════════════════════════
+   SUBTITLES
+════════════════════════════════════ */
+function renderSubtitles(subs) {
+  if (!subs.length) { subtitleBtn.classList.add('hidden'); return; }
+  subtitleBtn.classList.remove('hidden');
+
+  subDropdown.innerHTML =
+    `<button class="cp-sub-opt active" data-idx="-1">Off</button>
+     <div class="cp-sub-divider"></div>` +
+    subs.map((s, i) =>
+      `<button class="cp-sub-opt" data-idx="${i}">${esc(s.label || `Track ${i + 1}`)}</button>`
+    ).join('');
+
+  subDropdown.querySelectorAll('.cp-sub-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      subDropdown.querySelectorAll('.cp-sub-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      subDropdown.classList.add('hidden');
+      const idx = parseInt(btn.dataset.idx, 10);
+      if (idx === -1) { clearSubtitle(); subtitleBtn.classList.remove('cc-on'); }
+      else            { applySubtitle(allSubtitles[idx]); subtitleBtn.classList.add('cc-on'); }
+    });
+  });
+}
+
+function hideSubtitles() {
+  subtitleBtn.classList.add('hidden', 'cc-on');
+  subDropdown.classList.add('hidden');
+}
+
+subtitleBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  subDropdown.classList.toggle('hidden');
+});
+document.addEventListener('click', () => subDropdown.classList.add('hidden'));
+subDropdown.addEventListener('click', e => e.stopPropagation());
+
+async function applySubtitle(sub) {
+  clearSubtitle();
+  if (!sub?.url) return;
+  try {
+    const resp = await fetch(sub.url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    let text = await resp.text();
+    if (sub.format === 'srt' || (!text.trimStart().startsWith('WEBVTT') && text.includes(' --> '))) {
+      text = srtToVtt(text);
+    }
+    const blob = new Blob([text], { type: 'text/vtt' });
+    subtitleBlobUrl = URL.createObjectURL(blob);
+
+    const track = document.createElement('track');
+    track.kind = 'subtitles';
+    track.label = sub.label || 'Subtitles';
+    track.src = subtitleBlobUrl;
+    track.default = true;
+    cpPlayer.appendChild(track);
+
+    // Force show (browsers may default to hidden)
+    setTimeout(() => {
+      const tt = cpPlayer.textTracks;
+      for (let i = 0; i < tt.length; i++) tt[i].mode = i === tt.length - 1 ? 'showing' : 'disabled';
+    }, 100);
+  } catch (err) {
+    console.error('[subtitle]', err.message);
+  }
+}
+
+function clearSubtitle() {
+  Array.from(cpPlayer.querySelectorAll('track')).forEach(t => t.remove());
+  if (subtitleBlobUrl) { URL.revokeObjectURL(subtitleBlobUrl); subtitleBlobUrl = null; }
+}
+
+function srtToVtt(srt) {
+  return 'WEBVTT\n\n' + srt
+    .trim().replace(/\r\n/g, '\n')
+    .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+}
+
+/* ════════════════════════════════════
    PLAYER
 ════════════════════════════════════ */
 function playSource(source) {
   if (!source?.url) return;
   showOverlay(true);
+  clearSubtitle();
+  subtitleBtn.classList.remove('cc-on');
+  if (subDropdown.querySelectorAll) {
+    subDropdown.querySelectorAll('.cp-sub-opt').forEach((b, i) => {
+      b.classList.toggle('active', i === 0);
+    });
+  }
   if (hls) { hls.destroy(); hls = null; }
 
   const isHLS = source.type === 'hls' || source.url.includes('.m3u8');
@@ -1074,6 +1222,8 @@ function stopPlayer() {
   cpPlayer.src = '';
   showOverlay(true);
   sourceList.innerHTML = '';
+  clearSubtitle();
+  hideSubtitles();
   resetDlUI();
 }
 
