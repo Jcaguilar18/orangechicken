@@ -132,12 +132,13 @@
   background:#080808;
   color:#e5e5e5;
   font-family: inherit;
+  padding-top:68px; /* clear the fixed site navbar */
   padding-bottom:4rem;
 }
 
 /* ── Topbar ── */
 .cp-topbar {
-  position:sticky;top:0;z-index:100;
+  position:sticky;top:68px;z-index:90;
   display:flex;align-items:center;justify-content:space-between;
   padding:.75rem 1.5rem;
   background:linear-gradient(to bottom,rgba(8,8,8,.98),rgba(8,8,8,.8));
