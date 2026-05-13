@@ -6,8 +6,18 @@
     <h1 class="hero-title" style="font-size:2rem">Messages & Inquiries</h1>
   </section>
 
-  <div style="margin-bottom:2rem">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem">
     <a href="/admin" class="btn btn-ghost">← Back to Admin</a>
+    <form action="/admin/messages/toggle-email" method="POST" style="display:flex;align-items:center;gap:.75rem">
+      <span style="font-size:.85rem;color:var(--text-muted)">Email notifications</span>
+      <button type="submit" class="toggle-pill <%= emailNotifications ? 'on' : 'off' %>"
+              title="<%= emailNotifications ? 'Click to disable email notifications' : 'Click to enable email notifications' %>">
+        <span class="toggle-knob"></span>
+      </button>
+      <span style="font-size:.82rem;font-weight:600;color:<%= emailNotifications ? '#22c55e' : '#64748b' %>">
+        <%= emailNotifications ? 'ON' : 'OFF' %>
+      </span>
+    </form>
   </div>
 
   <% if (messages.length === 0) { %>
@@ -57,5 +67,20 @@
     </div>
   <% } %>
 </div>
+
+<style>
+  .toggle-pill {
+    position:relative;width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;
+    transition:background .25s;padding:0;flex-shrink:0;
+  }
+  .toggle-pill.on  { background:#22c55e }
+  .toggle-pill.off { background:#334155 }
+  .toggle-knob {
+    position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;
+    transition:left .25s;pointer-events:none;
+  }
+  .toggle-pill.on  .toggle-knob { left:23px }
+  .toggle-pill.off .toggle-knob { left:3px }
+</style>
 
 <%- include('partials/footer') %>

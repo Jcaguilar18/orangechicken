@@ -189,6 +189,7 @@ async function start() {
   await SiteSetting.findOrCreate({ where: { key: 'paypal_email' },   defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_me' },      defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_plan_id' }, defaults: { value: null } });
+  await SiteSetting.findOrCreate({ where: { key: 'contact_email_notifications' }, defaults: { value: '1' } });
 
   // Ensure the designated admin account is flagged
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;

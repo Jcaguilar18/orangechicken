@@ -1,5 +1,5 @@
 const express    = require('express');
-const { ContactMessage } = require('../models');
+const { ContactMessage, SiteSetting } = require('../models');
 const { requireAdmin }   = require('../middleware/auth');
 const { transporter }    = require('../config/mailer');
 
@@ -36,8 +36,11 @@ router.post('/contact', async (req, res) => {
     return res.render('contact', { error: 'Failed to send. Please try again.', success: null, formData: req.body });
   }
 
-  // Send email (non-blocking failure)
-  try {
+  // Send email only if notifications are enabled
+  const notifSetting = await SiteSetting.findOne({ where: { key: 'contact_email_notifications' } });
+  const emailEnabled = notifSetting?.value === '1';
+
+  if (emailEnabled) try {
     const budgetLine = budget ? `<tr><td><b>Budget:</b></td><td>${budget}</td></tr>` : '';
     await transporter.sendMail({
       from:    process.env.GMAIL_USER,
@@ -61,18 +64,31 @@ router.post('/contact', async (req, res) => {
     console.error('Email send failed (message still saved):', mailErr.message);
   }
 
-  res.render('contact', { success: 'Your message has been transmitted! I\'ll get back to you soon.', error: null, formData: {} });
+  res.render('contact', { success: "Your message has been transmitted! I'll get back to you soon.", error: null, formData: {} });
 });
 
 // Admin: view messages
 router.get('/admin/messages', requireAdmin, async (req, res) => {
   try {
-    const messages = await ContactMessage.findAll({ order: [['createdAt', 'DESC']] });
-    res.render('admin-messages', { messages });
+    const [messages, notifSetting] = await Promise.all([
+      ContactMessage.findAll({ order: [['createdAt', 'DESC']] }),
+      SiteSetting.findOne({ where: { key: 'contact_email_notifications' } }),
+    ]);
+    res.render('admin-messages', { messages, emailNotifications: notifSetting?.value === '1' });
   } catch (err) {
     console.error(err);
-    res.render('admin-messages', { messages: [] });
+    res.render('admin-messages', { messages: [], emailNotifications: true });
   }
+});
+
+// Admin: toggle email notifications
+router.post('/admin/messages/toggle-email', requireAdmin, async (req, res) => {
+  try {
+    const setting = await SiteSetting.findOne({ where: { key: 'contact_email_notifications' } });
+    const newVal = setting?.value === '1' ? '0' : '1';
+    await SiteSetting.upsert({ key: 'contact_email_notifications', value: newVal });
+  } catch (err) { console.error(err); }
+  res.redirect('/admin/messages');
 });
 
 // Admin: toggle read
