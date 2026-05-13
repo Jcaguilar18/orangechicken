@@ -8,11 +8,13 @@ const crypto    = require('crypto');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const { requireAdmin, requireAuth } = require('../middleware/auth');
+const { featureGuard } = require('../middleware/featureGuard');
 const { ScraperUsage, Subscription } = require('../models');
 const { checkSpace, cleanStale } = require('../utils/storage');
 
 const router        = express.Router();
 const execFileAsync = promisify(execFile);
+router.use('/scraper', featureGuard('scraper'));
 
 // Sites that yt-dlp handles better than direct scraping
 const YTDLP_HOSTS = new Set([

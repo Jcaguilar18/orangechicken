@@ -5,6 +5,7 @@ const session  = require('express-session');
 const path     = require('path');
 const fs       = require('fs');
 const passport = require('passport');
+const { getFlags } = require('./lib/featureFlags');
 
 const { sequelize } = require('./config/database');
 const { Op } = require('sequelize');
@@ -113,6 +114,11 @@ app.use(async (req, res, next) => {
       console.error('[middleware] user context error:', err);
     }
   }
+  try {
+    res.locals.featureFlags = await getFlags();
+  } catch {
+    res.locals.featureFlags = {};
+  }
   next();
 });
 
@@ -190,6 +196,7 @@ async function start() {
   await SiteSetting.findOrCreate({ where: { key: 'paypal_me' },      defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_plan_id' }, defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'contact_email_notifications' }, defaults: { value: '1' } });
+  await SiteSetting.findOrCreate({ where: { key: 'feature_flags' }, defaults: { value: JSON.stringify({ tools:{mode:'all',blocked:[]}, shows:{mode:'all',blocked:[]}, exclusive:{mode:'all',blocked:[]}, scraper:{mode:'all',blocked:[]}, contact:{mode:'all',blocked:[]} }) } });
 
   // Ensure the designated admin account is flagged
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;

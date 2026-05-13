@@ -1,7 +1,9 @@
 const express = require('express');
 const axios   = require('axios');
+const { featureGuard } = require('../middleware/featureGuard');
 
 const router   = express.Router();
+router.use('/exclusive', featureGuard('exclusive'));
 const TMDB_KEY  = process.env.TMDB_API_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 

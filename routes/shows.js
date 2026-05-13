@@ -3,8 +3,10 @@ const fs      = require('fs');
 const path    = require('path');
 const { Show, Episode, ShowComment, User } = require('../models');
 const { requireAuth } = require('../middleware/auth');
+const { featureGuard } = require('../middleware/featureGuard');
 
 const router     = express.Router();
+router.use(featureGuard('shows'));
 const VIDEOS_DIR = path.join(__dirname, '../storage/shows/videos');
 const SUBS_DIR   = path.join(__dirname, '../storage/shows/subtitles');
 

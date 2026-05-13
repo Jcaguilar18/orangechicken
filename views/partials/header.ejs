@@ -27,15 +27,26 @@
       ORANGE CHICK
     </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+    <%
+      function ffVisible(name) {
+        if (currentUser && currentUser.isAdmin) return true;
+        const ff = typeof featureFlags !== 'undefined' && featureFlags && featureFlags[name];
+        if (!ff) return true;
+        if (ff.mode === 'disabled') return false;
+        if (ff.mode === 'logged_in' && !currentUser) return false;
+        if (ff.mode === 'blocked' && currentUser && (ff.blocked||[]).map(Number).includes(Number(currentUser.id))) return false;
+        return true;
+      }
+    %>
     <div class="nav-links" id="navLinks">
       <a href="/portfolio" class="btn btn-ghost">Portfolio</a>
-      <a href="/tools" class="btn btn-ghost">Tools</a>
-      <a href="/shows" class="btn btn-ghost">Shows</a>
-      <% if (currentUser && (currentUser.isAdmin || currentUser.isProVIP)) { %>
+      <% if (ffVisible('tools')) { %><a href="/tools" class="btn btn-ghost">Tools</a><% } %>
+      <% if (ffVisible('shows')) { %><a href="/shows" class="btn btn-ghost">Shows</a><% } %>
+      <% if (currentUser && (currentUser.isAdmin || currentUser.isProVIP) && ffVisible('exclusive')) { %>
         <a href="/exclusive" class="btn btn-ghost" style="color:#f59e0b;border-color:rgba(245,158,11,.35)">👑 Exclusive</a>
       <% } %>
       <a href="/home" class="btn btn-ghost">Community</a>
-      <a href="/contact" class="btn btn-ghost">Contact</a>
+      <% if (ffVisible('contact')) { %><a href="/contact" class="btn btn-ghost">Contact</a><% } %>
       <% if (currentUser) { %>
         <a href="/users/<%= currentUser.username %>" class="nav-user nav-user-link">
           <% if (currentUser.avatar) { %>

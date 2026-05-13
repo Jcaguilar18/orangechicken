@@ -1,0 +1,179 @@
+<%- include('partials/header') %>
+
+<%
+const FEATURE_META = {
+  tools:     { label: 'Tools',       icon: '🛠',  path: '/tools' },
+  shows:     { label: 'Shows',       icon: '🎬',  path: '/shows' },
+  exclusive: { label: 'Exclusive',   icon: '👑',  path: '/exclusive' },
+  scraper:   { label: 'Web Scraper', icon: '🕷',  path: '/scraper' },
+  contact:   { label: 'Contact',     icon: '📬',  path: '/contact' },
+};
+const FEATURES = Object.keys(FEATURE_META);
+%>
+
+<div class="container">
+  <section class="hero" style="padding-bottom:2rem">
+    <p class="hero-label">ADMIN</p>
+    <h1 class="hero-title" style="font-size:2rem">Feature Visibility</h1>
+    <p class="hero-sub">Control who can access each feature. Admins always bypass restrictions.</p>
+  </section>
+
+  <div style="margin-bottom:2rem">
+    <a href="/admin" class="btn btn-ghost">← Back to Admin</a>
+  </div>
+
+  <% if (success) { %><div class="alert alert-success" style="margin-bottom:1.5rem"><%= success %></div><% } %>
+  <% if (error)   { %><div class="alert alert-error"   style="margin-bottom:1.5rem"><%= error %></div><% } %>
+
+  <form action="/admin/features" method="POST" id="featuresForm">
+    <div style="display:flex;flex-direction:column;gap:1.25rem;margin-bottom:2rem">
+
+      <% FEATURES.forEach(feat => {
+           const meta = FEATURE_META[feat];
+           const flag = flags[feat] || { mode:'all', blocked:[] };
+      %>
+      <div class="glass-card ff-card" id="card-<%= feat %>">
+        <div class="ff-header">
+          <div style="display:flex;align-items:center;gap:.65rem">
+            <span style="font-size:1.25rem"><%= meta.icon %></span>
+            <div>
+              <div style="font-weight:700;color:#fff;font-size:.95rem"><%= meta.label %></div>
+              <div style="font-size:.75rem;color:#64748b"><%= meta.path %></div>
+            </div>
+          </div>
+          <div class="ff-mode-status ff-status-<%= flag.mode %>">
+            <% if (flag.mode === 'all') { %>Everyone<% } %>
+            <% if (flag.mode === 'logged_in') { %>Logged-in only<% } %>
+            <% if (flag.mode === 'blocked') { %>Some blocked<% } %>
+            <% if (flag.mode === 'disabled') { %>Disabled<% } %>
+          </div>
+        </div>
+
+        <!-- Mode selector -->
+        <div class="ff-modes">
+          <% ['all','logged_in','blocked','disabled'].forEach(m => { %>
+          <label class="ff-mode-opt">
+            <input type="radio" name="<%= feat %>_mode" value="<%= m %>"
+                   <%= flag.mode === m ? 'checked' : '' %>
+                   onchange="updateCard('<%= feat %>')" />
+            <span class="ff-mode-label">
+              <% if (m === 'all')       { %><span class="ff-dot ff-dot-green"></span> Everyone<% } %>
+              <% if (m === 'logged_in') { %><span class="ff-dot ff-dot-blue"></span> Logged-in only<% } %>
+              <% if (m === 'blocked')   { %><span class="ff-dot ff-dot-orange"></span> Block specific users<% } %>
+              <% if (m === 'disabled')  { %><span class="ff-dot ff-dot-red"></span> Disabled for all<% } %>
+            </span>
+          </label>
+          <% }); %>
+        </div>
+
+        <!-- User picker (shown only for 'blocked' mode) -->
+        <div class="ff-user-picker" id="picker-<%= feat %>"
+             style="<%= flag.mode === 'blocked' ? '' : 'display:none' %>">
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:.65rem">
+            Select users to block from this feature:
+          </div>
+          <% if (users.length === 0) { %>
+            <div style="font-size:.82rem;color:#64748b">No non-admin users registered yet.</div>
+          <% } else { %>
+            <div class="ff-user-grid">
+              <% users.forEach(u => { %>
+              <label class="ff-user-opt">
+                <input type="checkbox"
+                       name="<%= feat %>_blocked"
+                       value="<%= u.id %>"
+                       <%= (flag.blocked || []).includes(u.id) ? 'checked' : '' %> />
+                <span><%= u.username %></span>
+              </label>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="min-width:160px">Save All</button>
+  </form>
+</div>
+
+<style>
+  .ff-card { padding:1.25rem 1.5rem }
+
+  .ff-header {
+    display:flex;align-items:center;justify-content:space-between;
+    gap:1rem;margin-bottom:1.1rem;flex-wrap:wrap
+  }
+
+  .ff-mode-status {
+    font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:.2rem .6rem;border-radius:20px
+  }
+  .ff-status-all      { background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3) }
+  .ff-status-logged_in{ background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3) }
+  .ff-status-blocked  { background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3) }
+  .ff-status-disabled { background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3) }
+
+  .ff-modes {
+    display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.1rem
+  }
+
+  .ff-mode-opt { cursor:pointer }
+  .ff-mode-opt input { display:none }
+
+  .ff-mode-label {
+    display:inline-flex;align-items:center;gap:.4rem;
+    padding:.35rem .85rem;border-radius:20px;font-size:.8rem;font-weight:500;
+    border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+    color:#94a3b8;cursor:pointer;transition:all .15s
+  }
+  .ff-mode-opt input:checked + .ff-mode-label {
+    background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff
+  }
+
+  .ff-dot {
+    display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0
+  }
+  .ff-dot-green  { background:#22c55e }
+  .ff-dot-blue   { background:#60a5fa }
+  .ff-dot-orange { background:#fb923c }
+  .ff-dot-red    { background:#ef4444 }
+
+  .ff-user-picker {
+    margin-top:1rem;padding:1rem;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px
+  }
+
+  .ff-user-grid {
+    display:flex;flex-wrap:wrap;gap:.4rem
+  }
+
+  .ff-user-opt { cursor:pointer }
+  .ff-user-opt input { display:none }
+  .ff-user-opt span {
+    display:inline-block;padding:.3rem .75rem;border-radius:20px;font-size:.8rem;
+    border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+    color:#94a3b8;transition:all .15s
+  }
+  .ff-user-opt input:checked + span {
+    background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#f87171
+  }
+</style>
+
+<script>
+function updateCard(feat) {
+  const radios  = document.querySelectorAll(`input[name="${feat}_mode"]`);
+  const picker  = document.getElementById('picker-' + feat);
+  const status  = document.querySelector(`#card-${feat} .ff-mode-status`);
+  let mode = 'all';
+  radios.forEach(r => { if (r.checked) mode = r.value; });
+
+  picker.style.display = mode === 'blocked' ? '' : 'none';
+
+  const labels = { all:'Everyone', logged_in:'Logged-in only', blocked:'Some blocked', disabled:'Disabled' };
+  const cls    = { all:'ff-status-all', logged_in:'ff-status-logged_in', blocked:'ff-status-blocked', disabled:'ff-status-disabled' };
+  status.className = 'ff-mode-status ' + cls[mode];
+  status.textContent = labels[mode];
+}
+</script>
+
+<%- include('partials/footer') %>

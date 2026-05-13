@@ -17,8 +17,10 @@ const archiver  = require('archiver');
 const { ToolUsage, Subscription, SiteSetting } = require('../models');
 const { checkSpace, cleanStale }   = require('../utils/storage');
 const citation = require('../utils/citation');
+const { featureGuard } = require('../middleware/featureGuard');
 
 const router = express.Router();
+router.use(featureGuard('tools'));
 
 // ── Site settings cache (30s TTL) ──────────────────────────────────
 let _settingsCache = null;

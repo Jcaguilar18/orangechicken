@@ -2,8 +2,10 @@ const express    = require('express');
 const { ContactMessage, SiteSetting } = require('../models');
 const { requireAdmin }   = require('../middleware/auth');
 const { transporter }    = require('../config/mailer');
+const { featureGuard }   = require('../middleware/featureGuard');
 
 const router = express.Router();
+router.use('/contact', featureGuard('contact'));
 
 // Public: contact form
 router.get('/contact', (req, res) => {

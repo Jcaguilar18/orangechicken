@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { User, Article, Comment, SiteSetting } = require('../models');
 const { requireAdmin } = require('../middleware/auth');
+const { invalidateCache, FEATURES, DEFAULT_FLAGS } = require('../lib/featureFlags');
 
 const router = express.Router();
 
@@ -176,6 +177,46 @@ router.post('/admin/users/:id/delete', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.redirect('/admin?error=Failed+to+delete+account.');
+  }
+});
+
+// ── Feature Visibility ────────────────────────────────────────────────────────
+router.get('/admin/features', requireAdmin, async (req, res) => {
+  try {
+    const [flagRow, users] = await Promise.all([
+      SiteSetting.findOne({ where: { key: 'feature_flags' } }),
+      User.findAll({ where: { isAdmin: false }, attributes: ['id', 'username'], order: [['username', 'ASC']] }),
+    ]);
+    let flags = {};
+    for (const f of FEATURES) flags[f] = { ...DEFAULT_FLAGS[f] };
+    if (flagRow?.value) {
+      const parsed = JSON.parse(flagRow.value);
+      for (const f of FEATURES) {
+        if (parsed[f]) flags[f] = { ...flags[f], ...parsed[f] };
+      }
+    }
+    res.render('admin-features', { flags, users, success: req.query.success || null, error: req.query.error || null });
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin?error=Failed+to+load+feature+settings.');
+  }
+});
+
+router.post('/admin/features', requireAdmin, async (req, res) => {
+  try {
+    const flags = {};
+    for (const feat of FEATURES) {
+      const mode    = req.body[`${feat}_mode`] || 'all';
+      const rawIds  = req.body[`${feat}_blocked`];
+      const blocked = rawIds ? [].concat(rawIds).map(Number).filter(Boolean) : [];
+      flags[feat] = { mode, blocked };
+    }
+    await SiteSetting.upsert({ key: 'feature_flags', value: JSON.stringify(flags) });
+    invalidateCache();
+    res.redirect('/admin/features?success=Feature+visibility+saved.');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin/features?error=Failed+to+save.');
   }
 });
 
