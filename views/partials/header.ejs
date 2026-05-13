@@ -34,6 +34,14 @@
         if (!ff) return true;
         if (ff.mode === 'disabled') return false;
         if (ff.mode === 'logged_in' && !currentUser) return false;
+        if (ff.mode === 'subscribers') {
+          if (!currentUser) return false;
+          if (!isSubscriber && !currentUser.isProVIP) return false;
+        }
+        if (ff.mode === 'provip') {
+          if (!currentUser) return false;
+          if (!currentUser.isProVIP) return false;
+        }
         if (ff.mode === 'blocked' && currentUser && (ff.blocked||[]).map(Number).includes(Number(currentUser.id))) return false;
         return true;
       }
@@ -42,7 +50,7 @@
       <a href="/portfolio" class="btn btn-ghost">Portfolio</a>
       <% if (ffVisible('tools')) { %><a href="/tools" class="btn btn-ghost">Tools</a><% } %>
       <% if (ffVisible('shows')) { %><a href="/shows" class="btn btn-ghost">Shows</a><% } %>
-      <% if (currentUser && (currentUser.isAdmin || currentUser.isProVIP) && ffVisible('exclusive')) { %>
+      <% if (ffVisible('exclusive')) { %>
         <a href="/exclusive" class="btn btn-ghost" style="color:#f59e0b;border-color:rgba(245,158,11,.35)">👑 Exclusive</a>
       <% } %>
       <a href="/home" class="btn btn-ghost">Community</a>
