@@ -120,6 +120,9 @@
                     <% if (user.isRestricted) { %>
                       <span class="status-badge status-badge--restricted">RESTRICTED</span>
                     <% } %>
+                    <% if (user.isProVIP) { %>
+                      <span style="font-size:.65rem;font-weight:800;padding:.15rem .5rem;border-radius:20px;background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;letter-spacing:.06em">👑 PRO VIP</span>
+                    <% } %>
                   </div>
                   <div class="user-email"><%= user.email %></div>
                   <div class="user-joined">
@@ -169,6 +172,17 @@
                   <% } else { %>
                     <form action="/admin/users/<%= user.id %>/unrestrict" method="POST">
                       <button type="submit" class="btn btn-sm btn-cyan">↑ Lift Restriction</button>
+                    </form>
+                  <% } %>
+
+                  <!-- Pro VIP -->
+                  <% if (!user.isProVIP) { %>
+                    <form action="/admin/users/<%= user.id %>/provip" method="POST">
+                      <button type="submit" class="btn btn-sm" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;font-weight:700">👑 Grant VIP</button>
+                    </form>
+                  <% } else { %>
+                    <form action="/admin/users/<%= user.id %>/unprovip" method="POST">
+                      <button type="submit" class="btn btn-sm btn-ghost" style="border-color:#b45309;color:#f59e0b">↩ Revoke VIP</button>
                     </form>
                   <% } %>
 

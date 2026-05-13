@@ -8,7 +8,7 @@ const router = express.Router();
 // Helper: load all users with stats
 async function loadUsers() {
   const users = await User.findAll({
-    attributes: ['id', 'username', 'email', 'isAdmin', 'isBanned', 'isRestricted', 'avatar', 'createdAt'],
+    attributes: ['id', 'username', 'email', 'isAdmin', 'isBanned', 'isRestricted', 'isProVIP', 'avatar', 'createdAt'],
     order: [['createdAt', 'ASC']],
   });
   return Promise.all(
@@ -129,6 +129,32 @@ router.post('/admin/users/:id/unrestrict', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.redirect('/admin?error=Failed+to+lift+restriction.');
+  }
+});
+
+// Grant Pro VIP
+router.post('/admin/users/:id/provip', requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.redirect('/admin');
+    await user.update({ isProVIP: true });
+    res.redirect(`/admin?success=${encodeURIComponent(user.username + ' has been granted Pro VIP.')}`);
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin?error=Failed+to+grant+Pro+VIP.');
+  }
+});
+
+// Revoke Pro VIP
+router.post('/admin/users/:id/unprovip', requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.redirect('/admin');
+    await user.update({ isProVIP: false });
+    res.redirect(`/admin?success=${encodeURIComponent(user.username + "'s Pro VIP has been revoked.")}`);
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin?error=Failed+to+revoke+Pro+VIP.');
   }
 });
 

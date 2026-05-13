@@ -33,6 +33,11 @@ const User = sequelize.define('User', {
     allowNull: false,
     defaultValue: false,
   },
+  isProVIP: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   googleId: {
     type: DataTypes.STRING,
     allowNull: true,

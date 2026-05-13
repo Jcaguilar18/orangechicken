@@ -25,7 +25,8 @@ const { router: toolRoutes } = require('./routes/tools');
 const subscribeRoutes = require('./routes/subscribe');
 const scraperRoutes   = require('./routes/scraper');
 const showRoutes      = require('./routes/shows');
-const adminShowRoutes = require('./routes/admin-shows');
+const adminShowRoutes   = require('./routes/admin-shows');
+const exclusiveRoutes   = require('./routes/exclusive');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -64,7 +65,7 @@ app.use(async (req, res, next) => {
   if (req.session.user) {
     try {
       const sessionUser = await User.findByPk(req.session.user.id, {
-        attributes: ['id', 'username', 'email', 'isAdmin', 'isBanned', 'isRestricted', 'avatar', 'bio'],
+        attributes: ['id', 'username', 'email', 'isAdmin', 'isBanned', 'isRestricted', 'isProVIP', 'avatar', 'bio'],
       });
       if (!sessionUser || sessionUser.isBanned) {
         return req.session.destroy(() => res.redirect('/login?banned=1'));
@@ -76,6 +77,7 @@ app.use(async (req, res, next) => {
         isAdmin: sessionUser.isAdmin,
         isBanned: sessionUser.isBanned,
         isRestricted: sessionUser.isRestricted,
+        isProVIP: sessionUser.isProVIP,
         avatar: sessionUser.avatar,
         bio: sessionUser.bio,
       };
@@ -127,6 +129,7 @@ app.use('/', subscribeRoutes);
 app.use('/', scraperRoutes);
 app.use('/', showRoutes);
 app.use('/', adminShowRoutes);
+app.use('/', exclusiveRoutes);
 
 // Boot
 async function start() {
@@ -172,6 +175,7 @@ async function start() {
     'ALTER TABLE "Subscriptions" ADD COLUMN "plan" VARCHAR(20) NOT NULL DEFAULT \'monthly\'',
     'ALTER TABLE "Subscriptions" ADD COLUMN "welcomeSeen" BOOLEAN NOT NULL DEFAULT 0',
     'ALTER TABLE "ToolUsages" ADD COLUMN "toolName" VARCHAR(40)',
+    'ALTER TABLE "Users" ADD COLUMN "isProVIP" BOOLEAN NOT NULL DEFAULT 0',
   ];
   for (const sql of patches) {
     try { await sequelize.query(sql); } catch (_) {}
