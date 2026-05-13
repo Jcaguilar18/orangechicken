@@ -155,6 +155,9 @@
       <!-- Video player -->
       <div class="cp-video-wrap">
         <video id="cpPlayer" controls playsinline></video>
+        <iframe id="cpEmbed" class="cp-embed hidden"
+          allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"
+          referrerpolicy="no-referrer"></iframe>
         <div id="videoOverlay" class="cp-video-overlay">
           <div class="cp-spinner"></div>
         </div>
@@ -437,6 +440,7 @@
   background:#000;box-shadow:0 8px 40px rgba(0,0,0,.7);margin-bottom:.85rem;
 }
 #cpPlayer { width:100%;aspect-ratio:16/9;max-height:72vh;display:block }
+.cp-embed  { width:100%;aspect-ratio:16/9;max-height:72vh;border:none;display:block;background:#000 }
 .cp-video-overlay {
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   background:rgba(0,0,0,.6);pointer-events:none;transition:opacity .3s;
@@ -471,6 +475,7 @@
 .cp-src-q.q-hd    { background:rgba(59,130,246,.25);color:#60a5fa }
 .cp-src-q.q-sd    { background:rgba(107,114,128,.25);color:#9ca3af }
 .cp-src-q.q-lo    { background:rgba(75,85,99,.2);color:#6b7280 }
+.cp-src-q.q-embed { background:rgba(168,85,247,.25);color:#c084fc }
 .cp-src-name { opacity:.85 }
 .cp-src-type { font-size:.6rem;opacity:.45;text-transform:uppercase }
 
@@ -706,6 +711,7 @@ const seasonSel   = document.getElementById('seasonSel');
 const episodeSel  = document.getElementById('episodeSel');
 const playEpBtn   = document.getElementById('playEpBtn');
 const cpPlayer    = document.getElementById('cpPlayer');
+const cpEmbed     = document.getElementById('cpEmbed');
 const videoOverlay= document.getElementById('videoOverlay');
 const sourceList  = document.getElementById('sourceList');
 const copyUrlBtn  = document.getElementById('copyUrlBtn');
@@ -1083,11 +1089,12 @@ async function fetchSources(id, type, s, e) {
 ════════════════════════════════════ */
 function renderSourceBtns(sources) {
   sourceList.innerHTML = sources.map((src, i) => {
-    const name  = src.provider?.name || `Source ${i + 1}`;
-    const q     = src.quality ? parseInt(src.quality) : 0;
-    const qLabel= q ? `${q}p` : (src.quality || '');
-    const qCls  = q >= 1080 ? 'q-ultra' : q >= 720 ? 'q-hd' : q >= 480 ? 'q-sd' : 'q-lo';
-    const typeTxt = src.type && src.type !== 'hls' ? src.type.toUpperCase() : '';
+    const name    = src.provider?.name || `Source ${i + 1}`;
+    const isEmbed = src.type === 'embed';
+    const q       = !isEmbed && src.quality ? parseInt(src.quality) : 0;
+    const qLabel  = isEmbed ? 'EMBED' : (q ? `${q}p` : (src.quality || ''));
+    const qCls    = isEmbed ? 'q-embed' : (q >= 1080 ? 'q-ultra' : q >= 720 ? 'q-hd' : q >= 480 ? 'q-sd' : 'q-lo');
+    const typeTxt = !isEmbed && src.type && src.type !== 'hls' ? src.type.toUpperCase() : '';
     return `<button class="cp-src-btn${i === 0 ? ' active' : ''}" data-idx="${i}">
       ${qLabel ? `<span class="cp-src-q ${qCls}">${qLabel}</span>` : ''}
       <span class="cp-src-name">${esc(name)}</span>
@@ -1187,15 +1194,26 @@ function srtToVtt(srt) {
 ════════════════════════════════════ */
 function playSource(source) {
   if (!source?.url) return;
-  showOverlay(true);
   clearSubtitle();
   subtitleBtn.classList.remove('cc-on');
-  if (subDropdown.querySelectorAll) {
-    subDropdown.querySelectorAll('.cp-sub-opt').forEach((b, i) => {
-      b.classList.toggle('active', i === 0);
-    });
-  }
+  subDropdown.querySelectorAll('.cp-sub-opt').forEach((b, i) => b.classList.toggle('active', i === 0));
   if (hls) { hls.destroy(); hls = null; }
+
+  // ── Embed (iframe) sources ────────────────────────────────────────────
+  if (source.type === 'embed') {
+    cpPlayer.classList.add('hidden');
+    cpEmbed.classList.remove('hidden');
+    cpEmbed.src = source.url;
+    showOverlay(false);
+    updateDlUI(source.url, false);
+    return;
+  }
+
+  // ── Stream (video) sources ────────────────────────────────────────────
+  cpEmbed.classList.add('hidden');
+  cpEmbed.src = '';
+  cpPlayer.classList.remove('hidden');
+  showOverlay(true);
 
   const isHLS = source.type === 'hls' || source.url.includes('.m3u8');
 
@@ -1220,6 +1238,9 @@ function playSource(source) {
 function stopPlayer() {
   if (hls) { hls.destroy(); hls = null; }
   cpPlayer.src = '';
+  cpPlayer.classList.remove('hidden');
+  cpEmbed.src = '';
+  cpEmbed.classList.add('hidden');
   showOverlay(true);
   sourceList.innerHTML = '';
   clearSubtitle();
