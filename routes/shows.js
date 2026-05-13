@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const { featureGuard } = require('../middleware/featureGuard');
 
 const router     = express.Router();
-router.use(featureGuard('shows'));
+router.use('/shows', featureGuard('shows'));
 const VIDEOS_DIR = path.join(__dirname, '../storage/shows/videos');
 const SUBS_DIR   = path.join(__dirname, '../storage/shows/subtitles');
 
