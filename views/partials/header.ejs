@@ -47,7 +47,7 @@
       }
     %>
     <div class="nav-links" id="navLinks">
-      <a href="/portfolio" class="btn btn-ghost">Portfolio</a>
+      <% if (ffVisible('portfolio')) { %><a href="/portfolio" class="btn btn-ghost">Portfolio</a><% } %>
       <% if (ffVisible('tools')) { %><a href="/tools" class="btn btn-ghost">Tools</a><% } %>
       <% if (ffVisible('shows')) { %><a href="/shows" class="btn btn-ghost">Shows</a><% } %>
       <% if (ffVisible('exclusive')) { %>
