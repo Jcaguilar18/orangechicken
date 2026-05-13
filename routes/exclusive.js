@@ -2,10 +2,12 @@ const express = require('express');
 const axios   = require('axios');
 const { featureGuard } = require('../middleware/featureGuard');
 
-const router   = express.Router();
-router.use('/exclusive', featureGuard('exclusive'));
+const router    = express.Router();
 const TMDB_KEY  = process.env.TMDB_API_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
+
+const fg     = featureGuard('exclusive');
+const fgApi  = featureGuard('exclusive', { api: true });
 
 // Lazy-load the ES module engine (dynamic import works from CommonJS)
 let _engine = null;
@@ -14,32 +16,13 @@ async function getEngine() {
   return _engine;
 }
 
-function requireVIP(req, res, next) {
-  const user = req.session.user;
-  if (!user) return res.redirect('/login?next=/exclusive');
-  if (!user.isAdmin && !user.isProVIP) {
-    return res.status(403).render('exclusive-denied', { pageTitle: 'Access Denied' });
-  }
-  next();
-}
-
-// JSON-only variant for API routes — never sends HTML redirects
-function requireVIPApi(req, res, next) {
-  const user = req.session.user;
-  if (!user) return res.status(401).json({ error: 'Login required.' });
-  if (!user.isAdmin && !user.isProVIP) {
-    return res.status(403).json({ error: 'VIP access required.' });
-  }
-  next();
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────
-router.get('/exclusive', requireVIP, (req, res) => {
+router.get('/exclusive', fg, (req, res) => {
   res.render('exclusive', { pageTitle: 'Exclusive Player — Orange Chick' });
 });
 
 // ── Trending ──────────────────────────────────────────────────────────────
-router.get('/exclusive/trending', requireVIPApi, async (req, res) => {
+router.get('/exclusive/trending', fgApi, async (req, res) => {
   try {
     const [moviesResp, tvResp] = await Promise.all([
       axios.get(`${TMDB_BASE}/trending/movie/week`, {
@@ -70,7 +53,7 @@ router.get('/exclusive/trending', requireVIPApi, async (req, res) => {
 });
 
 // ── Detail (credits + trailer) ────────────────────────────────────────────
-router.get('/exclusive/detail/:type/:id', requireVIPApi, async (req, res) => {
+router.get('/exclusive/detail/:type/:id', fgApi, async (req, res) => {
   const { type, id } = req.params;
   const isTV = type === 'tv';
   try {
@@ -116,7 +99,7 @@ router.get('/exclusive/detail/:type/:id', requireVIPApi, async (req, res) => {
 });
 
 // ── TMDB search ───────────────────────────────────────────────────────────
-router.get('/exclusive/search', requireVIPApi, async (req, res) => {
+router.get('/exclusive/search', fgApi, async (req, res) => {
   const q = req.query.q?.trim();
   if (!q) return res.json({ results: [] });
   try {
@@ -144,7 +127,7 @@ router.get('/exclusive/search', requireVIPApi, async (req, res) => {
 });
 
 // ── TV info from TMDB ─────────────────────────────────────────────────────
-router.get('/exclusive/tv/:id/info', requireVIPApi, async (req, res) => {
+router.get('/exclusive/tv/:id/info', fgApi, async (req, res) => {
   try {
     const resp = await axios.get(`${TMDB_BASE}/tv/${req.params.id}`, {
       params: { api_key: TMDB_KEY },
@@ -161,7 +144,7 @@ router.get('/exclusive/tv/:id/info', requireVIPApi, async (req, res) => {
 });
 
 // ── Get sources directly from engine ─────────────────────────────────────
-router.get('/exclusive/sources', requireVIPApi, async (req, res) => {
+router.get('/exclusive/sources', fgApi, async (req, res) => {
   const { id, type, s, e } = req.query;
   if (!id || !type) return res.status(400).json({ error: 'Missing id or type.' });
   try {
@@ -189,7 +172,6 @@ router.get('/v1/proxy', async (req, res) => {
     const result   = await engine.proxyRequest(data);
 
     if (result && result.stream) {
-      // streaming response (MP4 / large files)
       const { stream, contentType, statusCode, headers } = result;
       res.status(statusCode || 200);
       res.setHeader('Content-Type', contentType || 'application/octet-stream');
@@ -199,7 +181,6 @@ router.get('/v1/proxy', async (req, res) => {
       }
       stream.pipe(res);
     } else if (result && result.data) {
-      // buffered response (m3u8, manifests, etc.)
       const { data: buf, contentType, statusCode, headers } = result;
       res.status(statusCode || 200);
       res.setHeader('Content-Type', contentType || 'application/octet-stream');
