@@ -14,11 +14,33 @@ const puppeteer = require('puppeteer');
 const QRCode    = require('qrcode');
 const archiver  = require('archiver');
 
-const { ToolUsage, Subscription } = require('../models');
+const { ToolUsage, Subscription, SiteSetting } = require('../models');
 const { checkSpace, cleanStale }   = require('../utils/storage');
 const citation = require('../utils/citation');
 
 const router = express.Router();
+
+// ── Site settings cache (30s TTL) ──────────────────────────────────
+let _settingsCache = null;
+let _settingsCacheAt = 0;
+
+async function getToolSettings() {
+  if (_settingsCache && Date.now() - _settingsCacheAt < 30000) return _settingsCache;
+  try {
+    const [fm, lim] = await Promise.all([
+      SiteSetting.findOne({ where: { key: 'tools_free_mode' } }),
+      SiteSetting.findOne({ where: { key: 'tools_daily_limit' } }),
+    ]);
+    _settingsCache = {
+      freeMode: fm?.value === '1',
+      dailyLimit: Math.max(1, parseInt(lim?.value || '3', 10) || 3),
+    };
+    _settingsCacheAt = Date.now();
+    return _settingsCache;
+  } catch (_) {
+    return { freeMode: false, dailyLimit: 3 };
+  }
+}
 
 // ── Temp result store ──────────────────────────────────────────────
 // Holds converted output files for 30 min, then auto-deletes
@@ -88,11 +110,14 @@ const videoUpload = multer({
 
 // ── Rate limit helpers ─────────────────────────────────────────────
 async function checkRateLimit(req) {
+  const { freeMode, dailyLimit } = await getToolSettings();
+  if (freeMode) return { allowed: true, unlimited: true, remaining: 999, limit: dailyLimit };
+
   if (req.session.user) {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const sub = await Subscription.findOne({ where: { userId: req.session.user.id, status: 'active' } });
-      if (sub && sub.endDate >= today) return { allowed: true, unlimited: true, remaining: 999 };
+      if (sub && sub.endDate >= today) return { allowed: true, unlimited: true, remaining: 999, limit: dailyLimit };
     } catch (_) {}
   }
   const today  = new Date().toISOString().slice(0, 10);
@@ -104,21 +129,24 @@ async function checkRateLimit(req) {
       where,
       defaults: { userId, ipAddress: ip, date: today, count: 0 },
     });
-    if (usage.count >= 3) return { allowed: false, unlimited: false, remaining: 0 };
+    if (usage.count >= dailyLimit) return { allowed: false, unlimited: false, remaining: 0, limit: dailyLimit };
     await usage.increment('count');
-    return { allowed: true, unlimited: false, remaining: Math.max(0, 2 - usage.count) };
+    return { allowed: true, unlimited: false, remaining: Math.max(0, (dailyLimit - 1) - usage.count), limit: dailyLimit };
   } catch (err) {
     console.error('Rate limit check error:', err);
-    return { allowed: true, unlimited: false, remaining: 0 };
+    return { allowed: true, unlimited: false, remaining: 0, limit: dailyLimit };
   }
 }
 
 async function getUsageInfo(req) {
+  const { freeMode, dailyLimit } = await getToolSettings();
+  if (freeMode) return { unlimited: true, remaining: 999, used: 0, freeMode: true, dailyLimit };
+
   if (req.session.user) {
     const today = new Date().toISOString().slice(0, 10);
     try {
       const sub = await Subscription.findOne({ where: { userId: req.session.user.id, status: 'active' } });
-      if (sub && sub.endDate >= today) return { unlimited: true, remaining: 999, used: 0 };
+      if (sub && sub.endDate >= today) return { unlimited: true, remaining: 999, used: 0, freeMode: false, dailyLimit };
     } catch (_) {}
   }
   const today  = new Date().toISOString().slice(0, 10);
@@ -128,9 +156,9 @@ async function getUsageInfo(req) {
     const where = userId ? { userId, date: today } : { userId: null, ipAddress: ip, date: today };
     const usage = await ToolUsage.findOne({ where });
     const used  = usage?.count || 0;
-    return { unlimited: false, remaining: Math.max(0, 3 - used), used };
+    return { unlimited: false, remaining: Math.max(0, dailyLimit - used), used, freeMode: false, dailyLimit };
   } catch (_) {
-    return { unlimited: false, remaining: 3, used: 0 };
+    return { unlimited: false, remaining: dailyLimit, used: 0, freeMode: false, dailyLimit };
   }
 }
 
@@ -138,8 +166,8 @@ function cleanFile(filePath) {
   if (filePath) fs.unlink(filePath, () => {});
 }
 
-function rateLimitErr() {
-  return { ok: false, error: 'Daily limit reached (3 uses/day). <a href="/subscribe" style="color:var(--cyan)">Subscribe for unlimited access →</a>' };
+function rateLimitErr(limit = 3) {
+  return { ok: false, error: `Daily limit reached (${limit} uses/day). <a href="/subscribe" style="color:var(--cyan)">Subscribe for unlimited access →</a>` };
 }
 
 function toolLimitErr(limit) {
@@ -147,6 +175,9 @@ function toolLimitErr(limit) {
 }
 
 async function checkToolLimit(req, toolName, limit) {
+  const { freeMode } = await getToolSettings();
+  if (freeMode) return { allowed: true, unlimited: true };
+
   if (req.session.user) {
     try {
       const today = new Date().toISOString().slice(0, 10);
@@ -250,9 +281,13 @@ router.post('/tools/pdf/save', express.json({ limit: '80mb' }), async (req, res)
 
 // ── Tools landing page ─────────────────────────────────────────────
 router.get('/tools', async (req, res) => {
-  const usageInfo = await getUsageInfo(req);
+  const [usageInfo, { freeMode, dailyLimit }] = await Promise.all([getUsageInfo(req), getToolSettings()]);
   res.render('tools', {
     usageInfo,
+    freeMode,
+    dailyLimit,
+    isSubscriber: usageInfo.unlimited,
+    currentUser: req.session?.user || null,
     error: null,
     pageTitle: "Free Online Tools — PDF Converter, QR Code Generator | JC's Space",
     metaDescription: "Free online tools: convert PDF to Word, Excel, PowerPoint, JPG; convert Word, Excel, PowerPoint, images to PDF; merge PDFs; generate QR codes. No signup needed.",
@@ -266,7 +301,7 @@ router.post('/tools/qr-code', toolUpload.none(), async (req, res) => {
   if (!text?.trim()) return res.json({ ok: false, error: 'Please enter text or a URL.' });
 
   const rl = await checkRateLimit(req);
-  if (!rl.allowed) return res.json(rateLimitErr());
+  if (!rl.allowed) return res.json(rateLimitErr(rl.limit));
 
   try {
     const buffer  = await QRCode.toBuffer(text.trim(), { type: 'png', width: 400, margin: 2 });

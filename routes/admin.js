@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { User, Article, Comment } = require('../models');
+const { User, Article, Comment, SiteSetting } = require('../models');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -23,14 +23,35 @@ async function loadUsers() {
 // Admin panel
 router.get('/admin', requireAdmin, async (req, res) => {
   try {
+    const [freeModeSetting, limitSetting, users] = await Promise.all([
+      SiteSetting.findOne({ where: { key: 'tools_free_mode' } }),
+      SiteSetting.findOne({ where: { key: 'tools_daily_limit' } }),
+      loadUsers(),
+    ]);
     res.render('admin', {
-      users: await loadUsers(),
+      users,
       success: req.query.success || null,
       error: req.query.error || null,
+      toolsFreeMode: freeModeSetting?.value === '1',
+      toolsDailyLimit: Math.max(1, parseInt(limitSetting?.value || '3', 10) || 3),
     });
   } catch (err) {
     console.error(err);
     res.redirect('/');
+  }
+});
+
+// Tools settings
+router.post('/admin/tools-settings', requireAdmin, async (req, res) => {
+  const freeMode = req.body.freeMode === '1' ? '1' : '0';
+  const limit = Math.max(1, parseInt(req.body.dailyLimit, 10) || 3);
+  try {
+    await SiteSetting.upsert({ key: 'tools_free_mode', value: freeMode });
+    await SiteSetting.upsert({ key: 'tools_daily_limit', value: String(limit) });
+    res.redirect('/admin?success=Tools+settings+updated.');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin?error=Failed+to+save+tools+settings.');
   }
 });
 

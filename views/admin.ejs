@@ -24,7 +24,67 @@
       <a href="/admin/subscriptions" class="btn btn-ghost">💳 Subscriptions</a>
       <a href="/admin/settings" class="btn btn-ghost">⚙ GCash Settings</a>
       <a href="/admin/scraper" class="btn btn-ghost">🕷 Web Scraper</a>
+      <a href="#tools-settings" class="btn btn-ghost">🆓 Tools Settings</a>
     </div>
+
+    <div class="glow-line"></div>
+
+    <!-- Tools Settings -->
+    <section class="admin-section" id="tools-settings" style="margin-bottom:2.5rem">
+      <h2 class="feed-title" style="margin-bottom:1.5rem">TOOLS SETTINGS</h2>
+      <div class="glass-card" style="max-width:520px">
+        <form action="/admin/tools-settings" method="POST">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1.5rem;margin-bottom:1.75rem">
+            <div>
+              <div style="font-weight:600;color:#fff;margin-bottom:.25rem">Free Mode</div>
+              <div style="font-size:.82rem;color:var(--muted)">Remove all limits — everyone gets unlimited access. Show "Free Tools" banner on the tools page.</div>
+            </div>
+            <label class="oc-toggle" title="Toggle Free Mode">
+              <input type="checkbox" name="freeMode" value="1" <%= toolsFreeMode ? 'checked' : '' %> onchange="this.form.submit()">
+              <span class="oc-toggle-track">
+                <span class="oc-toggle-thumb"></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-group" style="margin-bottom:1.5rem">
+            <label class="form-label">Daily Limit per User</label>
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <input type="number" name="dailyLimit" class="form-input" value="<%= toolsDailyLimit %>"
+                     min="1" max="999" style="max-width:90px;text-align:center" />
+              <span style="font-size:.85rem;color:var(--muted)">uses / day</span>
+            </div>
+            <p style="font-size:.8rem;color:var(--muted);margin-top:.35rem">Applied when Free Mode is off. Default: 3.</p>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <% if (toolsFreeMode) { %>
+              <span style="color:#fbbf24;font-size:.85rem;font-weight:600">🆓 Free Mode is ON</span>
+            <% } else { %>
+              <span style="color:var(--muted);font-size:.82rem">Limit: <%= toolsDailyLimit %> uses/day</span>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <style>
+      .oc-toggle { position:relative;display:inline-flex;cursor:pointer;flex-shrink:0 }
+      .oc-toggle input { position:absolute;opacity:0;width:0;height:0 }
+      .oc-toggle-track {
+        width:52px;height:28px;border-radius:28px;
+        background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+        transition:background .25s,border-color .25s;position:relative
+      }
+      .oc-toggle-thumb {
+        position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+        background:#94a3b8;transition:transform .25s,background .25s
+      }
+      .oc-toggle input:checked ~ .oc-toggle-track { background:rgba(251,191,36,.25);border-color:#fbbf24 }
+      .oc-toggle input:checked ~ .oc-toggle-track .oc-toggle-thumb { transform:translateX(24px);background:#fbbf24 }
+    </style>
 
     <div class="glow-line"></div>
 

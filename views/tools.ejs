@@ -10,15 +10,66 @@
 
   <div class="glow-line"></div>
 
+  <% if (freeMode) { %>
+  <!-- Free Tools Banner -->
+  <div class="free-tools-banner">
+    <div class="free-tools-shimmer"></div>
+    <div class="free-tools-badge">FREE</div>
+    <h2 class="free-tools-title">🎉 Free Tools</h2>
+    <p class="free-tools-sub">All tools are completely free — no limits, no signup required. Use as much as you want!</p>
+  </div>
+  <style>
+    @keyframes freeGlow {
+      0%,100% { box-shadow:0 0 30px rgba(251,191,36,.35),0 0 60px rgba(251,191,36,.15),inset 0 0 30px rgba(251,191,36,.04) }
+      50%      { box-shadow:0 0 55px rgba(251,191,36,.55),0 0 110px rgba(251,191,36,.28),inset 0 0 40px rgba(251,191,36,.08) }
+    }
+    @keyframes freeBadgePop {
+      0%,100% { transform:scale(1) rotate(-2deg) }
+      50%     { transform:scale(1.08) rotate(2deg) }
+    }
+    @keyframes freeShimmer {
+      0%   { transform:translateX(-100%) skewX(-20deg) }
+      100% { transform:translateX(400%) skewX(-20deg) }
+    }
+    .free-tools-banner {
+      position:relative;overflow:hidden;text-align:center;
+      padding:2.75rem 2rem 2.5rem;margin:1.5rem 0 2.25rem;
+      border:2px solid rgba(251,191,36,.55);border-radius:20px;
+      background:linear-gradient(135deg,rgba(251,191,36,.09) 0%,rgba(251,191,36,.03) 60%,rgba(168,85,247,.06) 100%);
+      animation:freeGlow 2.4s ease-in-out infinite
+    }
+    .free-tools-shimmer {
+      position:absolute;top:0;left:0;width:60px;height:100%;
+      background:linear-gradient(90deg,transparent,rgba(251,191,36,.18),transparent);
+      animation:freeShimmer 3s ease-in-out infinite
+    }
+    .free-tools-badge {
+      display:inline-block;background:#fbbf24;color:#000;
+      font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;
+      letter-spacing:.15em;padding:.3rem .85rem;border-radius:20px;
+      margin-bottom:.85rem;animation:freeBadgePop 2s ease-in-out infinite
+    }
+    .free-tools-title {
+      font-size:2.4rem;font-weight:800;margin:0 0 .65rem;
+      background:linear-gradient(135deg,#fbbf24,#f59e0b,#fde68a,#fbbf24);
+      background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;animation:freeShimmer 4s linear infinite
+    }
+    .free-tools-sub {
+      color:#e2c97e;font-size:1rem;margin:0;opacity:.9
+    }
+  </style>
+  <% } %>
+
   <!-- Rate limit banner -->
-  <div class="rate-limit-banner" style="<%= usageInfo.unlimited ? 'border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.08)' : usageInfo.remaining === 0 ? 'border-color:rgba(255,100,100,.4);background:rgba(255,100,100,.08)' : '' %>">
+  <div class="rate-limit-banner" style="<%= freeMode ? 'display:none' : (usageInfo.unlimited ? 'border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.08)' : usageInfo.remaining === 0 ? 'border-color:rgba(255,100,100,.4);background:rgba(255,100,100,.08)' : '') %>">
     <% if (usageInfo.unlimited) { %>
       <span style="color:var(--cyan)">✦</span> <strong style="color:var(--cyan)">PRO Subscriber</strong> — Unlimited conversions
     <% } else if (usageInfo.remaining === 0) { %>
-      <span>⚠</span> Daily limit reached (3/3 used).
+      <span>⚠</span> Daily limit reached (<%= usageInfo.dailyLimit %>/<%= usageInfo.dailyLimit %> used).
       <a href="/subscribe" class="btn btn-primary btn-sm" style="margin-left:.5rem">Upgrade to PRO →</a>
     <% } else { %>
-      <span style="color:var(--cyan)">◈</span> <strong><%= usageInfo.remaining %> of 3</strong> free uses remaining today
+      <span style="color:var(--cyan)">◈</span> <strong><%= usageInfo.remaining %> of <%= usageInfo.dailyLimit %></strong> free uses remaining today
       <% if (!isSubscriber) { %>
         &nbsp;·&nbsp; <a href="/subscribe" class="btn btn-ghost btn-sm">Upgrade to PRO ₱20/mo</a>
       <% } %>
