@@ -3,22 +3,26 @@
 <div class="cp-app" id="cpApp">
 
   <!-- ── Top Bar ── -->
-  <header class="cp-topbar">
+  <div class="cp-topbar">
     <div class="cp-topbar-left">
       <button class="cp-home-btn" id="homeBtn">
         <span class="cp-logo-icon">🎬</span>
         <span class="cp-logo-text">CinePro</span>
       </button>
-      <nav class="cp-nav">
-        <button class="cp-nav-btn active" data-view="browse">Browse</button>
-        <button class="cp-nav-btn" data-view="search">Search</button>
-      </nav>
     </div>
     <div class="cp-topbar-right">
       <div id="cpStatus" class="cp-status" title="Backend status"></div>
       <span class="cp-vip-pill">PRO VIP</span>
     </div>
-  </header>
+  </div>
+
+  <!-- ── Tab bar ── -->
+  <div class="cp-tabbar">
+    <nav class="cp-nav">
+      <button class="cp-nav-btn active" data-view="browse">Browse</button>
+      <button class="cp-nav-btn" data-view="search">Search</button>
+    </nav>
+  </div>
 
   <!-- ════════════════════════════════════
        BROWSE VIEW
@@ -140,7 +144,7 @@
   backdrop-filter:blur(8px);
   border-bottom:1px solid rgba(255,255,255,.06);
 }
-.cp-topbar-left { display:flex;align-items:center;gap:1.5rem }
+.cp-topbar-left { display:flex;align-items:center }
 .cp-home-btn {
   display:flex;align-items:center;gap:.5rem;
   background:none;border:none;cursor:pointer;padding:0;
@@ -150,11 +154,18 @@
   font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;
   color:#f59e0b;letter-spacing:.06em;
 }
+
+/* ── Tab bar ── */
+.cp-tabbar {
+  background:rgba(8,8,8,.95);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  padding:.25rem 1.5rem;
+}
 .cp-nav { display:flex;gap:.25rem }
 .cp-nav-btn {
   background:none;border:none;color:#94a3b8;font-size:.85rem;
   padding:.4rem .85rem;border-radius:20px;cursor:pointer;
-  transition:background .15s,color .15s;
+  transition:background .15s,color .15s;white-space:nowrap;
 }
 .cp-nav-btn:hover { color:#fff }
 .cp-nav-btn.active { background:rgba(245,158,11,.12);color:#f59e0b;font-weight:600 }
