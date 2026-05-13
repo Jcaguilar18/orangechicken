@@ -75,6 +75,62 @@
   </div>
 
   <!-- ════════════════════════════════════
+       DETAIL VIEW
+  ════════════════════════════════════ -->
+  <div id="viewDetail" class="cp-view hidden">
+
+    <!-- Backdrop hero -->
+    <div class="cp-dh-wrap" id="dhWrap">
+      <div class="cp-dh-bg" id="dhBg"></div>
+      <div class="cp-dh-grad"></div>
+    </div>
+
+    <div class="cp-detail-body">
+      <button class="cp-back-btn" id="detailBackBtn">← Back</button>
+
+      <div class="cp-detail-layout">
+
+        <!-- Poster -->
+        <div class="cp-detail-poster-wrap">
+          <img id="detailPoster" class="cp-detail-poster" src="" alt="" />
+        </div>
+
+        <!-- Info -->
+        <div class="cp-detail-info">
+          <div id="detailBadge" class="cp-detail-badge"></div>
+          <h2 id="detailTitle" class="cp-detail-title"></h2>
+          <p id="detailTagline" class="cp-detail-tagline hidden"></p>
+          <div id="detailMeta" class="cp-detail-meta"></div>
+          <div id="detailGenres" class="cp-detail-genres"></div>
+          <p id="detailOverview" class="cp-detail-overview"></p>
+          <div class="cp-detail-actions">
+            <button id="watchNowBtn" class="cp-btn-play" style="font-size:1rem;padding:.75rem 2rem">▶ Watch Now</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cast -->
+      <div class="cp-section" id="castSection">
+        <div class="cp-section-title">Cast</div>
+        <div id="detailCast" class="cp-cast-row"></div>
+      </div>
+
+      <!-- Trailer -->
+      <div class="cp-section hidden" id="trailerSection">
+        <div class="cp-section-title">Trailer</div>
+        <div class="cp-trailer-outer">
+          <div id="trailerThumb" class="cp-trailer-thumb-wrap">
+            <img id="trailerThumbImg" src="" alt="Trailer thumbnail" class="cp-trailer-thumb-img" />
+            <button class="cp-trailer-play-btn" id="trailerPlayBtn">▶ Play Trailer</button>
+          </div>
+          <div id="trailerEmbed" class="cp-trailer-embed hidden"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════
        PLAYER VIEW
   ════════════════════════════════════ -->
   <div id="viewPlayer" class="cp-view hidden">
@@ -422,6 +478,143 @@
 }
 @keyframes cpSpin { to{transform:rotate(360deg)} }
 
+/* ── Detail view ── */
+.cp-dh-wrap {
+  position:relative;height:360px;overflow:hidden;
+}
+@media(max-width:640px){ .cp-dh-wrap { height:220px } }
+.cp-dh-bg {
+  position:absolute;inset:0;
+  background-size:cover;background-position:center 20%;
+  filter:brightness(.55);
+}
+.cp-dh-grad {
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom, transparent 40%, #080808 100%);
+}
+
+.cp-detail-body {
+  padding:0 1.5rem 4rem;
+  margin-top:-80px;
+  position:relative;z-index:1;
+}
+@media(max-width:640px){ .cp-detail-body { margin-top:-40px } }
+
+.cp-detail-layout {
+  display:flex;gap:2rem;align-items:flex-start;margin-bottom:2.5rem;
+}
+@media(max-width:640px){
+  .cp-detail-layout { flex-direction:column;gap:1.25rem }
+}
+
+.cp-detail-poster-wrap { flex-shrink:0 }
+.cp-detail-poster {
+  width:180px;border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.7);
+  display:block;
+}
+@media(max-width:640px){ .cp-detail-poster { width:120px } }
+
+.cp-detail-info { flex:1;min-width:0 }
+
+.cp-detail-badge {
+  display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;padding:.2rem .6rem;border-radius:20px;
+  background:rgba(245,158,11,.2);color:#f59e0b;border:1px solid rgba(245,158,11,.35);
+  margin-bottom:.75rem;
+}
+.cp-detail-title {
+  font-size:1.9rem;font-weight:800;color:#fff;line-height:1.15;margin-bottom:.4rem;
+}
+@media(max-width:640px){ .cp-detail-title { font-size:1.4rem } }
+.cp-detail-tagline {
+  font-style:italic;color:#94a3b8;font-size:.9rem;margin-bottom:.6rem;
+}
+.cp-detail-meta {
+  display:flex;flex-wrap:wrap;gap:.5rem 1rem;
+  font-size:.82rem;color:#94a3b8;margin-bottom:.85rem;
+}
+.cp-detail-meta span { display:flex;align-items:center;gap:.3rem }
+.cp-detail-genres {
+  display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem;
+}
+.cp-genre-tag {
+  padding:.2rem .65rem;border-radius:20px;font-size:.72rem;font-weight:600;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#cbd5e1;
+}
+.cp-detail-overview {
+  font-size:.9rem;line-height:1.75;color:#b0b0b0;margin-bottom:1.5rem;
+}
+.cp-detail-actions { display:flex;gap:.75rem;flex-wrap:wrap }
+
+/* Cast */
+.cp-section { margin-bottom:2.5rem }
+.cp-section-title {
+  font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:#64748b;margin-bottom:1rem;
+}
+.cp-cast-row {
+  display:flex;gap:.85rem;overflow-x:auto;padding-bottom:.5rem;
+  scroll-snap-type:x mandatory;
+}
+.cp-cast-row::-webkit-scrollbar { height:3px }
+.cp-cast-row::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1);border-radius:2px }
+.cp-cast-card {
+  flex-shrink:0;width:90px;scroll-snap-align:start;text-align:center;
+}
+.cp-cast-photo {
+  width:80px;height:80px;border-radius:50%;object-fit:cover;
+  background:rgba(255,255,255,.07);display:block;margin:0 auto .5rem;
+  border:2px solid rgba(255,255,255,.1);
+}
+.cp-cast-no-photo {
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(255,255,255,.07);display:flex;align-items:center;
+  justify-content:center;font-size:1.6rem;margin:0 auto .5rem;
+  border:2px solid rgba(255,255,255,.1);
+}
+.cp-cast-name {
+  font-size:.72rem;font-weight:700;color:#e2e8f0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.cp-cast-char {
+  font-size:.65rem;color:#64748b;margin-top:.15rem;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
+}
+
+/* Trailer */
+.cp-trailer-outer { max-width:640px }
+.cp-trailer-thumb-wrap {
+  position:relative;border-radius:12px;overflow:hidden;cursor:pointer;
+  aspect-ratio:16/9;background:#111;
+}
+.cp-trailer-thumb-img {
+  width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .3s,filter .3s;
+}
+.cp-trailer-thumb-wrap:hover .cp-trailer-thumb-img {
+  transform:scale(1.03);filter:brightness(.7);
+}
+.cp-trailer-play-btn {
+  position:absolute;inset:0;background:none;border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:700;color:#fff;cursor:pointer;
+  gap:.5rem;
+}
+.cp-trailer-play-btn::before {
+  content:'';display:block;
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(0,0,0,.65);border:2px solid rgba(255,255,255,.5);
+  position:absolute;
+}
+.cp-trailer-play-btn span { position:relative;z-index:1;font-size:1.4rem }
+.cp-trailer-embed {
+  aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;
+}
+.cp-trailer-embed iframe {
+  width:100%;height:100%;border:none;display:block;
+}
+
 /* ── Utility ── */
 .hidden { display:none!important }
 </style>
@@ -431,17 +624,20 @@
 'use strict';
 
 /* ── State ── */
-let hls         = null;
+let hls          = null;
 let currentMedia = null;
 let allSources   = [];
 let seasonData   = [];
 let trendingData = { movies: [], tv: [] };
+let previousView = 'browse';
 
 /* ── Element refs ── */
 const app         = document.getElementById('cpApp');
 const viewBrowse  = document.getElementById('viewBrowse');
 const viewSearch  = document.getElementById('viewSearch');
+const viewDetail  = document.getElementById('viewDetail');
 const viewPlayer  = document.getElementById('viewPlayer');
+const dhBg        = document.getElementById('dhBg');
 const browseRows  = document.getElementById('browseRows');
 const featuredHero= document.getElementById('featuredHero');
 const heroBg      = document.getElementById('heroBg');
@@ -476,7 +672,7 @@ const cpStatus    = document.getElementById('cpStatus');
    VIEW SWITCHING
 ════════════════════════════════════ */
 function showView(name) {
-  [viewBrowse, viewSearch, viewPlayer].forEach(v => v.classList.add('hidden'));
+  [viewBrowse, viewSearch, viewDetail, viewPlayer].forEach(v => v.classList.add('hidden'));
   document.querySelectorAll('.cp-nav-btn').forEach(b => b.classList.remove('active'));
 
   if (name === 'browse') {
@@ -486,6 +682,8 @@ function showView(name) {
     viewSearch.classList.remove('hidden');
     document.querySelector('[data-view="search"]').classList.add('active');
     searchInput.focus();
+  } else if (name === 'detail') {
+    viewDetail.classList.remove('hidden');
   } else if (name === 'player') {
     viewPlayer.classList.remove('hidden');
   }
@@ -497,7 +695,11 @@ document.querySelectorAll('.cp-nav-btn').forEach(btn => {
 document.getElementById('homeBtn').addEventListener('click', () => showView('browse'));
 document.getElementById('backBtn').addEventListener('click', () => {
   stopPlayer();
-  showView('browse');
+  showView(currentMedia ? 'detail' : previousView);
+});
+document.getElementById('detailBackBtn').addEventListener('click', () => showView(previousView));
+document.getElementById('watchNowBtn').addEventListener('click', () => {
+  if (currentMedia) selectMedia(currentMedia);
 });
 
 /* ════════════════════════════════════
@@ -537,12 +739,8 @@ function renderHero(item) {
     heroTitle.textContent = item.title;
     heroOverview.textContent = item.overview;
     heroMeta.textContent = [item.year, item.rating ? `★ ${item.rating}` : null].filter(Boolean).join(' · ');
-    heroPlayBtn.onclick = () => selectMedia(item);
-    heroMoreBtn.onclick = () => {
-      searchInput.value = item.title;
-      showView('search');
-      doSearch();
-    };
+    heroPlayBtn.onclick = () => showDetail(item);
+    heroMoreBtn.onclick = () => showDetail(item);
   }
 }
 
@@ -558,7 +756,7 @@ function buildRow(title, items) {
   row.innerHTML = `<div class="cp-row-title">${esc(title)}</div>
     <div class="cp-row-scroll">${items.map(cardHTML).join('')}</div>`;
   row.querySelectorAll('.cp-card').forEach((card, i) => {
-    card.addEventListener('click', () => selectMedia(items[i]));
+    card.addEventListener('click', () => showDetail(items[i]));
   });
   return row;
 }
@@ -608,7 +806,7 @@ async function doSearch() {
     searchResults.innerHTML = items.map(cardHTML).join('');
     searchResults.classList.remove('hidden');
     searchResults.querySelectorAll('.cp-card').forEach((card, i) => {
-      card.addEventListener('click', () => selectMedia(items[i]));
+      card.addEventListener('click', () => showDetail(items[i]));
     });
   } catch {
     searchStatus.textContent = 'Search failed. Try again.';
@@ -638,6 +836,86 @@ function cardHTML(item) {
       </div>
     </div>
   </div>`;
+}
+
+/* ════════════════════════════════════
+   DETAIL VIEW
+════════════════════════════════════ */
+async function showDetail(item) {
+  previousView = viewSearch.classList.contains('hidden') ? 'browse' : 'search';
+  currentMedia = item;
+  showView('detail');
+
+  // Reset while loading
+  dhBg.style.backgroundImage = '';
+  document.getElementById('detailPoster').src = '';
+  document.getElementById('detailTitle').textContent = item.title;
+  document.getElementById('detailOverview').textContent = 'Loading…';
+  document.getElementById('detailCast').innerHTML = '<div class="cp-spinner-sm" style="margin:.5rem 0"></div>';
+  document.getElementById('detailTagline').classList.add('hidden');
+  document.getElementById('trailerSection').classList.add('hidden');
+  document.getElementById('trailerEmbed').classList.add('hidden');
+  document.getElementById('trailerEmbed').innerHTML = '';
+  document.getElementById('trailerThumb').classList.remove('hidden');
+
+  try {
+    const r = await fetch(`/exclusive/detail/${item.type}/${item.id}`);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    if (d.backdrop) dhBg.style.backgroundImage = `url('${d.backdrop}')`;
+
+    const posterEl = document.getElementById('detailPoster');
+    posterEl.src = d.poster || '';
+    posterEl.alt = d.title;
+
+    document.getElementById('detailBadge').textContent = d.type === 'movie' ? 'Movie' : 'TV Series';
+    document.getElementById('detailTitle').textContent = d.title;
+
+    const taglineEl = document.getElementById('detailTagline');
+    if (d.tagline) { taglineEl.textContent = d.tagline; taglineEl.classList.remove('hidden'); }
+
+    const metaParts = [];
+    if (d.year)    metaParts.push(`<span>📅 ${esc(d.year)}</span>`);
+    if (d.rating)  metaParts.push(`<span>⭐ ${esc(d.rating)}</span>`);
+    if (d.runtime) metaParts.push(`<span>⏱ ${esc(d.runtime)}</span>`);
+    document.getElementById('detailMeta').innerHTML = metaParts.join('');
+
+    document.getElementById('detailGenres').innerHTML = (d.genres || [])
+      .map(g => `<span class="cp-genre-tag">${esc(g)}</span>`).join('');
+
+    document.getElementById('detailOverview').textContent = d.overview || '';
+
+    const castEl = document.getElementById('detailCast');
+    if (d.cast && d.cast.length) {
+      castEl.innerHTML = d.cast.map(c => `
+        <div class="cp-cast-card">
+          ${c.photo
+            ? `<img src="${escAttr(c.photo)}" alt="${escAttr(c.name)}" class="cp-cast-photo" loading="lazy" />`
+            : `<div class="cp-cast-no-photo">👤</div>`}
+          <div class="cp-cast-name">${esc(c.name)}</div>
+          ${c.character ? `<div class="cp-cast-char">${esc(c.character)}</div>` : ''}
+        </div>`).join('');
+    } else {
+      castEl.innerHTML = '<span style="color:#64748b;font-size:.85rem">No cast info.</span>';
+    }
+
+    if (d.trailer) {
+      document.getElementById('trailerSection').classList.remove('hidden');
+      document.getElementById('trailerThumbImg').src =
+        `https://img.youtube.com/vi/${d.trailer.key}/maxresdefault.jpg`;
+      document.getElementById('trailerPlayBtn').onclick = () => {
+        document.getElementById('trailerThumb').classList.add('hidden');
+        const embed = document.getElementById('trailerEmbed');
+        embed.classList.remove('hidden');
+        embed.innerHTML = `<iframe src="https://www.youtube.com/embed/${d.trailer.key}?autoplay=1"
+          allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      };
+    }
+  } catch (err) {
+    document.getElementById('detailOverview').textContent = `Failed to load details: ${err.message}`;
+    document.getElementById('detailCast').innerHTML = '';
+  }
 }
 
 /* ════════════════════════════════════
