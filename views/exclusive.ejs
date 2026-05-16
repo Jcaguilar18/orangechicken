@@ -156,8 +156,9 @@
       <div class="cp-video-wrap">
         <video id="cpPlayer" controls playsinline></video>
         <iframe id="cpEmbed" class="cp-embed hidden"
-          allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"
-          referrerpolicy="no-referrer"></iframe>
+          allowfullscreen allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          referrerpolicy="no-referrer"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-fullscreen"></iframe>
         <div id="videoOverlay" class="cp-video-overlay">
           <div class="cp-spinner"></div>
         </div>
