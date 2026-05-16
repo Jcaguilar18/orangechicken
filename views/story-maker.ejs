@@ -179,7 +179,6 @@
         <div class="sm-voice-grid">
           <select id="voiceSelect" class="form-input" style="font-size:.85rem">
             <optgroup label="Female">
-              <option value="21m00Tcm4TlvDq8ikWAM">Rachel — Calm &amp; Clear</option>
               <option value="EXAVITQu4vr4xnSDxMaL">Bella — Soft &amp; Warm</option>
               <option value="MF3mGyEYCl7XYWbV9V6O">Elli — Expressive</option>
               <option value="AZnzlk1XvdvUeBnXmlld">Domi — Bold &amp; Confident</option>
@@ -311,8 +310,7 @@
         2. Pick a background clip<br>
         3. <strong>Preview</strong> to check timing<br>
         4. <strong>Record</strong> → downloads <code>.webm</code><br>
-        5. Upload to TikTok — done<br><br>
-        <strong>ElevenLabs key:</strong> Add <code>ELEVENLABS_API_KEY=sk-...</code> to your <code>.env</code> file. Free tier = 10k chars/month.
+        5. Upload to TikTok — done
       </div>
     </div>
 
@@ -384,6 +382,10 @@ document.getElementById('bgFileInput').addEventListener('change', function() {
   videoEl.src = URL.createObjectURL(this.files[0]);
   videoEl.load();
   videoEl.addEventListener('loadeddata', () => { setStatus('Background ready.'); drawIdle(); }, { once: true });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadBuiltinBg('subway-surfers', '🛹 Subway Surfers', document.getElementById('bg-ss'));
 });
 
 function loadBuiltinBg(slug, label, btn) {
