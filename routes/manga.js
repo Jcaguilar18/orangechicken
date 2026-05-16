@@ -14,7 +14,7 @@ const VALID_SOURCES = ['omega'];
 router.get('/manga', fg, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   try {
-    const [series, continueReading] = await Promise.all([
+    const [{ series, totalPages }, continueReading] = await Promise.all([
       manga.browseAll(page),
       req.session.user
         ? MangaProgress.findAll({
@@ -28,11 +28,12 @@ router.get('/manga', fg, async (req, res) => {
       series,
       continueReading,
       page,
+      totalPages,
       pageTitle: 'Manga/Manhwa — Orange Chick',
     });
   } catch (err) {
     console.error('[manga/browse]', err);
-    res.render('manga', { series: [], continueReading: [], page: 1, pageTitle: 'Manga/Manhwa — Orange Chick' });
+    res.render('manga', { series: [], continueReading: [], page: 1, totalPages: 1, pageTitle: 'Manga/Manhwa — Orange Chick' });
   }
 });
 

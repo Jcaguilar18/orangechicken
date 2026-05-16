@@ -64,9 +64,30 @@
       <% }) %>
     </div>
 
-    <% if (series.length > 0) { %>
-    <div style="text-align:center;margin:2.5rem 0">
-      <a href="/manga?page=<%= page + 1 %>" class="btn btn-ghost" id="mangaLoadMore">Load More →</a>
+    <% if (totalPages > 1) { %>
+    <%
+      const delta = 2;
+      const left  = Math.max(1, page - delta);
+      const right = Math.min(totalPages, page + delta);
+    %>
+    <div class="manga-pages">
+      <% if (page > 1) { %>
+        <a href="/manga?page=<%= page - 1 %>" class="manga-page-btn">← Prev</a>
+      <% } %>
+      <% if (left > 1) { %>
+        <a href="/manga?page=1" class="manga-page-btn">1</a>
+        <% if (left > 2) { %><span class="manga-page-ellipsis">…</span><% } %>
+      <% } %>
+      <% for (let p = left; p <= right; p++) { %>
+        <a href="/manga?page=<%= p %>" class="manga-page-btn <%= p === page ? 'manga-page-active' : '' %>"><%= p %></a>
+      <% } %>
+      <% if (right < totalPages) { %>
+        <% if (right < totalPages - 1) { %><span class="manga-page-ellipsis">…</span><% } %>
+        <a href="/manga?page=<%= totalPages %>" class="manga-page-btn"><%= totalPages %></a>
+      <% } %>
+      <% if (page < totalPages) { %>
+        <a href="/manga?page=<%= page + 1 %>" class="manga-page-btn">Next →</a>
+      <% } %>
     </div>
     <% } %>
 
@@ -110,15 +131,19 @@
   .manga-src-manhwaclan { background:rgba(168,85,247,.8) }
   .manga-src-mangaeden  { background:rgba(34,197,94,.8) }
 
-  .manga-card-cover .manga-src-badge { position:absolute;top:.45rem;left:.45rem;margin:0 }
+  .manga-pages { display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:.4rem;margin:2.5rem 0 }
+  .manga-page-btn { padding:.45rem .85rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:.85rem;text-decoration:none;transition:background .15s,border-color .15s }
+  .manga-page-btn:hover { background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25) }
+  .manga-page-active { background:rgba(232,197,71,.15);border-color:var(--amber);color:var(--amber);font-weight:700;pointer-events:none }
+  .manga-page-ellipsis { color:var(--muted);font-size:.85rem;padding:0 .25rem }
 </style>
 
 <script>
 (function () {
-  const input   = document.getElementById('mangaSearch');
-  const grid    = document.getElementById('mangaGrid');
-  const label   = document.getElementById('mangaGridLabel');
-  const loadMore = document.getElementById('mangaLoadMore');
+  const input  = document.getElementById('mangaSearch');
+  const grid   = document.getElementById('mangaGrid');
+  const label  = document.getElementById('mangaGridLabel');
+  const pages  = document.querySelector('.manga-pages');
   let debounce;
 
   function renderCards(items) {
@@ -148,7 +173,7 @@
     }
     debounce = setTimeout(async () => {
       label.textContent = `RESULTS FOR "${q.toUpperCase()}"`;
-      if (loadMore) loadMore.style.display = 'none';
+      if (pages) pages.style.display = 'none';
       grid.style.opacity = '.5';
       try {
         const resp = await fetch(`/manga/search?q=${encodeURIComponent(q)}`);
