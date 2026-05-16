@@ -30,18 +30,12 @@ router.get('/admin', requireAdmin, async (req, res) => {
       SiteSetting.findOne({ where: { key: 'feature_flags' } }),
       loadUsers(),
     ]);
-    let exclusiveMode = 'all';
-    if (flagRow?.value) {
-      const parsed = JSON.parse(flagRow.value);
-      exclusiveMode = parsed?.exclusive?.mode || 'all';
-    }
     res.render('admin', {
       users,
       success: req.query.success || null,
       error: req.query.error || null,
       toolsFreeMode: freeModeSetting?.value === '1',
       toolsDailyLimit: Math.max(1, parseInt(limitSetting?.value || '3', 10) || 3),
-      exclusiveMode,
     });
   } catch (err) {
     console.error(err);

@@ -26,7 +26,7 @@
       <a href="/admin/scraper" class="btn btn-ghost">🕷 Web Scraper</a>
       <a href="/admin/shows" class="btn btn-ghost">🎬 Shows</a>
       <a href="#tools-settings" class="btn btn-ghost">🆓 Tools Settings</a>
-      <a href="#exclusive-settings" class="btn btn-ghost">👑 Exclusive Access</a>
+
       <a href="/admin/features" class="btn btn-ghost">🔒 Feature Visibility</a>
       <a href="/admin/popup" class="btn btn-ghost">📢 Popup Announcement</a>
     </div>
@@ -89,44 +89,6 @@
       .oc-toggle input:checked ~ .oc-toggle-track { background:rgba(251,191,36,.25);border-color:#fbbf24 }
       .oc-toggle input:checked ~ .oc-toggle-track .oc-toggle-thumb { transform:translateX(24px);background:#fbbf24 }
     </style>
-
-    <div class="glow-line"></div>
-
-    <!-- Exclusive Access -->
-    <section class="admin-section" id="exclusive-settings" style="margin-bottom:2.5rem">
-      <h2 class="feed-title" style="margin-bottom:1.5rem">EXCLUSIVE ACCESS</h2>
-      <div class="glass-card" style="max-width:520px">
-        <form action="/admin/exclusive-access" method="POST">
-          <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.25rem">
-            Control who can view the 👑 Exclusive player page.
-          </p>
-          <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.5rem">
-            <%
-              const exModes = [
-                { value:'all',         dot:'#22c55e', label:'Everyone',        desc:'Anyone, including guests' },
-                { value:'logged_in',   dot:'#60a5fa', label:'Users only',      desc:'Must be logged in' },
-                { value:'subscribers', dot:'#c084fc', label:'Pro subscribers', desc:'Active Pro or Pro VIP' },
-                { value:'provip',      dot:'#facc15', label:'Pro VIP only',    desc:'Pro VIP badge required' },
-                { value:'disabled',    dot:'#f87171', label:'Disabled',        desc:'Hidden for everyone' },
-              ];
-            %>
-            <% exModes.forEach(opt => { %>
-            <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;padding:.55rem .75rem;border-radius:10px;border:1px solid rgba(255,255,255,<%= exclusiveMode === opt.value ? '.15' : '.06' %>);background:rgba(255,255,255,<%= exclusiveMode === opt.value ? '.06' : '.02' %>);transition:all .15s">
-              <input type="radio" name="mode" value="<%= opt.value %>"
-                     <%= exclusiveMode === opt.value ? 'checked' : '' %>
-                     style="accent-color:<%= opt.dot %>;width:15px;height:15px;flex-shrink:0" />
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:<%= opt.dot %>;flex-shrink:0"></span>
-              <span style="flex:1">
-                <span style="font-size:.88rem;font-weight:600;color:#e2e8f0"><%= opt.label %></span>
-                <span style="font-size:.78rem;color:#64748b;margin-left:.4rem"><%= opt.desc %></span>
-              </span>
-            </label>
-            <% }); %>
-          </div>
-          <button type="submit" class="btn btn-primary">Save</button>
-        </form>
-      </div>
-    </section>
 
     <div class="glow-line"></div>
 
