@@ -1,4 +1,5 @@
 const User         = require('./User');
+const MangaProgress = require('./MangaProgress');
 const Article      = require('./Article');
 const Comment      = require('./Comment');
 const Project      = require('./Project');
@@ -47,4 +48,8 @@ ShowComment.belongsTo(Episode,  { foreignKey: 'episodeId' });
 User.hasMany(ShowComment,    { foreignKey: 'userId', onDelete: 'CASCADE' });
 ShowComment.belongsTo(User,  { foreignKey: 'userId', as: 'author' });
 
-module.exports = { User, Article, Comment, Project, ContactMessage, ToolUsage, ScraperUsage, Subscription, SiteSetting, Show, Episode, ShowComment };
+// User <-> MangaProgress
+User.hasMany(MangaProgress, { foreignKey: 'userId', onDelete: 'CASCADE' });
+MangaProgress.belongsTo(User, { foreignKey: 'userId', as: 'reader' });
+
+module.exports = { User, Article, Comment, Project, ContactMessage, ToolUsage, ScraperUsage, Subscription, SiteSetting, Show, Episode, ShowComment, MangaProgress };

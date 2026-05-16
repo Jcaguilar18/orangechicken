@@ -28,6 +28,7 @@ const scraperRoutes   = require('./routes/scraper');
 const showRoutes      = require('./routes/shows');
 const adminShowRoutes   = require('./routes/admin-shows');
 const exclusiveRoutes   = require('./routes/exclusive');
+const mangaRoutes       = require('./routes/manga');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -142,6 +143,7 @@ app.use('/', scraperRoutes);
 app.use('/', showRoutes);
 app.use('/', adminShowRoutes);
 app.use('/', exclusiveRoutes);
+app.use('/', mangaRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────
 app.use((req, res) => {
@@ -209,6 +211,13 @@ async function start() {
     'ALTER TABLE "Subscriptions" ADD COLUMN "welcomeSeen" BOOLEAN NOT NULL DEFAULT 0',
     'ALTER TABLE "ToolUsages" ADD COLUMN "toolName" VARCHAR(40)',
     'ALTER TABLE "Users" ADD COLUMN "isProVIP" BOOLEAN NOT NULL DEFAULT 0',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "userId" INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "source" VARCHAR(20) NOT NULL DEFAULT \'omega\'',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "seriesSlug" VARCHAR(500) NOT NULL DEFAULT \'\'',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "seriesTitle" VARCHAR(500) NOT NULL DEFAULT \'\'',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "seriesCover" VARCHAR(1000)',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "chapterSlug" VARCHAR(500) NOT NULL DEFAULT \'\'',
+    'ALTER TABLE "MangaProgresses" ADD COLUMN "chapterNumber" REAL NOT NULL DEFAULT 0',
   ];
   for (const sql of patches) {
     try { await sequelize.query(sql); } catch (_) {}
@@ -223,7 +232,18 @@ async function start() {
   await SiteSetting.findOrCreate({ where: { key: 'paypal_me' },      defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_plan_id' }, defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'contact_email_notifications' }, defaults: { value: '1' } });
-  await SiteSetting.findOrCreate({ where: { key: 'feature_flags' }, defaults: { value: JSON.stringify({ tools:{mode:'all',blocked:[]}, shows:{mode:'all',blocked:[]}, exclusive:{mode:'all',blocked:[]}, scraper:{mode:'all',blocked:[]}, contact:{mode:'all',blocked:[]} }) } });
+  await SiteSetting.findOrCreate({ where: { key: 'feature_flags' }, defaults: { value: JSON.stringify({ tools:{mode:'all',blocked:[]}, shows:{mode:'all',blocked:[]}, exclusive:{mode:'all',blocked:[]}, scraper:{mode:'all',blocked:[]}, contact:{mode:'all',blocked:[]}, manga:{mode:'all',blocked:[]} }) } });
+  // Ensure 'manga' key exists in existing feature_flags rows
+  try {
+    const ffRow = await SiteSetting.findOne({ where: { key: 'feature_flags' } });
+    if (ffRow) {
+      const flags = JSON.parse(ffRow.value || '{}');
+      if (!flags.manga) {
+        flags.manga = { mode: 'all', blocked: [] };
+        await ffRow.update({ value: JSON.stringify(flags) });
+      }
+    }
+  } catch (_) {}
 
   // Ensure the designated admin account is flagged
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;

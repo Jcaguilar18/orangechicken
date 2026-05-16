@@ -1,0 +1,129 @@
+<%- include('partials/header') %>
+
+<div class="reader-bar">
+  <a href="/manga/series/<%= source %>/<%= encodeURIComponent(series.slug) %>" class="reader-back">← <%= series.title %></a>
+  <span class="reader-chap">Ch. <%= currentChap.number %><% if (currentChap.title) { %> — <%= currentChap.title %><% } %></span>
+  <button id="readerToggle" class="btn btn-ghost reader-toggle" onclick="toggleMode()">📖 Pages</button>
+</div>
+
+<!-- Scroll mode (default) -->
+<div id="scrollMode" class="reader-scroll-wrap">
+  <% pages.forEach((p, i) => { %>
+    <img src="<%= p.url %>" alt="Page <%= i + 1 %>" class="reader-page-img" loading="<%= i < 3 ? 'eager' : 'lazy' %>" />
+  <% }) %>
+</div>
+
+<!-- Page mode -->
+<div id="pageMode" class="reader-page-wrap" style="display:none">
+  <button class="reader-arrow reader-arrow-left" onclick="changePage(-1)">‹</button>
+  <div class="reader-page-single">
+    <img id="pageImg" src="" alt="" />
+  </div>
+  <button class="reader-arrow reader-arrow-right" onclick="changePage(1)">›</button>
+  <div class="reader-page-counter" id="pageCounter">1 / <%= pages.length %></div>
+</div>
+
+<div class="reader-nav-bar">
+  <% if (prevChap) { %>
+    <a href="/manga/read/<%= source %>/<%= encodeURIComponent(series.slug) %>/<%= encodeURIComponent(prevChap.slug) %>" class="btn btn-ghost">← Ch. <%= prevChap.number %></a>
+  <% } else { %>
+    <span></span>
+  <% } %>
+  <a href="/manga/series/<%= source %>/<%= encodeURIComponent(series.slug) %>" class="btn btn-ghost" style="font-size:.8rem">Chapter List</a>
+  <% if (nextChap) { %>
+    <a href="/manga/read/<%= source %>/<%= encodeURIComponent(series.slug) %>/<%= encodeURIComponent(nextChap.slug) %>" class="btn btn-ghost">Ch. <%= nextChap.number %> →</a>
+  <% } else { %>
+    <span></span>
+  <% } %>
+</div>
+
+<style>
+  .reader-bar { position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:1rem;padding:.65rem 1.25rem;background:rgba(13,6,2,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--border) }
+  .reader-back { font-size:.82rem;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;flex-shrink:0 }
+  .reader-chap { flex:1;font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+  .reader-toggle { font-size:.8rem;padding:.35rem .8rem;white-space:nowrap;flex-shrink:0 }
+
+  .reader-scroll-wrap { max-width:800px;margin:0 auto;padding:1rem 0 2rem }
+  .reader-page-img { width:100%;display:block;margin-bottom:.15rem }
+
+  .reader-page-wrap { display:flex;align-items:center;justify-content:center;min-height:80vh;position:relative;gap:1rem;padding:1rem }
+  .reader-page-single { max-width:min(700px,95vw) }
+  .reader-page-single img { width:100%;max-height:90vh;object-fit:contain;display:block }
+  .reader-arrow { background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text);font-size:2rem;width:48px;height:80px;border-radius:8px;cursor:pointer;transition:background .15s;flex-shrink:0 }
+  .reader-arrow:hover { background:rgba(255,255,255,.16) }
+  .reader-page-counter { position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:var(--muted);font-size:.8rem;padding:.35rem .85rem;border-radius:20px;pointer-events:none }
+
+  .reader-nav-bar { display:flex;justify-content:space-between;align-items:center;padding:1.5rem 1.25rem 3rem;max-width:800px;margin:0 auto }
+</style>
+
+<script>
+const PAGES = <%- JSON.stringify(pages.map(p => p.url)) %>;
+let currentPage = 0;
+let mode = localStorage.getItem('mangaReaderMode') || 'scroll';
+
+function applyMode() {
+  const scrollEl = document.getElementById('scrollMode');
+  const pageEl   = document.getElementById('pageMode');
+  const btn      = document.getElementById('readerToggle');
+  if (mode === 'scroll') {
+    scrollEl.style.display = '';
+    pageEl.style.display   = 'none';
+    btn.textContent        = '📖 Pages';
+  } else {
+    scrollEl.style.display = 'none';
+    pageEl.style.display   = '';
+    btn.textContent        = '📜 Scroll';
+    updatePageImg();
+  }
+}
+
+function toggleMode() {
+  mode = mode === 'scroll' ? 'page' : 'scroll';
+  localStorage.setItem('mangaReaderMode', mode);
+  applyMode();
+}
+
+function updatePageImg() {
+  const img = document.getElementById('pageImg');
+  const ctr = document.getElementById('pageCounter');
+  img.src = PAGES[currentPage] || '';
+  ctr.textContent = `${currentPage + 1} / ${PAGES.length}`;
+}
+
+function changePage(dir) {
+  const next = currentPage + dir;
+  if (next < 0 || next >= PAGES.length) return;
+  currentPage = next;
+  updatePageImg();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.addEventListener('keydown', e => {
+  if (mode !== 'page') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changePage(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changePage(-1);
+});
+
+applyMode();
+
+<% if (typeof currentUser !== 'undefined' && currentUser) { %>
+(async function saveProgress() {
+  try {
+    await fetch('/manga/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source:        '<%- source %>',
+        seriesSlug:    '<%- seriesSlug %>',
+        seriesTitle:   <%- JSON.stringify(series.title) %>,
+        seriesCover:   <%- JSON.stringify(series.cover || '') %>,
+        chapterSlug:   '<%- currentChap.slug %>',
+        chapterNumber: <%- currentChap.number %>,
+      }),
+    });
+  } catch (_) {}
+})();
+<% } %>
+</script>
+
+<%- include('partials/footer') %>

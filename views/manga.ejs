@@ -1,0 +1,168 @@
+<%- include('partials/header') %>
+<div class="container">
+
+  <section class="hero" style="padding-bottom:2rem">
+    <div class="hero-glow"></div>
+    <p class="hero-label">THE SHELF</p>
+    <h1 class="hero-title">Manga / Manhwa</h1>
+    <p class="hero-sub">Browse thousands of titles from multiple sources.</p>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <% if (continueReading.length > 0) { %>
+  <section style="margin:2rem 0 2.5rem">
+    <p class="hero-label" style="margin-bottom:.75rem">📖 CONTINUE READING</p>
+    <div class="manga-scroll">
+      <% continueReading.forEach(p => { %>
+      <a href="/manga/series/<%= p.source %>/<%= encodeURIComponent(p.seriesSlug) %>" class="manga-pop-card glass-card">
+        <div class="manga-pop-thumb">
+          <% if (p.seriesCover) { %>
+            <img src="<%= p.seriesCover %>" alt="<%= p.seriesTitle %>" loading="lazy" />
+          <% } else { %>
+            <div class="manga-pop-placeholder">📚</div>
+          <% } %>
+        </div>
+        <div class="manga-pop-info">
+          <div class="manga-pop-title"><%= p.seriesTitle %></div>
+          <div class="manga-pop-ch">Ch. <%= p.chapterNumber %></div>
+          <span class="manga-src-badge manga-src-<%= p.source %>"><%= p.source.toUpperCase() %></span>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- Search -->
+  <section style="margin-bottom:1.5rem">
+    <div class="manga-search-wrap">
+      <input id="mangaSearch" type="search" placeholder="Search manga or manhwa…" class="manga-search-input" autocomplete="off" />
+    </div>
+  </section>
+
+  <!-- Grid -->
+  <section>
+    <p class="hero-label" style="margin-bottom:1.25rem" id="mangaGridLabel">ALL TITLES</p>
+    <div class="manga-grid" id="mangaGrid">
+      <% series.forEach(s => { %>
+      <a href="/manga/series/<%= s.source %>/<%= encodeURIComponent(s.slug) %>" class="manga-card glass-card">
+        <div class="manga-card-cover">
+          <% if (s.cover) { %>
+            <img src="<%= s.cover %>" alt="<%= s.title %>" loading="lazy" />
+          <% } else { %>
+            <div class="manga-card-nocover">📚</div>
+          <% } %>
+          <span class="manga-src-badge manga-src-<%= s.source %>"><%= s.source.toUpperCase() %></span>
+        </div>
+        <div class="manga-card-info">
+          <div class="manga-card-title"><%= s.title %></div>
+          <% if (s.status) { %>
+            <div class="manga-card-status"><%= s.status %></div>
+          <% } %>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+
+    <% if (series.length > 0) { %>
+    <div style="text-align:center;margin:2.5rem 0">
+      <a href="/manga?page=<%= page + 1 %>" class="btn btn-ghost" id="mangaLoadMore">Load More →</a>
+    </div>
+    <% } %>
+
+    <% if (series.length === 0) { %>
+    <div class="glass-card" style="text-align:center;padding:3rem;color:var(--muted)">
+      <div style="font-size:3rem;margin-bottom:1rem">📚</div>
+      <p>No titles available right now. Check back soon!</p>
+    </div>
+    <% } %>
+  </section>
+</div>
+
+<style>
+  .manga-scroll { display:flex;gap:1rem;overflow-x:auto;padding-bottom:.75rem;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent }
+  .manga-pop-card { display:flex;flex-direction:column;min-width:140px;max-width:140px;padding:0;overflow:hidden;border-radius:12px;text-decoration:none;transition:transform .2s,box-shadow .2s }
+  .manga-pop-card:hover { transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.4) }
+  .manga-pop-thumb { position:relative;aspect-ratio:2/3;overflow:hidden }
+  .manga-pop-thumb img { width:100%;height:100%;object-fit:cover }
+  .manga-pop-placeholder { width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:rgba(255,255,255,.05) }
+  .manga-pop-info { padding:.6rem .75rem }
+  .manga-pop-title { font-size:.78rem;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.2rem }
+  .manga-pop-ch { font-size:.7rem;color:var(--muted) }
+
+  .manga-search-wrap { max-width:480px }
+  .manga-search-input { width:100%;padding:.65rem 1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;outline:none;transition:border-color .2s }
+  .manga-search-input:focus { border-color:var(--amber) }
+
+  .manga-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1.25rem }
+  .manga-card { display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:14px;text-decoration:none;transition:transform .2s,box-shadow .2s }
+  .manga-card:hover { transform:translateY(-5px);box-shadow:0 16px 48px rgba(0,0,0,.45) }
+  .manga-card-cover { position:relative;aspect-ratio:2/3;overflow:hidden }
+  .manga-card-cover img { width:100%;height:100%;object-fit:cover;transition:transform .35s }
+  .manga-card:hover .manga-card-cover img { transform:scale(1.05) }
+  .manga-card-nocover { width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;font-size:3rem;background:rgba(255,255,255,.05) }
+  .manga-card-info { padding:.75rem }
+  .manga-card-title { font-size:.9rem;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:.25rem }
+  .manga-card-status { font-size:.7rem;color:var(--muted) }
+
+  .manga-src-badge { font-size:.58rem;font-weight:700;letter-spacing:.07em;padding:.15rem .45rem;border-radius:20px;color:#fff;display:inline-block;margin-top:.3rem }
+  .manga-src-omega      { background:rgba(0,180,220,.8) }
+  .manga-src-manhwaclan { background:rgba(168,85,247,.8) }
+  .manga-src-mangaeden  { background:rgba(34,197,94,.8) }
+
+  .manga-card-cover .manga-src-badge { position:absolute;top:.45rem;left:.45rem;margin:0 }
+</style>
+
+<script>
+(function () {
+  const input   = document.getElementById('mangaSearch');
+  const grid    = document.getElementById('mangaGrid');
+  const label   = document.getElementById('mangaGridLabel');
+  const loadMore = document.getElementById('mangaLoadMore');
+  let debounce;
+
+  function renderCards(items) {
+    if (!items.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">No results found.</div>';
+      return;
+    }
+    grid.innerHTML = items.map(s => `
+      <a href="/manga/series/${encodeURIComponent(s.source)}/${encodeURIComponent(s.slug)}" class="manga-card glass-card">
+        <div class="manga-card-cover">
+          ${s.cover ? `<img src="${s.cover}" alt="" loading="lazy" />` : '<div class="manga-card-nocover">📚</div>'}
+          <span class="manga-src-badge manga-src-${s.source}">${s.source.toUpperCase()}</span>
+        </div>
+        <div class="manga-card-info">
+          <div class="manga-card-title">${s.title}</div>
+          ${s.status ? `<div class="manga-card-status">${s.status}</div>` : ''}
+        </div>
+      </a>
+    `).join('');
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    const q = input.value.trim();
+    if (!q) {
+      location.reload();
+      return;
+    }
+    debounce = setTimeout(async () => {
+      label.textContent = `RESULTS FOR "${q.toUpperCase()}"`;
+      if (loadMore) loadMore.style.display = 'none';
+      grid.style.opacity = '.5';
+      try {
+        const resp = await fetch(`/manga/search?q=${encodeURIComponent(q)}`);
+        const data = await resp.json();
+        renderCards(data);
+      } catch (e) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">Search failed. Try again.</div>';
+      }
+      grid.style.opacity = '1';
+    }, 420);
+  });
+})();
+</script>
+
+<%- include('partials/footer') %>
