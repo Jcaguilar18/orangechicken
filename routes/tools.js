@@ -329,11 +329,30 @@ router.post('/tools/pdf-merge', toolUpload.array('files', 20), async (req, res) 
   const outPath = `/tmp/uploads/merged_${Date.now()}.pdf`;
   try {
     const merged = await PDFDocument.create();
-    for (const file of req.files) {
-      const doc   = await PDFDocument.load(fs.readFileSync(file.path));
-      const pages = await merged.copyPages(doc, doc.getPageIndices());
-      pages.forEach(p => merged.addPage(p));
+
+    let pageOrder;
+    try { pageOrder = req.body.pageOrder ? JSON.parse(req.body.pageOrder) : null; } catch { pageOrder = null; }
+
+    if (pageOrder && Array.isArray(pageOrder) && pageOrder.length > 0) {
+      if (pageOrder.some(({ f }) => f < 0 || f >= req.files.length)) {
+        return res.json({ ok: false, error: 'Invalid page order data.' });
+      }
+      const docs = {};
+      for (const { f } of pageOrder) {
+        if (!docs[f]) docs[f] = await PDFDocument.load(fs.readFileSync(req.files[f].path));
+      }
+      for (const { f, p } of pageOrder) {
+        const [page] = await merged.copyPages(docs[f], [p]);
+        merged.addPage(page);
+      }
+    } else {
+      for (const file of req.files) {
+        const doc   = await PDFDocument.load(fs.readFileSync(file.path));
+        const pages = await merged.copyPages(doc, doc.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
     }
+
     fs.writeFileSync(outPath, await merged.save());
     const result = saveTempResult(outPath, 'merged.pdf', 'application/pdf');
     res.json({ ok: true, ...result, previewable: true, previewType: 'pdf' });
