@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+
+<style>
+  .err-wrap { min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:3rem 1.5rem }
+  .err-code { font-family:'Rye',serif;font-size:6rem;line-height:1;color:var(--cyan);opacity:.15;margin:0;user-select:none }
+  .err-chick { font-size:4rem;margin:-.5rem 0 1rem;animation:err-bob 2s ease-in-out infinite }
+  @keyframes err-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .err-title { font-family:'Rye',serif;font-size:1.5rem;color:var(--text);margin:0 0 .75rem }
+  .err-msg   { color:var(--muted);font-size:.95rem;max-width:400px;line-height:1.6;margin:0 auto 2rem }
+</style>
+
+<div class="err-wrap">
+  <p class="err-code"><%= status %></p>
+  <div class="err-chick">🐔</div>
+  <h1 class="err-title"><%= title %></h1>
+  <p class="err-msg"><%= message %></p>
+  <a href="/" class="btn btn-primary">Take me home →</a>
+</div>
+
+<%- include('partials/footer') %>

@@ -143,6 +143,27 @@ app.use('/', showRoutes);
 app.use('/', adminShowRoutes);
 app.use('/', exclusiveRoutes);
 
+// ── 404 handler ───────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).render('error', {
+    status: 404,
+    title: 'Page Not Found',
+    message: "Looks like this page flew the coop. It doesn't exist or was moved.",
+  });
+});
+
+// ── Global error handler ──────────────────────────────────────────
+app.use((err, req, res, next) => {
+  const status = err.status || 500;
+  const messages = {
+    403: { title: 'Access Denied', message: "You're not allowed in here. Please log in or go back home." },
+    500: { title: 'Something Went Wrong', message: "Our little chick tripped over something. Try again in a moment." },
+  };
+  const { title, message } = messages[status] || messages[500];
+  console.error(`[${status}]`, err.message || err);
+  res.status(status).render('error', { status, title, message });
+});
+
 // Boot
 async function start() {
   // Ensure upload directories exist

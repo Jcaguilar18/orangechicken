@@ -9,8 +9,7 @@
 <% if (typeof popupAnnouncement !== 'undefined' && popupAnnouncement && popupAnnouncement.enabled) { %>
 <div id="sitePopup" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;max-width:320px;width:calc(100vw - 3rem)">
   <div style="background:#1a1a1a;border:1px solid var(--cyan);border-radius:14px;padding:1.2rem 1.2rem 1rem;box-shadow:0 8px 32px rgba(0,0,0,.6);position:relative">
-    <button onclick="document.getElementById('sitePopup').style.display='none'"
-      style="position:absolute;top:.6rem;right:.75rem;background:none;border:none;color:#666;font-size:1.1rem;cursor:pointer;line-height:1">✕</button>
+    <button onclick="closePopup()" style="position:absolute;top:.6rem;right:.75rem;background:none;border:none;color:#666;font-size:1.1rem;cursor:pointer;line-height:1">✕</button>
     <% if (popupAnnouncement.title) { %>
       <p style="font-family:'Rye',serif;font-size:.85rem;color:var(--cyan);letter-spacing:.05em;margin:0 0 .5rem"><%= popupAnnouncement.title %></p>
     <% } %>
@@ -18,7 +17,12 @@
   </div>
 </div>
 <script>
+  function closePopup() {
+    document.getElementById('sitePopup').style.display = 'none';
+    sessionStorage.setItem('popupDismissed', '1');
+  }
   (function() {
+    if (sessionStorage.getItem('popupDismissed') === '1') return;
     const el = document.getElementById('sitePopup');
     if (el) setTimeout(() => el.style.display = 'block', 800);
   })();
