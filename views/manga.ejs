@@ -53,7 +53,6 @@
           <% } else { %>
             <div class="manga-card-nocover">📚</div>
           <% } %>
-          <span class="manga-src-badge manga-src-<%= s.source %>"><%= s.source.toUpperCase() %></span>
         </div>
         <div class="manga-card-info">
           <div class="manga-card-title"><%= s.title %></div>
@@ -131,7 +130,6 @@
       <a href="/manga/series/${encodeURIComponent(s.source)}/${encodeURIComponent(s.slug)}" class="manga-card glass-card">
         <div class="manga-card-cover">
           ${s.cover ? `<img src="${s.cover}" alt="" loading="lazy" />` : '<div class="manga-card-nocover">📚</div>'}
-          <span class="manga-src-badge manga-src-${s.source}">${s.source.toUpperCase()}</span>
         </div>
         <div class="manga-card-info">
           <div class="manga-card-title">${s.title}</div>

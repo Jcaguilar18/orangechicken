@@ -8,7 +8,7 @@ const router = express.Router();
 const fg    = featureGuard('manga');
 const fgApi = featureGuard('manga', { api: true });
 
-const VALID_SOURCES = ['omega', 'manhwaclan', 'mangaeden'];
+const VALID_SOURCES = ['omega'];
 
 // ── Browse ─────────────────────────────────────────────────────────────────
 router.get('/manga', fg, async (req, res) => {
