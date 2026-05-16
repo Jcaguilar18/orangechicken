@@ -156,6 +156,21 @@ router.get('/exclusive/sources', fgApi, async (req, res) => {
       if (!s || !e) return res.status(400).json({ error: 'Missing season or episode.' });
       result = await engine.getTVSources(id, s, e);
     }
+
+    // Inject VidLink embed source
+    const vidlinkUrl = type === 'movie'
+      ? `https://vidlink.pro/movie/${id}`
+      : `https://vidlink.pro/tv/${id}/${s}/${e}`;
+    const vidlinkProvider = {
+      sources: [{ url: vidlinkUrl, type: 'embed', quality: null, provider: { id: 'vidlink', name: 'VidLink' } }],
+      subtitles: []
+    };
+
+    if (Array.isArray(result))        result.push(vidlinkProvider);
+    else if (result?.results)         result.results.push(vidlinkProvider);
+    else if (result?.sources)         result = [result, vidlinkProvider];
+    else                              result = [vidlinkProvider];
+
     res.json(result);
   } catch (err) {
     console.error('[exclusive/sources]', err.message);
