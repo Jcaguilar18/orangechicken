@@ -209,20 +209,39 @@
     </div>
 
     <!-- PDF Merge -->
-    <div class="tool-card glass-card" data-category="utility" data-name="merge combine pdfs join documents">
+    <div class="tool-card glass-card" data-category="utility" data-name="merge combine pdfs join documents" id="mergePdfCard">
       <div class="tool-card-top">
         <div class="tool-icon-wrap"><span class="tool-icon">📎</span></div>
         <span class="tool-category-tag">Utility</span>
       </div>
       <h3 class="tool-title">Merge PDFs</h3>
       <p class="tool-desc">Combine multiple PDF files into one document.</p>
-      <form class="tool-form" action="/tools/pdf-merge" method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-          <input type="file" name="files" class="form-input" accept=".pdf" multiple required />
-          <p class="tool-hint">Select 2 or more PDF files</p>
+      <div class="form-group">
+        <input type="file" id="mergeFileInput" class="form-input" accept=".pdf" multiple />
+        <p class="tool-hint">Select 2 or more PDF files</p>
+      </div>
+
+      <!-- Expanded panel — hidden until files are selected -->
+      <div id="mergePdfPanel" style="display:none;margin-top:12px">
+        <!-- Tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="merge-tab active" data-tab="files" onclick="mergeSwitchTab('files')" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--cyan);background:var(--cyan);color:#000;font-size:12px;cursor:pointer;font-weight:600">Files</button>
+          <button class="merge-tab" data-tab="pages" onclick="mergeSwitchTab('pages')" style="flex:1;padding:6px;border-radius:6px;border:1px solid #444;background:transparent;color:#aaa;font-size:12px;cursor:pointer">Pages</button>
         </div>
-        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Merge PDFs →</button>
-      </form>
+
+        <!-- Files tab -->
+        <div id="mergeFilesTab">
+          <ul id="mergeFileList" style="list-style:none;padding:0;margin:0 0 10px;display:flex;flex-direction:column;gap:6px"></ul>
+        </div>
+
+        <!-- Pages tab -->
+        <div id="mergePagesTab" style="display:none">
+          <p style="font-size:11px;color:#666;margin:0 0 8px">Drag pages to set the merged order.</p>
+          <div id="mergePageGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;max-height:340px;overflow-y:auto;padding:4px"></div>
+        </div>
+
+        <button id="mergePdfBtn" class="btn btn-primary" style="width:100%" onclick="submitMergePdf()">Merge PDFs →</button>
+      </div>
     </div>
 
     <!-- Image to PDF -->
@@ -613,6 +632,180 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ── PDF Merge with reorder ──────────────────────────────────────────
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const mergeState = {
+  files: [],
+  numPages: [],
+  activeTab: 'files',
+  filesSortable: null,
+  pagesSortable: null,
+};
+
+const FILE_COLORS = ['#e07b00','#00b4d8','#7b2fff','#e05c00','#00d4a0'];
+
+document.getElementById('mergeFileInput').addEventListener('change', async (e) => {
+  const picked = Array.from(e.target.files);
+  if (!picked.length) return;
+
+  const startIdx = mergeState.files.length;
+  mergeState.files.push(...picked);
+
+  for (let i = startIdx; i < mergeState.files.length; i++) {
+    const url = URL.createObjectURL(mergeState.files[i]);
+    const pdf = await pdfjsLib.getDocument(url).promise;
+    mergeState.numPages[i] = pdf.numPages;
+    URL.revokeObjectURL(url);
+  }
+
+  mergeRenderFileList();
+  document.getElementById('mergePdfPanel').style.display = '';
+  e.target.value = '';
+});
+
+function mergeRenderFileList() {
+  const ul = document.getElementById('mergeFileList');
+  ul.innerHTML = '';
+  mergeState.files.forEach((file, f) => {
+    const li = document.createElement('li');
+    li.dataset.f = f;
+    li.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1e1e1e;border-radius:5px;border:1px solid #333;font-size:12px;color:#ccc;cursor:grab';
+    li.innerHTML = `
+      <span style="color:#555;font-size:16px;line-height:1">⠿</span>
+      <span style="width:8px;height:8px;border-radius:50%;background:${FILE_COLORS[f % FILE_COLORS.length]};flex-shrink:0"></span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span>
+      <span style="color:#555;font-size:11px;white-space:nowrap">${mergeState.numPages[f]} pg</span>
+      <span onclick="mergeRemoveFile(${f})" style="color:#c00;cursor:pointer;font-size:13px;padding:0 2px">✕</span>
+    `;
+    ul.appendChild(li);
+  });
+
+  if (mergeState.filesSortable) mergeState.filesSortable.destroy();
+  mergeState.filesSortable = Sortable.create(ul, { animation: 150, handle: 'li' });
+}
+
+function mergeRemoveFile(f) {
+  mergeState.files.splice(f, 1);
+  mergeState.numPages.splice(f, 1);
+  if (mergeState.files.length < 1) {
+    document.getElementById('mergePdfPanel').style.display = 'none';
+    return;
+  }
+  mergeRenderFileList();
+  if (mergeState.activeTab === 'pages') mergeRenderPageGrid();
+}
+
+async function mergeRenderPageGrid() {
+  const grid = document.getElementById('mergePageGrid');
+  grid.innerHTML = '<p style="color:#555;font-size:12px">Rendering thumbnails...</p>';
+
+  const fileOrder = mergeGetFileOrder();
+
+  if (mergeState.pagesSortable) { mergeState.pagesSortable.destroy(); mergeState.pagesSortable = null; }
+  grid.innerHTML = '';
+
+  for (const f of fileOrder) {
+    const file = mergeState.files[f];
+    const url  = URL.createObjectURL(file);
+    const pdf  = await pdfjsLib.getDocument(url).promise;
+    for (let p = 0; p < pdf.numPages; p++) {
+      const page   = await pdf.getPage(p + 1);
+      const vp     = page.getViewport({ scale: 0.3 });
+      const canvas = document.createElement('canvas');
+      canvas.width  = vp.width;
+      canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+      const wrap = document.createElement('div');
+      wrap.dataset.f = f;
+      wrap.dataset.p = p;
+      wrap.style.cssText = 'position:relative;cursor:grab;border-radius:4px;overflow:hidden;border:2px solid #333;flex-shrink:0';
+      wrap.title = `${file.name} — page ${p + 1}`;
+
+      const dot = document.createElement('div');
+      dot.style.cssText = `position:absolute;bottom:4px;right:4px;width:8px;height:8px;border-radius:50%;background:${FILE_COLORS[f % FILE_COLORS.length]};box-shadow:0 0 0 1px rgba(0,0,0,.5)`;
+
+      wrap.appendChild(canvas);
+      wrap.appendChild(dot);
+      grid.appendChild(wrap);
+    }
+    URL.revokeObjectURL(url);
+  }
+
+  mergeState.pagesSortable = Sortable.create(grid, { animation: 150 });
+}
+
+function mergeGetFileOrder() {
+  const ul = document.getElementById('mergeFileList');
+  return Array.from(ul.children).map(li => parseInt(li.dataset.f));
+}
+
+function mergeSwitchTab(tab) {
+  mergeState.activeTab = tab;
+  document.querySelectorAll('.merge-tab').forEach(btn => {
+    const active = btn.dataset.tab === tab;
+    btn.style.background  = active ? 'var(--cyan)' : 'transparent';
+    btn.style.color       = active ? '#000' : '#aaa';
+    btn.style.borderColor = active ? 'var(--cyan)' : '#444';
+    btn.style.fontWeight  = active ? '600' : '400';
+  });
+  document.getElementById('mergeFilesTab').style.display = tab === 'files' ? '' : 'none';
+  document.getElementById('mergePagesTab').style.display = tab === 'pages' ? '' : 'none';
+  if (tab === 'pages') mergeRenderPageGrid();
+}
+
+async function submitMergePdf() {
+  if (mergeState.files.length < 2) {
+    showAlert('Please select at least 2 PDF files.');
+    return;
+  }
+
+  let pageOrder;
+  if (mergeState.activeTab === 'pages') {
+    const grid = document.getElementById('mergePageGrid');
+    pageOrder = Array.from(grid.children).map(wrap => ({
+      f: parseInt(wrap.dataset.f),
+      p: parseInt(wrap.dataset.p),
+    }));
+  } else {
+    pageOrder = [];
+    for (const f of mergeGetFileOrder()) {
+      for (let p = 0; p < mergeState.numPages[f]; p++) {
+        pageOrder.push({ f, p });
+      }
+    }
+  }
+
+  const btn = document.getElementById('mergePdfBtn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+  showLoading(true);
+  hideAlert();
+
+  try {
+    const fd = new FormData();
+    mergeState.files.forEach(file => fd.append('files', file));
+    fd.append('pageOrder', JSON.stringify(pageOrder));
+
+    const res  = await fetch('/tools/pdf-merge', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) showModal(data);
+    else showAlert(data.error || 'Merge failed.');
+  } catch {
+    showAlert('Network error. Please try again.');
+  } finally {
+    showLoading(false);
+    btn.disabled = false;
+    btn.textContent = 'Merge PDFs →';
+  }
+}
 </script>
 
 <%- include('partials/footer') %>
