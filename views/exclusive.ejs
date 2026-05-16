@@ -1067,11 +1067,12 @@ async function fetchSources(id, type, s, e) {
       return;
     }
 
-    // VidSrcEmbed always first, then sort remaining by quality descending
+    // VidSrcEmbed first, VidLink second, then remaining by quality descending
+    const priority = id => id === 'vidsrcembed' ? 2 : id === 'vidlink' ? 1 : 0;
     sources.sort((a, b) => {
-      const aVse = a.provider?.id === 'vidsrcembed' ? 1 : 0;
-      const bVse = b.provider?.id === 'vidsrcembed' ? 1 : 0;
-      if (aVse !== bVse) return bVse - aVse;
+      const pa = priority(a.provider?.id);
+      const pb = priority(b.provider?.id);
+      if (pa !== pb) return pb - pa;
       return (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0);
     });
 
