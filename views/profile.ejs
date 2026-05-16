@@ -25,6 +25,11 @@
       <div class="profile-name-row">
         <h1 class="profile-username"><%= profileUser.username %></h1>
         <% if (profileUser.isAdmin) { %><span class="admin-badge">ADMIN</span><% } %>
+        <% if (profileUser.isProVIP) { %>
+          <span class="user-status-badge badge-provip">👑 PRO VIP</span>
+        <% } else if (profileIsPro) { %>
+          <span class="user-status-badge badge-pro">PRO</span>
+        <% } %>
       </div>
       <div class="profile-joined">
         Member since <%= new Date(profileUser.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) %>
@@ -148,4 +153,9 @@
   </section>
 </div>
 
+<style>
+  .user-status-badge { display:inline-block;font-size:.58rem;font-weight:800;letter-spacing:.07em;padding:.1rem .45rem;border-radius:20px;vertical-align:middle;margin-left:.3rem;line-height:1.4 }
+  .badge-provip { background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff }
+  .badge-pro    { background:rgba(168,85,247,.85);color:#fff }
+</style>
 <%- include('partials/footer') %>

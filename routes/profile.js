@@ -1,7 +1,8 @@
 const express = require('express');
 const path = require('path');
 const multer = require('multer');
-const { User, Article, Comment } = require('../models');
+const { User, Article, Comment, Subscription } = require('../models');
+const { Op } = require('sequelize');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -65,25 +66,34 @@ router.get('/users/:username', async (req, res) => {
   try {
     const profileUser = await User.findOne({
       where: { username: req.params.username },
-      attributes: ['id', 'username', 'avatar', 'bio', 'createdAt', 'isAdmin', 'isBanned'],
+      attributes: ['id', 'username', 'avatar', 'bio', 'createdAt', 'isAdmin', 'isBanned', 'isProVIP'],
     });
     if (!profileUser) return res.redirect('/');
 
-    const articles = await Article.findAll({
-      where: { userId: profileUser.id },
-      order: [['createdAt', 'DESC']],
-      include: [
-        { model: User, as: 'author', attributes: ['username', 'avatar'] },
-        { model: Comment, attributes: ['id'] },
-      ],
-    });
+    const today = new Date().toISOString().slice(0, 10);
+    const [articles, activeSub] = await Promise.all([
+      Article.findAll({
+        where: { userId: profileUser.id },
+        order: [['createdAt', 'DESC']],
+        include: [
+          { model: User, as: 'author', attributes: ['id', 'username', 'avatar', 'isProVIP'] },
+          { model: Comment, attributes: ['id'] },
+        ],
+      }),
+      Subscription.findOne({
+        where: { userId: profileUser.id, status: 'active', endDate: { [Op.gte]: today } },
+        attributes: ['id'],
+      }),
+    ]);
 
     const isOwner = !!(req.session.user && req.session.user.id === profileUser.id);
+    const profileIsPro = !!activeSub;
 
     res.render('profile', {
       profileUser: profileUser.toJSON(),
       articles,
       isOwner,
+      profileIsPro,
     });
   } catch (err) {
     console.error(err);

@@ -1,7 +1,8 @@
 const express = require('express');
 const path = require('path');
 const multer = require('multer');
-const { Article, User, Comment } = require('../models');
+const { Article, User, Comment, Subscription } = require('../models');
+const { Op } = require('sequelize');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -34,10 +35,20 @@ router.get('/', (req, res) => res.redirect('/tools'));
 router.get('/home', async (req, res) => {
   try {
     const articles = await Article.findAll({
-      include: [{ model: User, as: 'author', attributes: ['username', 'avatar'] }],
+      include: [{ model: User, as: 'author', attributes: ['id', 'username', 'avatar', 'isProVIP'] }],
       order: [['createdAt', 'DESC']],
     });
     const totalUsers = await User.count();
+    const today = new Date().toISOString().slice(0, 10);
+    const authorIds = [...new Set(articles.map(a => a.author?.id).filter(Boolean))];
+    if (authorIds.length) {
+      const activeSubs = await Subscription.findAll({
+        where: { userId: { [Op.in]: authorIds }, status: 'active', endDate: { [Op.gte]: today } },
+        attributes: ['userId'],
+      });
+      const proIds = new Set(activeSubs.map(s => s.userId));
+      articles.forEach(a => { if (a.author) a.author.dataValues.isPro = proIds.has(a.author.id); });
+    }
     res.render('index', { articles, totalUsers });
   } catch (err) {
     console.error(err);
@@ -93,15 +104,26 @@ router.get('/articles/:id', async (req, res) => {
   try {
     const article = await Article.findByPk(req.params.id, {
       include: [
-        { model: User, as: 'author', attributes: ['username', 'avatar'] },
+        { model: User, as: 'author', attributes: ['id', 'username', 'avatar', 'isProVIP'] },
         {
           model: Comment,
-          include: [{ model: User, as: 'author', attributes: ['username', 'avatar'] }],
+          include: [{ model: User, as: 'author', attributes: ['id', 'username', 'avatar', 'isProVIP'] }],
           order: [['createdAt', 'ASC']],
         },
       ],
     });
     if (!article) return res.redirect('/');
+    const today = new Date().toISOString().slice(0, 10);
+    const allAuthors = [article.author, ...(article.Comments || []).map(c => c.author)].filter(Boolean);
+    const authorIds = [...new Set(allAuthors.map(a => a.id))];
+    if (authorIds.length) {
+      const activeSubs = await Subscription.findAll({
+        where: { userId: { [Op.in]: authorIds }, status: 'active', endDate: { [Op.gte]: today } },
+        attributes: ['userId'],
+      });
+      const proIds = new Set(activeSubs.map(s => s.userId));
+      allAuthors.forEach(a => { a.dataValues.isPro = proIds.has(a.id); });
+    }
     res.render('article', { article });
   } catch (err) {
     console.error(err);
