@@ -232,14 +232,14 @@ async function start() {
   await SiteSetting.findOrCreate({ where: { key: 'paypal_me' },      defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'paypal_plan_id' }, defaults: { value: null } });
   await SiteSetting.findOrCreate({ where: { key: 'contact_email_notifications' }, defaults: { value: '1' } });
-  await SiteSetting.findOrCreate({ where: { key: 'feature_flags' }, defaults: { value: JSON.stringify({ tools:{mode:'all',blocked:[]}, shows:{mode:'all',blocked:[]}, exclusive:{mode:'all',blocked:[]}, scraper:{mode:'all',blocked:[]}, contact:{mode:'all',blocked:[]}, manga:{mode:'all',blocked:[]} }) } });
+  await SiteSetting.findOrCreate({ where: { key: 'feature_flags' }, defaults: { value: JSON.stringify({ tools:{mode:'all',blocked:[]}, shows:{mode:'all',blocked:[]}, exclusive:{mode:'all',blocked:[]}, scraper:{mode:'all',blocked:[]}, contact:{mode:'all',blocked:[]}, manga:{mode:'disabled',blocked:[]} }) } });
   // Ensure 'manga' key exists in existing feature_flags rows
   try {
     const ffRow = await SiteSetting.findOne({ where: { key: 'feature_flags' } });
     if (ffRow) {
       const flags = JSON.parse(ffRow.value || '{}');
       if (!flags.manga) {
-        flags.manga = { mode: 'all', blocked: [] };
+        flags.manga = { mode: 'disabled', blocked: [] };
         await ffRow.update({ value: JSON.stringify(flags) });
       }
     }
