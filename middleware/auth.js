@@ -7,7 +7,11 @@ function requireAuth(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!req.session.user || !req.session.user.isAdmin) {
-    return res.status(403).send('Forbidden');
+    return res.status(403).render('error', {
+      status: 403,
+      title: 'Access Denied',
+      message: "You're not allowed in here. Please log in or go back home.",
+    });
   }
   next();
 }
