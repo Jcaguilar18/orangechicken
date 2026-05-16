@@ -249,4 +249,26 @@ router.post('/admin/features', requireAdmin, async (req, res) => {
   }
 });
 
+// ── Popup Announcement ────────────────────────────────────────────
+router.get('/admin/popup', requireAdmin, async (req, res) => {
+  const row = await SiteSetting.findOne({ where: { key: 'popup_announcement' } });
+  const popup = row ? JSON.parse(row.value) : { enabled: false, title: '', message: '' };
+  res.render('admin-popup', { popup, success: req.query.success || null, error: req.query.error || null });
+});
+
+router.post('/admin/popup', requireAdmin, async (req, res) => {
+  try {
+    const popup = {
+      enabled: req.body.enabled === '1',
+      title:   (req.body.title   || '').trim().slice(0, 100),
+      message: (req.body.message || '').trim().slice(0, 500),
+    };
+    await SiteSetting.upsert({ key: 'popup_announcement', value: JSON.stringify(popup) });
+    res.redirect('/admin/popup?success=Popup+saved.');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin/popup?error=Failed+to+save.');
+  }
+});
+
 module.exports = router;

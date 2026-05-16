@@ -119,6 +119,12 @@ app.use(async (req, res, next) => {
   } catch {
     res.locals.featureFlags = {};
   }
+  try {
+    const popupRow = await SiteSetting.findOne({ where: { key: 'popup_announcement' } });
+    res.locals.popupAnnouncement = popupRow ? JSON.parse(popupRow.value) : null;
+  } catch {
+    res.locals.popupAnnouncement = null;
+  }
   next();
 });
 
