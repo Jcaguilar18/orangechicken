@@ -249,11 +249,12 @@ router.post('/tools/youtube-download', express.json({ limit: '4kb' }), async (re
       job.status = 'downloading';
       const outTemplate = `${outDir}/yt_${ts}_%(title)s.%(ext)s`;
 
+      const ytBase = `yt-dlp --js-runtimes node --no-playlist --max-filesize 500m -o "${outTemplate}"`;
       let cmd;
       if (isAudio) {
-        cmd = `yt-dlp -x --audio-format mp3 --audio-quality 0 -o "${outTemplate}" --no-playlist --max-filesize 500m "${url.trim()}"`;
+        cmd = `${ytBase} -x --audio-format mp3 --audio-quality 0 "${url.trim()}"`;
       } else {
-        cmd = `yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4 -o "${outTemplate}" --no-playlist --max-filesize 500m "${url.trim()}"`;
+        cmd = `${ytBase} -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4 "${url.trim()}"`;
       }
 
       await execAsync(cmd, { timeout: 5 * 60 * 1000 });
