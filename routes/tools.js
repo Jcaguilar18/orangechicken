@@ -249,7 +249,9 @@ router.post('/tools/youtube-download', express.json({ limit: '4kb' }), async (re
       job.status = 'downloading';
       const outTemplate = `${outDir}/yt_${ts}_%(title)s.%(ext)s`;
 
-      const ytBase = `yt-dlp --js-runtimes node --extractor-args "youtube:player_client=android_vr,web" --no-playlist --max-filesize 500m -o "${outTemplate}"`;
+      const cookiesPath = process.env.YTDLP_COOKIES || path.join(__dirname, '../cookies.txt');
+      const cookiesFlag = fs.existsSync(cookiesPath) ? `--cookies "${cookiesPath}"` : '';
+      const ytBase = `yt-dlp --js-runtimes node ${cookiesFlag} --no-playlist --max-filesize 500m -o "${outTemplate}"`;
       let cmd;
       if (isAudio) {
         cmd = `${ytBase} -x --audio-format mp3 --audio-quality 0 "${url.trim()}"`;
