@@ -249,7 +249,7 @@ router.post('/tools/youtube-download', express.json({ limit: '4kb' }), async (re
       job.status = 'downloading';
       const outTemplate = `${outDir}/yt_${ts}_%(title)s.%(ext)s`;
 
-      const ytBase = `yt-dlp --js-runtimes node --no-playlist --max-filesize 500m -o "${outTemplate}"`;
+      const ytBase = `yt-dlp --js-runtimes node --extractor-args "youtube:player_client=ios" --no-playlist --max-filesize 500m -o "${outTemplate}"`;
       let cmd;
       if (isAudio) {
         cmd = `${ytBase} -x --audio-format mp3 --audio-quality 0 "${url.trim()}"`;
