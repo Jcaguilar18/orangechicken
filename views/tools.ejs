@@ -149,6 +149,51 @@
       </div>
     </div>
 
+    <!-- YouTube Downloader -->
+    <div class="tool-card glass-card" data-category="utility" data-name="youtube downloader download video audio mp4 mp3 yt">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">▶</span></div>
+        <span class="tool-category-tag">Utility</span>
+      </div>
+      <h3 class="tool-title">YouTube Downloader</h3>
+      <p class="tool-desc">Download any YouTube video as MP4 or extract audio as MP3. Paste the video URL and pick your format.</p>
+      <div class="form-group" style="margin-top:.75rem">
+        <input type="url" id="ytUrl" class="form-input" placeholder="https://youtube.com/watch?v=..." autocomplete="off" />
+      </div>
+      <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+        <label style="flex:1;display:flex;align-items:center;gap:.4rem;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:.5rem .75rem;cursor:pointer">
+          <input type="radio" name="ytFormat" value="mp4" checked style="accent-color:var(--cyan)"> <span style="font-size:.85rem">MP4 (video)</span>
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:.4rem;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:.5rem .75rem;cursor:pointer">
+          <input type="radio" name="ytFormat" value="mp3" style="accent-color:var(--cyan)"> <span style="font-size:.85rem">MP3 (audio)</span>
+        </label>
+      </div>
+      <div id="ytProgress" style="display:none;margin-bottom:.5rem">
+        <div style="height:4px;background:#1e1e3a;border-radius:2px;overflow:hidden;margin-bottom:.4rem">
+          <div id="ytProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),#7c3aed);transition:width .4s;border-radius:2px"></div>
+        </div>
+        <p id="ytProgressText" style="font-size:.78rem;color:#64748b;margin:0"></p>
+      </div>
+      <button id="ytBtn" class="btn btn-primary tool-submit" style="width:100%" onclick="startYtDownload()">Download →</button>
+    </div>
+
+    <!-- MP4 → MP3 -->
+    <div class="tool-card glass-card" data-category="utility" data-name="mp4 to mp3 convert audio extract video music">
+      <div class="tool-card-top">
+        <div class="tool-icon-wrap"><span class="tool-icon">🎵</span></div>
+        <span class="tool-category-tag">Utility</span>
+      </div>
+      <h3 class="tool-title">MP4 → MP3</h3>
+      <p class="tool-desc">Extract the audio track from any MP4 video and save it as a high-quality MP3 file. Up to 500 MB.</p>
+      <form class="tool-form" action="/tools/mp4-to-mp3" method="POST" enctype="multipart/form-data" style="margin-top:.75rem">
+        <div class="form-group">
+          <input type="file" name="file" class="form-input" accept="video/mp4,video/*,audio/*" required />
+          <p class="tool-hint">MP4, MKV, AVI, MOV — any video with audio</p>
+        </div>
+        <button type="submit" class="btn btn-primary tool-submit" style="width:100%">Convert →</button>
+      </form>
+    </div>
+
     <!-- Citation Generator -->
     <div class="tool-card glass-card" data-category="utility" data-name="citation generator apa mla chicago harvard reference bibliography intext">
       <div class="tool-card-top">
@@ -806,6 +851,80 @@ async function submitMergePdf() {
     btn.textContent = 'Merge PDFs →';
   }
 }
+</script>
+
+<script>
+// ── YouTube Downloader ─────────────────────────────────────────────
+async function startYtDownload() {
+  const url    = document.getElementById('ytUrl').value.trim();
+  const format = document.querySelector('input[name="ytFormat"]:checked')?.value || 'mp4';
+  const btn    = document.getElementById('ytBtn');
+  const bar    = document.getElementById('ytProgressBar');
+  const txt    = document.getElementById('ytProgressText');
+  const prog   = document.getElementById('ytProgress');
+
+  if (!url) { showAlert('Please enter a YouTube URL.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+  prog.style.display = '';
+  bar.style.width = '5%';
+  txt.textContent = 'Sending request…';
+  hideAlert();
+
+  let jobId;
+  try {
+    const res  = await fetch('/tools/youtube-download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, format }),
+    });
+    const data = await res.json();
+    if (!data.ok) { showAlert(data.error || 'Failed to start download.'); reset(); return; }
+    jobId = data.jobId;
+  } catch { showAlert('Network error. Please try again.'); reset(); return; }
+
+  txt.textContent = 'Downloading from YouTube…';
+  bar.style.width = '15%';
+
+  // Animate bar while waiting
+  let pct = 15;
+  const anim = setInterval(() => {
+    if (pct < 80) { pct += Math.random() * 3; bar.style.width = pct + '%'; }
+  }, 1500);
+
+  const poll = setInterval(async () => {
+    try {
+      const res  = await fetch(`/tools/youtube-status/${jobId}`);
+      const data = await res.json();
+
+      if (data.status === 'done') {
+        clearInterval(poll); clearInterval(anim);
+        bar.style.width = '100%';
+        txt.textContent = 'Done! Preparing download…';
+        setTimeout(() => {
+          showModal({ ok: true, id: data.resultId, filename: data.filename, size: data.size, previewType: 'file' });
+          reset();
+        }, 400);
+      } else if (data.status === 'error') {
+        clearInterval(poll); clearInterval(anim);
+        showAlert('Download failed: ' + (data.error || 'Unknown error.'));
+        reset();
+      } else {
+        txt.textContent = data.status === 'downloading' ? 'Downloading from YouTube…' : 'Processing…';
+      }
+    } catch { clearInterval(poll); clearInterval(anim); showAlert('Lost connection.'); reset(); }
+  }, 2000);
+
+  function reset() {
+    btn.disabled = false;
+    btn.textContent = 'Download →';
+    prog.style.display = 'none';
+    bar.style.width = '0%';
+  }
+}
+
+document.getElementById('ytUrl')?.addEventListener('keydown', e => { if (e.key === 'Enter') startYtDownload(); });
 </script>
 
 <%- include('partials/footer') %>

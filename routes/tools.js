@@ -207,6 +207,108 @@ async function checkToolLimit(req, toolName, limit) {
   }
 }
 
+// ── YouTube download jobs ──────────────────────────────────────────
+const ytJobs = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, job] of ytJobs) {
+    if (job.expires < now) {
+      if (job.filePath) fs.unlink(job.filePath, () => {});
+      ytJobs.delete(id);
+    }
+  }
+}, 10 * 60 * 1000);
+
+router.post('/tools/youtube-download', express.json({ limit: '4kb' }), async (req, res) => {
+  const { url, format } = req.body;
+  if (!url?.trim()) return res.json({ ok: false, error: 'Please enter a YouTube URL.' });
+
+  let parsedUrl;
+  try { parsedUrl = new URL(url.trim()); } catch { return res.json({ ok: false, error: 'Invalid URL.' }); }
+  const allowedHosts = ['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com', 'music.youtube.com'];
+  if (!allowedHosts.includes(parsedUrl.hostname)) {
+    return res.json({ ok: false, error: 'Only YouTube URLs are supported.' });
+  }
+
+  const rl = await checkToolLimit(req, 'youtube', 3);
+  if (!rl.allowed) return res.json(toolLimitErr(3));
+
+  const jobId = crypto.randomBytes(12).toString('hex');
+  ytJobs.set(jobId, { status: 'pending', progress: '', filePath: null, filename: null, expires: Date.now() + 30 * 60 * 1000 });
+  res.json({ ok: true, jobId });
+
+  // Run yt-dlp async
+  (async () => {
+    const job = ytJobs.get(jobId);
+    const ts = Date.now();
+    const outDir = '/tmp/uploads';
+    const isAudio = format === 'mp3';
+
+    try {
+      job.status = 'downloading';
+      const outTemplate = `${outDir}/yt_${ts}_%(title)s.%(ext)s`;
+
+      let cmd;
+      if (isAudio) {
+        cmd = `yt-dlp -x --audio-format mp3 --audio-quality 0 -o "${outTemplate}" --no-playlist --max-filesize 500m "${url.trim()}"`;
+      } else {
+        cmd = `yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4 -o "${outTemplate}" --no-playlist --max-filesize 500m "${url.trim()}"`;
+      }
+
+      await execAsync(cmd, { timeout: 5 * 60 * 1000 });
+
+      // Find the output file
+      const files = fs.readdirSync(outDir).filter(f => f.startsWith(`yt_${ts}_`));
+      if (files.length === 0) throw new Error('Download produced no output file.');
+      const filePath = `${outDir}/${files[0]}`;
+      const ext = path.extname(files[0]).slice(1).toLowerCase();
+      const mime = isAudio ? 'audio/mpeg' : 'video/mp4';
+      const safeFilename = files[0].replace(`yt_${ts}_`, '');
+
+      const result = saveTempResult(filePath, safeFilename, mime);
+      job.status = 'done';
+      job.resultId = result.id;
+      job.filename = safeFilename;
+      job.filePath = filePath;
+      job.size = result.size;
+    } catch (err) {
+      console.error('yt-dlp error:', err.message);
+      job.status = 'error';
+      job.error = err.stderr?.slice(0, 200) || err.message || 'Download failed.';
+    }
+  })();
+});
+
+router.get('/tools/youtube-status/:id', (req, res) => {
+  const job = ytJobs.get(req.params.id);
+  if (!job) return res.json({ status: 'not_found' });
+  if (job.status === 'done') return res.json({ status: 'done', resultId: job.resultId, filename: job.filename, size: job.size });
+  if (job.status === 'error') return res.json({ status: 'error', error: job.error });
+  res.json({ status: job.status });
+});
+
+// ── MP4 to MP3 ────────────────────────────────────────────────────
+router.post('/tools/mp4-to-mp3', videoUpload.single('file'), async (req, res) => {
+  if (!req.file) return res.json({ ok: false, error: 'Please upload an MP4 file.' });
+  const rl = await checkToolLimit(req, 'mp4_mp3', 5);
+  if (!rl.allowed) { cleanFile(req.file.path); return res.json(toolLimitErr(5)); }
+
+  const outPath = `/tmp/uploads/mp3_${Date.now()}.mp3`;
+  try {
+    await execAsync(`ffmpeg -i "${req.file.path}" -vn -q:a 0 -map a "${outPath}" -y`, { timeout: 3 * 60 * 1000 });
+    const origName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const result = saveTempResult(outPath, `${origName}.mp3`, 'audio/mpeg');
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('MP4→MP3 error:', err.message);
+    cleanFile(outPath);
+    res.json({ ok: false, error: 'Conversion failed. Make sure the file contains an audio track.' });
+  } finally {
+    cleanFile(req.file.path);
+  }
+});
+
 // ── Video job tracker ──────────────────────────────────────────────
 const videoJobs = new Map();
 // source files uploaded by users (not yet processed)
